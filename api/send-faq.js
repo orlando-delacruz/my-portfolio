@@ -17,7 +17,6 @@ export default async function handler(req, res) {
 
   try {
     const { error } = await resend.emails.send({
-      // removed 'data'
       from: "Leidi Bud Dentals <onboarding@resend.dev>",
       to: ["orlando.delacruz.dev@gmail.com"],
       subject: "New FAQ Question from Website",
