@@ -6,6 +6,7 @@ import Hero from "./sections/Hero";
 const About = lazy(() => import("./sections/About"));
 const Services = lazy(() => import("./sections/Sevices"));
 const Gallery = lazy(() => import("./sections/Gallery"));
+const WhyUs = lazy(() => import("./sections/WhyUs"));
 
 
 const SectionFallback = () => (
@@ -21,16 +22,10 @@ const Home = () => (
     <Header />
     <main id="main-content">
       <Hero />
-      <Suspense fallback={<SectionFallback />}>
-        <About />
-      </Suspense>
-
-      <Suspense fallback={<SectionFallback />}>
-        <Services />
-      </Suspense>
-
+      <Suspense fallback={<SectionFallback />}><About /></Suspense>
+      <Suspense fallback={<SectionFallback />}><Services /></Suspense>
       <Suspense fallback={<SectionFallback />}><Gallery /></Suspense>
-
+      <Suspense fallback={<SectionFallback />}><WhyUs /></Suspense>
     </main>
   </>
 );
