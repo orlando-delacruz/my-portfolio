@@ -9,6 +9,7 @@ const Gallery = lazy(() => import("./sections/Gallery"));
 const WhyUs = lazy(() => import("./sections/WhyUs"));
 const Branch = lazy(() => import("./sections/Branch"));
 const Testimonial = lazy(() => import("./sections/Testimonial"))
+const Faqs = lazy(() => import("./sections/Faqs"))
 
 
 const SectionFallback = () => (
@@ -30,6 +31,7 @@ const Home = () => (
       <Suspense fallback={<SectionFallback />}><WhyUs /></Suspense>
       <Suspense fallback={<SectionFallback />}><Branch /></Suspense>
       <Suspense fallback={<SectionFallback />}><Testimonial /></Suspense>
+      <Suspense fallback={<SectionFallback />}><Faqs /></Suspense>
     </main>
   </>
 );
