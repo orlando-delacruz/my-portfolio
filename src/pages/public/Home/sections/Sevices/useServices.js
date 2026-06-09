@@ -12,19 +12,20 @@ export const useServices = () => {
 
   const activeBranch = useMemo(
     () => branches.find((b) => b.id === activeBranchId),
-    [branches, activeBranchId]
+    [branches, activeBranchId],
   );
 
   const visibleServices = useMemo(
-    () => (expanded ? activeBranch.items : activeBranch.items.slice(0, initialCount)),
-    [expanded, activeBranch, initialCount]
+    () =>
+      expanded ? activeBranch.items : activeBranch.items.slice(0, initialCount),
+    [expanded, activeBranch, initialCount],
   );
 
   const hasMore = activeBranch.items.length > initialCount;
 
   const handleBranchChange = useCallback((branchId) => {
     setActiveBranchId(branchId);
-    setExpanded(false); // reset expand on tab switch
+    setExpanded(false);
   }, []);
 
   const handleViewDetails = useCallback((service) => {
