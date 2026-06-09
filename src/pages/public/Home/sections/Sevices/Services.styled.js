@@ -9,22 +9,11 @@ const fadeUp = keyframes`
 
 /* ─── Section ─────────────────────────────────────────── */
 export const ServicesSection = styled.section`
-  padding: 112px 65px 80px;
   background: ${theme.colors.background};
   display: flex;
   flex-direction: column;
   gap: 50px;
   overflow: hidden;
-
-  @media ${theme.media.tablet} {
-    padding: 80px 30px 60px;
-    gap: 40px;
-  }
-
-  @media ${theme.media.mobile} {
-    padding: 60px 20px 50px;
-    gap: 32px;
-  }
 `;
 
 /* ─── Body ────────────────────────────────────────────── */
@@ -53,7 +42,7 @@ export const TabButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  font-size: ${theme.typography.size.lg} !important;
   font-weight: ${theme.typography.weight.medium};
   line-height: 1.5;
   padding-bottom: 5px;

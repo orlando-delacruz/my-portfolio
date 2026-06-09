@@ -3,6 +3,8 @@ import { Suspense, lazy } from "react";
 import Header from "../../../components/layout/Header/Header";
 import Hero from "./sections/Hero";
 import CallToAction from "../../../components/layout/CallToAction";
+import Footer from "../../../components/layout/Footer";
+
 
 const About = lazy(() => import("./sections/About"));
 const Services = lazy(() => import("./sections/Sevices"));
@@ -35,6 +37,7 @@ const Home = () => (
       <Suspense fallback={<SectionFallback />}><Faqs /></Suspense>
       <CallToAction />
     </main>
+    <Footer />
   </>
 );
 

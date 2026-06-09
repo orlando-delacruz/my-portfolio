@@ -21,8 +21,6 @@ const theme = {
 
     sucess: "#16a34a",
     successDark: "#15803d",
-
-
   },
 
   typography: {
@@ -31,14 +29,13 @@ const theme = {
       secondary: "sans-serif",
     },
 
-
     heading: {
       h1: "clamp(2.25rem, 6vw, 3.438rem)",
       h2: "clamp(1.625rem, 5vw, 2.5rem)",
       h3: "clamp(1.25rem, 4vw, 1.875rem)",
       h4: "clamp(1rem, 3vw, 24px)",
       h5: "clamp(1.25rem, 3vw, 1rem)",
-      h6: "clamp(1.125rem, 3vw, 1rem)"
+      h6: "clamp(1.125rem, 3vw, 1rem)",
     },
 
     size: {
@@ -46,24 +43,24 @@ const theme = {
       sm: "14px",
       body: "16px",
       md: "18px",
-      lg: "clamp(1.25rem, 3vw, 1rem)",
+      lg: "clamp(1.25rem, 5vw, 1rem)",
       xl: "30px",
-      xxl: "clamp(1.5rem ,5vw, 2.188rem)"
+      xxl: "clamp(1.5rem ,5vw, 2.188rem)",
     },
 
     weight: {
       regular: "400",
       medium: "500",
       semibold: "600",
-    }
+    },
   },
 
   media: {
     mobile: "(max-width: 576px)",
     tablet: "(max-width: 1024px)",
     laptop: "(max-width: 1280px)",
-    desktop: "(min-width: 1440px)"
-  }
-}
+    desktop: "(min-width: 1440px)",
+  },
+};
 
-export default theme
+export default theme;

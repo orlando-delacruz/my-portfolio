@@ -9,17 +9,8 @@ const fadeUp = keyframes`
 
 /* ─── Outer section wrapper ───────────────────────────── */
 export const CTASection = styled.section`
-  padding: 112px 65px 80px;
   background: ${theme.colors.background};
   overflow: hidden;
-
-  @media ${theme.media.tablet} {
-    padding: 80px 30px 60px;
-  }
-
-  @media ${theme.media.mobile} {
-    padding: 60px 20px 50px;
-  }
 `;
 
 /* ─── Gradient card — 2-col grid on desktop ───────────── */
