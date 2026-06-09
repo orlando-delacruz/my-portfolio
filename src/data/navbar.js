@@ -1,3 +1,4 @@
+// src/data/navbar.js
 import Logo from "../assets/images/logo.png"
 
 export const banner = {
