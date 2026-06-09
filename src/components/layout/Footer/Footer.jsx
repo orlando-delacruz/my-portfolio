@@ -94,7 +94,7 @@ FooterBottom.displayName = "FooterBottom";
 
 /* ─── Main component ──────────────────────────────────── */
 const Footer = () => (
-  <S.FooterWrapper role="contentinfo">
+  <S.FooterWrapper id="footer" role="contentinfo">
     <S.FooterInner>
       <S.FooterGrid>
         <BrandCol />

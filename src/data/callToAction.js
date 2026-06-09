@@ -7,12 +7,11 @@ export const callToAction = {
     "Our dental team is here to help you achieve the confident smile you deserve. Book your appointment today and experience quality dental care in a comfortable environment.",
   primaryCta: {
     label: "Book Appointment",
-    href: "#contact",
     ariaLabel: "Book a dental appointment",
   },
   secondaryCta: {
     label: "Contact Our Clinic",
-    href: "#contact",
+    href: "https://www.messenger.com/t/105864438662342",
     ariaLabel: "Contact Leidi Bud Dentals",
   },
   image: {

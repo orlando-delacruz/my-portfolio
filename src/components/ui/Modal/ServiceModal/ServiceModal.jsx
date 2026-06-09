@@ -1,12 +1,20 @@
 // src/components/ui/Modal/ServiceModal.jsx
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 import * as S from "./ServiceModal.styled";
 
 const ServiceModal = memo(({ service, open, onClose }) => {
+  const navigate = useNavigate();
+
   if (!service) return null;
 
   const { title, fullDesc, image, imageAlt } = service;
+
+  const handleBookThisService = () => {
+    navigate("/book");
+    onClose();
+  };
 
   return (
     <Modal
@@ -34,7 +42,10 @@ const ServiceModal = memo(({ service, open, onClose }) => {
         <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
         <S.ModalDesc>{fullDesc}</S.ModalDesc>
         <S.ModalFooter>
-          <S.BookButton href="#contact" onClick={onClose} aria-label={`Book an appointment for ${title}`}>
+          <S.BookButton
+            onClick={handleBookThisService}
+            aria-label={`Book an appointment for ${title}`}
+          >
             Book This Service
           </S.BookButton>
         </S.ModalFooter>

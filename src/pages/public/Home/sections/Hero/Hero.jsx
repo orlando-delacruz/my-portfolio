@@ -1,5 +1,6 @@
 // src/pages/public/Home/sections/Hero/Hero.jsx
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { BsTelephoneOutboundFill } from "react-icons/bs";
 import { MdMedicalServices } from "react-icons/md";
 import { FaAward, FaStar, FaUsers } from "react-icons/fa";
@@ -7,7 +8,6 @@ import * as S from "./Hero.styled";
 import Button from "../../../../../components/ui/Button/Button";
 import { hero } from "../../../../../data/HomePage/hero";
 
-/* ─── Icon map ─────────────────────────────────────────── */
 const statIcons = {
   award: <FaAward aria-hidden="true" />,
   star: <FaStar aria-hidden="true" />,
@@ -20,7 +20,6 @@ const statPositionClass = {
   patients: "stat--patients",
 };
 
-/* ─── Sub-components ───────────────────────────────────── */
 const StatBadges = memo(({ stats }) =>
   stats.map(({ id, icon, label }) => (
     <S.StatBadge
@@ -36,14 +35,19 @@ const StatBadges = memo(({ stats }) =>
 );
 StatBadges.displayName = "StatBadges";
 
-/* ─── Main component ───────────────────────────────────── */
+// MAIN COMPONENT
 const Hero = () => {
+  const navigate = useNavigate();
   const { badge, headingStart, headingAccent, description, primaryCta, secondaryCta, image, stats } =
     hero;
 
+  const handleBookAppointment = () => {
+    navigate("/book");
+  };
+
   return (
     <S.HeroSection id="home" aria-labelledby="hero-heading">
-      {/* Left — copy */}
+      {/* Left Content*/}
       <S.HeroContent>
         <S.Badge aria-label="Section label">{badge}</S.Badge>
 
@@ -59,12 +63,11 @@ const Hero = () => {
           <Button
             variant="primary"
             size="sm"
-            as="a"
-            href={primaryCta.href}
+            onClick={handleBookAppointment}
             aria-label={primaryCta.ariaLabel}
           >
-            <BsTelephoneOutboundFill aria-hidden="true" />
             {primaryCta.label}
+            <BsTelephoneOutboundFill aria-hidden="true" />
           </Button>
 
           <Button
@@ -80,7 +83,7 @@ const Hero = () => {
         </S.CtaGroup>
       </S.HeroContent>
 
-      {/* Right — image stage with floating badges */}
+      {/* Right Content */}
       <S.HeroImageStage aria-hidden="true">
         <S.ImageGlow />
         <S.HeroImage

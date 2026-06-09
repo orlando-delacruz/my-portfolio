@@ -1,10 +1,11 @@
 // src/components/ui/Button/Button.styled.js
 import styled, { css } from "styled-components";
-import theme from "../../../styles/theme"
+import theme from "../../../styles/theme";
 
 const variants = {
   primary: css`
     background: ${theme.colors.primary};
+    border: 1px solid ${theme.colors.primary};
     color: white;
 
     &:hover {
@@ -45,13 +46,14 @@ const variants = {
 const sizes = {
   sm: css`
     padding: 0.625rem 1.25rem;
-    font-size: ${theme.typography.size.lg};
+    font-size: ${theme.typography.size.md};
     font-weight: ${theme.typography.weight.regular};
   `,
 
   md: css`
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    padding: 0.75rem 1.3rem;
+    font-size: ${theme.typography.size.lg};
+    font-weight: ${theme.typography.weight.regular};
   `,
 
   lg: css`

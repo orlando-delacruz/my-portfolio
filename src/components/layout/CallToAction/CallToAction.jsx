@@ -1,10 +1,17 @@
 // src/components/layout/CallToAction/CallToAction.jsx
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import * as S from "./CallToAction.styled";
 import { callToAction } from "../../../data/callToAction";
+import Button from "../../ui/Button"
 
 const CallToAction = () => {
+  const navigate = useNavigate();
   const { heading, description, primaryCta, secondaryCta, image } = callToAction;
+
+  const handleBookAppointment = () => {
+    navigate("/book");
+  };
 
   return (
     <S.CTASection id="cta" aria-labelledby="cta-heading">
@@ -15,19 +22,26 @@ const CallToAction = () => {
           <S.CTADescription>{description}</S.CTADescription>
 
           <S.CTAButtons>
-            <S.PrimaryCtaButton
-              href={primaryCta.href}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleBookAppointment}
               aria-label={primaryCta.ariaLabel}
             >
               {primaryCta.label}
-            </S.PrimaryCtaButton>
+            </Button>
 
-            <S.SecondaryCtaButton
+            <Button
+              variant="outline"
+              size="sm"
+              as="a"
               href={secondaryCta.href}
               aria-label={secondaryCta.ariaLabel}
+              target="_blank"
+              rel="noreferrer noopener"
             >
               {secondaryCta.label}
-            </S.SecondaryCtaButton>
+            </Button>
           </S.CTAButtons>
         </S.CTAContent>
 

@@ -1,5 +1,6 @@
 // src/components/layout/Header/Header.jsx
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import * as S from "./Header.styled";
 import Button from "../../ui/Button";
 import { AiOutlineMessage } from "react-icons/ai";
@@ -13,9 +14,15 @@ const Header = () => {
   const { links, setActive, mobileOpen, toggleMobile, closeMobile, scrolled } =
     useHeader(navlivnks);
 
+  const navigate = useNavigate();
+
+  const handleBookNow = () => {
+    navigate("/book");
+    closeMobile();
+  };
+
   return (
     <S.Header $scrolled={scrolled} role="banner">
-      {/* ── banner ── */}
       <S.Banner>
         <div className="left-details">
           <a className="contacts" href={banner.phone.href}>{banner.phone.display}</a>
@@ -72,7 +79,12 @@ const Header = () => {
 
           {/* CTA */}
           <S.NavItem role="none">
-            <Button variant="primary" size="sm" aria-label="Book an appointment">
+            <Button
+              variant="primary"
+              size="sm"
+              aria-label="Book an appointment"
+              onClick={handleBookNow}
+            >
               Book Now
               <AiOutlineMessage aria-hidden="true" />
             </Button>
@@ -114,6 +126,7 @@ const Header = () => {
             size="sm"
             aria-label="Book an appointment"
             style={{ width: "100%", justifyContent: "center" }}
+            onClick={handleBookNow}
           >
             Book Now
             <AiOutlineMessage aria-hidden="true" />
