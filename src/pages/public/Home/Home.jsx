@@ -4,6 +4,7 @@ import Header from "../../../components/layout/Header/Header";
 import Hero from "./sections/Hero";
 
 const About = lazy(() => import("./sections/About"));
+const Services = lazy(() => import("./sections/Sevices"));
 
 const SectionFallback = () => (
   <div
@@ -20,6 +21,10 @@ const Home = () => (
       <Hero />
       <Suspense fallback={<SectionFallback />}>
         <About />
+      </Suspense>
+
+      <Suspense fallback={<SectionFallback />}>
+        <Services />
       </Suspense>
     </main>
   </>

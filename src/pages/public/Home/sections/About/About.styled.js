@@ -9,6 +9,7 @@ const fadeUp = keyframes`
 
 /* ─── Section ─────────────────────────────────────────── */
 export const AboutSection = styled.section`
+  padding: 112px 65px 80px;
   background: ${theme.colors.background};
   display: flex;
   flex-direction: column;
@@ -26,38 +27,7 @@ export const AboutSection = styled.section`
   }
 `;
 
-/* ─── Header block ────────────────────────────────────── */
-export const SectionHeader = styled.header`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  animation: ${fadeUp} 0.55s ease both;
-`;
-
-export const Eyebrow = styled.span`
-  display: inline-block;
-  padding-bottom: 5px;
-  border-bottom: 2px solid ${theme.colors.primary};
-  color: ${theme.colors.primary};
-  font-size: ${theme.typography.size.md};
-  font-weight: ${theme.typography.weight.medium};
-  line-height: 1.5;
-  width: fit-content;
-`;
-
-export const Heading = styled.h2`
-  font-size: ${theme.typography.heading.h2};
-  font-weight: ${theme.typography.weight.medium};
-  line-height: 1.5;
-  color: ${theme.colors.black};
-  margin: 0;
-
-  span.accent {
-    color: ${theme.colors.primary};
-  }
-`;
-
-/* ─── Body layout — text + image ─────────────────────── */
+/* ─── Body layout ─────────────────────────────────────── */
 export const AboutBody = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;

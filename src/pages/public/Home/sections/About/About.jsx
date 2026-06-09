@@ -1,9 +1,9 @@
 // src/pages/public/Home/sections/About/About.jsx
 import { memo } from "react";
 import * as S from "./About.styled";
+import SectionTitle from "../../../../../components/common/SectionTitle";
 import { about } from "../../../../../data/HomePage/about";
 
-/* ─── Highlights list ─────────────────────────────────── */
 const HighlightList = memo(({ highlights }) => (
   <S.HighlightList>
     {highlights.map(({ id, Icon, label }) => (
@@ -16,35 +16,28 @@ const HighlightList = memo(({ highlights }) => (
 ));
 HighlightList.displayName = "HighlightList";
 
-/* ─── Main component ──────────────────────────────────── */
 const About = () => {
   const { eyebrow, headingStart, headingAccent, body, highlights, image } = about;
 
   return (
     <S.AboutSection id="about" aria-labelledby="about-heading">
-      {/* Header */}
-      <S.SectionHeader>
-        <S.Eyebrow>{eyebrow}</S.Eyebrow>
-        <S.Heading id="about-heading">
-          {headingStart}
-          <span className="accent">{headingAccent}</span>
-        </S.Heading>
-      </S.SectionHeader>
+      <SectionTitle
+        eyebrow={eyebrow}
+        headingStart={headingStart}
+        headingAccent={headingAccent}
+        id="about-heading"
+      />
 
-      {/* Body — two-column grid */}
       <S.AboutBody>
-        {/* Left: paragraphs + feature list */}
         <S.AboutContent>
           <S.BodyText>
             {body.map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
             ))}
           </S.BodyText>
-
           <HighlightList highlights={highlights} />
         </S.AboutContent>
 
-        {/* Right: clinic photo */}
         <S.AboutImage
           src={image.src}
           alt={image.alt}
