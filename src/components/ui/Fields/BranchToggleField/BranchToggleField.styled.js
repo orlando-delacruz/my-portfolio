@@ -10,7 +10,7 @@ export const FieldWrapper = styled.div`
 `;
 
 export const Label = styled.span`
-  font-size: 20px;
+  font-size: ${theme.typography.size.lg};
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
@@ -31,7 +31,7 @@ export const ToggleGroup = styled.div`
 `;
 export const ToggleButton = styled.button`
   width: 100%;
-  padding: 12px 20px;
+  padding: 10px 20px;
   border-radius: 50px;
   font-size: ${theme.typography.size.body};
   font-family: inherit;

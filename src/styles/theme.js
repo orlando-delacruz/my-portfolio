@@ -43,8 +43,8 @@ const theme = {
       sm: "14px",
       body: "16px",
       md: "18px",
-      lg: "clamp(1.25rem, 5vw, 1rem)",
-      xl: "30px",
+      lg: "clamp(1rem, 3vw, 1.25rem)",
+      xl: "clamp(1.25rem, 3vw, 1.875rem)",
       xxl: "clamp(1.5rem ,5vw, 2.188rem)",
     },
 

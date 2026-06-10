@@ -3,11 +3,10 @@ import { memo } from "react";
 import * as S from "./TextField.styled";
 
 /**
- * TextField
  * @param {string}   id
  * @param {string}   label
  * @param {string}   name
- * @param {string}   type        - "text" | "email" | "tel"
+ * @param {string}   type
  * @param {string}   placeholder
  * @param {string}   value
  * @param {function} onChange

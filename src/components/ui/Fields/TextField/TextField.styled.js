@@ -10,7 +10,7 @@ export const FieldWrapper = styled.div`
 `;
 
 export const Label = styled.label`
-  font-size: 20px;
+  font-size: ${theme.typography.size.lg};
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
@@ -22,7 +22,7 @@ export const Required = styled.span`
 
 export const Input = styled.input`
   width: 100%;
-  padding: 18px 20px;
+  padding: 10px 20px;
   border-radius: 50px;
   border: 1.5px solid
     ${({ $hasError }) =>

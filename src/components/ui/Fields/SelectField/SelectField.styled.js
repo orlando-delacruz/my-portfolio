@@ -10,7 +10,7 @@ export const FieldWrapper = styled.div`
 `;
 
 export const Label = styled.label`
-  font-size: 20px;
+  font-size: ${theme.typography.size.lg};
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
@@ -29,7 +29,7 @@ export const Select = styled.select`
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
-  padding: 18px 48px 18px 20px;
+  padding: 10px 48px 10px 20px;
   border-radius: 50px;
   border: 1.5px solid
     ${({ $hasError }) =>
