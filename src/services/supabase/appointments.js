@@ -1,4 +1,4 @@
-// src/lib/appointments.js
+// src/services/supabase/appointments.js
 import { supabase } from "./supabase";
 
 export async function updateAppointmentStatus(

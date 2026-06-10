@@ -1,3 +1,4 @@
+// src/hooks/useCurrentUser.js
 import { useEffect, useState } from "react";
 import { supabase } from "../services/supabase/supabase";
 

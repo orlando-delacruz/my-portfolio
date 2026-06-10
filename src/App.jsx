@@ -1,12 +1,10 @@
-// src/App.jsx
-import PublicRoutes from "./routes/PublicRoutes"
+import AuthProvider from "./providers/AuthProvider";
+import PublicRoutes from "./routes/PublicRoutes";
 
-function App() {
+export default function App() {
   return (
-    <>
+    <AuthProvider>
       <PublicRoutes />
-    </>
-  )
+    </AuthProvider>
+  );
 }
-
-export default App
