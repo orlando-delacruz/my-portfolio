@@ -1,4 +1,3 @@
-// src/services/supabase/auth.js
 import { supabase } from "./supabase";
 
 export async function signUp(email, password, fullName) {
@@ -8,12 +7,14 @@ export async function signUp(email, password, fullName) {
   });
   if (authError || !authData.user) throw authError;
 
-  const { error } = await supabase.from("users").insert({
-    auth_id: authData.user.id,
+  const { error } = await supabase.from("admins").insert({
+    auth_user_id: authData.user.id, // auth_id → auth_user_id
     email,
     full_name: fullName,
-    role: "staff",
+    role: "admin",
     status: "active",
+    login_method: "password",
+    username: email.split("@")[0], // temporary username derived from email
   });
   if (error) throw error;
 }

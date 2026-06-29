@@ -1,4 +1,3 @@
-// src/hooks/useRealtimeAppointments.js
 import { useEffect } from "react";
 import { supabase } from "../services/supabase/supabase";
 

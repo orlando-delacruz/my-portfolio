@@ -1,25 +1,21 @@
 import { create } from "zustand";
 import { supabase } from "../services/supabase/supabase";
 
-/**
- * Global auth state via Zustand.
- * Bootstrapped once in AuthProvider; consumed by ProtectedRoute and any component.
- */
 export const useAuthStore = create((set) => ({
   user: null, // Supabase auth user object
-  profile: null, // Row from public.users table
-  loading: true, // true until first session check resolves
+  profile: null, // Row from public.admins table
+  loading: true,
 
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading }),
 
-  /** Fetch the public.users row for a given auth_id */
-  fetchProfile: async (authId) => {
+  /** Fetch the admins row for a given auth_user_id */
+  fetchProfile: async (authUserId) => {
     const { data } = await supabase
-      .from("users")
+      .from("admins") // users → admins
       .select("*")
-      .eq("auth_id", authId)
+      .eq("auth_user_id", authUserId) // auth_id → auth_user_id
       .single();
     set({ profile: data ?? null });
   },

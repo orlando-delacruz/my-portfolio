@@ -1,6 +1,5 @@
-// src/hooks/useBranches.js
 import { useEffect, useState } from "react";
-import { supabase } from "..//services/supabase/supabase";
+import { supabase } from "../services/supabase/supabase";
 
 export function useBranches() {
   const [branches, setBranches] = useState([]);
@@ -10,7 +9,7 @@ export function useBranches() {
     supabase
       .from("branches")
       .select("*")
-      .eq("is_active", true)
+      .eq("status", "active") // is_active (bool) → status = 'active' (text)
       .then(({ data }) => {
         setBranches(data ?? []);
         setLoading(false);

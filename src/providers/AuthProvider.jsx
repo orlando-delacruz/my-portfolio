@@ -1,3 +1,4 @@
+// src/providers/AuthProvider.jsx
 import { useEffect } from "react";
 import { supabase } from "../services/supabase/supabase";
 import { useAuthStore } from "../store/authStore";
