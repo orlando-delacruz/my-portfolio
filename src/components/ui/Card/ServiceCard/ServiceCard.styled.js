@@ -10,7 +10,9 @@ export const Card = styled.article`
   display: flex;
   flex-direction: column;
   gap: 0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-4px);
@@ -18,13 +20,31 @@ export const Card = styled.article`
   }
 `;
 
+export const ImageWrapper = styled.div`
+  position: relative;
+  padding: 10px;
+`;
+
 export const CardImage = styled.img`
   width: 100%;
   height: 180px;
   object-fit: cover;
   border-radius: 10px;
-  padding: 10px;
   display: block;
+`;
+
+export const PriceBadge = styled.span`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: ${theme.colors.primary};
+  color: ${theme.colors.white};
+  font-size: ${theme.typography.size.sm};
+  font-weight: ${theme.typography.weight.medium};
+  padding: 4px 12px;
+  border-radius: 50px;
+  line-height: 1.5;
+  pointer-events: none;
 `;
 
 export const CardBody = styled.div`
@@ -41,12 +61,26 @@ export const CardTextGroup = styled.div`
   gap: 6px;
 `;
 
+export const TitleGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
 export const CardTitle = styled.h3`
   font-size: ${theme.typography.heading.h3};
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
   margin: 0;
+`;
+
+export const CardTitleTl = styled.span`
+  font-size: ${theme.typography.size.sm};
+  font-weight: ${theme.typography.weight.regular};
+  color: ${theme.colors.primary};
+  line-height: 1.4;
+  font-style: italic;
 `;
 
 export const CardDesc = styled.p`
@@ -76,7 +110,9 @@ export const ViewDetailsButton = styled.button`
   font-weight: ${theme.typography.weight.medium};
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: opacity 0.15s ease, gap 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    gap 0.15s ease;
 
   svg {
     font-size: 18px;

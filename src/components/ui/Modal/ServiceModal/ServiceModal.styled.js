@@ -20,7 +20,13 @@ export const ModalBody = styled.div`
   padding: 28px 32px 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+`;
+
+export const ModalTitleGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 `;
 
 export const ModalTitle = styled.h2`
@@ -29,6 +35,27 @@ export const ModalTitle = styled.h2`
   color: ${theme.colors.black};
   line-height: 1.3;
   margin: 0;
+`;
+
+export const ModalTitleTl = styled.span`
+  font-size: ${theme.typography.size.sm};
+  font-weight: ${theme.typography.weight.regular};
+  color: ${theme.colors.primary};
+  font-style: italic;
+  line-height: 1.4;
+`;
+
+export const ModalPrice = styled.p`
+  display: inline-flex;
+  align-self: flex-start;
+  background: ${theme.colors.secondary};
+  color: ${theme.colors.primaryDark};
+  font-size: ${theme.typography.size.body};
+  font-weight: ${theme.typography.weight.semibold};
+  padding: 5px 16px;
+  border-radius: 50px;
+  margin: 0;
+  line-height: 1.5;
 `;
 
 export const ModalDesc = styled.p`
@@ -56,7 +83,10 @@ export const BookButton = styled.a`
   font-size: ${theme.typography.size.body};
   font-weight: ${theme.typography.weight.medium};
   text-decoration: none;
-  transition: background 0.2s ease, transform 0.15s ease;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
 
   &:hover {
     background: ${theme.colors.primaryDark};
@@ -69,4 +99,3 @@ export const BookButton = styled.a`
     outline-offset: 4px;
   }
 `;
-

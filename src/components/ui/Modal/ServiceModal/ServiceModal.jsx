@@ -9,7 +9,7 @@ const ServiceModal = memo(({ service, open, onClose }) => {
 
   if (!service) return null;
 
-  const { title, fullDesc, image, imageAlt } = service;
+  const { title, titleTl, fullDesc, image, imageAlt, price } = service;
 
   const handleBookThisService = () => {
     navigate("/book");
@@ -39,7 +39,15 @@ const ServiceModal = memo(({ service, open, onClose }) => {
         height={280}
       />
       <S.ModalBody>
-        <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
+        <S.ModalTitleGroup>
+          <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
+          {titleTl && <S.ModalTitleTl>{titleTl}</S.ModalTitleTl>}
+        </S.ModalTitleGroup>
+        {price && (
+          <S.ModalPrice>
+            Starts at ₱{price.toLocaleString("en-PH")}
+          </S.ModalPrice>
+        )}
         <S.ModalDesc>{fullDesc}</S.ModalDesc>
         <S.ModalFooter>
           <S.BookButton

@@ -3,7 +3,7 @@ import { Spin } from "antd";
 import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { AiOutlineWarning } from "react-icons/ai";
 import { FiLoader } from "react-icons/fi";
-import Logo from "../../assets/images/logo.png"
+import Logo from "../../assets/images/logo.webp"
 
 import { useLogin } from "./useLogin";
 import {

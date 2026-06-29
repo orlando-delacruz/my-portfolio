@@ -4,6 +4,8 @@ const rosarioServices = [
   {
     id: "general-dentistry",
     title: "General Dentistry",
+    titleTl: "Pangkalahatang Dentisterya",
+    price: 300,
     shortDesc:
       "Comprehensive oral examinations, consultations, and preventive dental care for patients of all ages.",
     fullDesc:
@@ -14,6 +16,8 @@ const rosarioServices = [
   {
     id: "dental-cleaning",
     title: "Dental Cleaning",
+    titleTl: "Paglilinis ng Ngipin",
+    price: 500,
     shortDesc:
       "Professional teeth cleaning procedures to remove plaque, tartar, and maintain healthy gums.",
     fullDesc:
@@ -24,6 +28,8 @@ const rosarioServices = [
   {
     id: "tooth-extraction",
     title: "Tooth Extraction",
+    titleTl: "Pagbubunot ng Ngipin",
+    price: 800,
     shortDesc:
       "Safe and comfortable tooth extraction procedures performed with patient care and precision.",
     fullDesc:
@@ -34,6 +40,8 @@ const rosarioServices = [
   {
     id: "tooth-fillings",
     title: "Tooth Fillings",
+    titleTl: "Pasta ng Ngipin",
+    price: 1200,
     shortDesc:
       "Restore damaged or decayed teeth using durable and natural-looking filling materials.",
     fullDesc:
@@ -44,6 +52,8 @@ const rosarioServices = [
   {
     id: "root-canal",
     title: "Root Canal Treatment",
+    titleTl: "Paggamot ng Ugat ng Ngipin",
+    price: 5000,
     shortDesc:
       "Effective treatment designed to save infected teeth and relieve dental pain.",
     fullDesc:
@@ -54,7 +64,10 @@ const rosarioServices = [
   {
     id: "pediatric-dentistry",
     title: "Pediatric Dentistry",
-    shortDesc: "Gentle and friendly dental care specially designed for children.",
+    titleTl: "Dentisterya para sa mga Bata",
+    price: 400,
+    shortDesc:
+      "Gentle and friendly dental care specially designed for children.",
     fullDesc:
       "Our child-friendly environment and gentle approach help young patients feel at ease. We offer cleanings, fluoride treatments, sealants, and early orthodontic assessments. Building good oral habits early sets children up for a lifetime of healthy smiles.",
     image: "https://picsum.photos/seed/pediatric-dentistry/600/300",
@@ -63,6 +76,8 @@ const rosarioServices = [
   {
     id: "teeth-whitening",
     title: "Teeth Whitening",
+    titleTl: "Pagpapaputi ng Ngipin",
+    price: 3500,
     shortDesc:
       "Professional in-clinic whitening treatments for a noticeably brighter smile.",
     fullDesc:
@@ -73,6 +88,8 @@ const rosarioServices = [
   {
     id: "orthodontics",
     title: "Orthodontics",
+    titleTl: "Ortodontiya",
+    price: 25000,
     shortDesc:
       "Braces and clear aligner solutions to straighten teeth and improve your bite.",
     fullDesc:
@@ -86,6 +103,8 @@ const sanJuanServices = [
   {
     id: "sj-general-dentistry",
     title: "General Dentistry",
+    titleTl: "Pangkalahatang Dentisterya",
+    price: 300,
     shortDesc:
       "Comprehensive oral examinations, consultations, and preventive dental care for patients of all ages.",
     fullDesc:
@@ -96,6 +115,8 @@ const sanJuanServices = [
   {
     id: "sj-cosmetic",
     title: "Cosmetic Dentistry",
+    titleTl: "Kosmetikong Dentisterya",
+    price: 8000,
     shortDesc:
       "Smile makeovers using veneers, bonding, and whitening for a confident, beautiful smile.",
     fullDesc:
@@ -106,6 +127,8 @@ const sanJuanServices = [
   {
     id: "sj-implants",
     title: "Dental Implants",
+    titleTl: "Dental Implants",
+    price: 35000,
     shortDesc:
       "Permanent tooth replacement solutions that look, feel, and function like natural teeth.",
     fullDesc:
@@ -116,6 +139,8 @@ const sanJuanServices = [
   {
     id: "sj-dentures",
     title: "Dentures & Bridges",
+    titleTl: "Pustiso at Tulay na Ngipin",
+    price: 12000,
     shortDesc:
       "Custom-fitted dentures and bridges to restore missing teeth and improve function.",
     fullDesc:
@@ -126,6 +151,8 @@ const sanJuanServices = [
   {
     id: "sj-periodontics",
     title: "Periodontics",
+    titleTl: "Periodonsia",
+    price: 2500,
     shortDesc:
       "Diagnosis and treatment of gum disease to protect the foundation of your smile.",
     fullDesc:
@@ -136,6 +163,8 @@ const sanJuanServices = [
   {
     id: "sj-oral-surgery",
     title: "Oral Surgery",
+    titleTl: "Operasyon sa Bibig",
+    price: 4500,
     shortDesc:
       "Wisdom tooth removal and minor oral surgeries performed with precision and care.",
     fullDesc:
