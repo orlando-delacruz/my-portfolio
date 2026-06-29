@@ -1,4 +1,4 @@
-import HeroBg from "../../assets/images/hero-bg.png"
+import HeroBg from "../../assets/images/hero-bg.webp";
 export const hero = {
   badge: "Trusted Dental Care",
   headingStart: "Healthy Smiles ",

@@ -21,9 +21,7 @@ const PageFallback = () => (
   />
 );
 
-/**
- * Redirects already-authenticated users away from /login back to the dashboard.
- */
+
 function GuestRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
@@ -43,7 +41,6 @@ export default function PublicRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/book" element={<BookAppointment />} />
 
-        {/* Auth — redirect if already logged in */}
         <Route
           path="/login"
           element={
@@ -53,12 +50,10 @@ export default function PublicRoutes() {
           }
         />
 
-        {/* Protected admin area */}
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<Dashboard />} />
         </Route>
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

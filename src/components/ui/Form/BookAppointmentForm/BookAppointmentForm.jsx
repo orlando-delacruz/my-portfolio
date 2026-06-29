@@ -4,7 +4,7 @@ import * as S from "./BookAppointmentForm.styled";
 import { TextField, SelectField, BranchToggleField } from "../../Fields";
 import SuccessView from "../../SuccessView";
 import { useBookAppointmentForm } from "./useBookAppointmentForm";
-import Logo from "../../../../assets/images/logo.png";
+import Logo from "../../../../assets/images/logo.webp";
 
 const BRANCH_OPTIONS = [
   { value: "rosario", label: "Rosario Branch" },

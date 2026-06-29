@@ -3,7 +3,7 @@ import { IoLogoFacebook } from "react-icons/io5";
 import { RiInstagramFill } from "react-icons/ri";
 import { FaTwitter, FaYoutube } from "react-icons/fa";
 import { FiMapPin, FiClock, FiPhone, FiMail } from "react-icons/fi";
-import Logo from "../assets/images/logo.png";
+import Logo from "../assets/images/logo.webp";
 
 export const footer = {
   brand: {

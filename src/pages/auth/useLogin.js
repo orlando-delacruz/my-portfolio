@@ -2,12 +2,6 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabase/supabase";
 
-// ── Security helpers ──────────────────────────────────────────────────────────
-
-/**
- * Strip HTML tags and dangerous chars to prevent XSS
- * before sending to any API.
- */
 function sanitize(str) {
   return String(str)
     .replace(/[<>"'`]/g, "")
@@ -15,29 +9,23 @@ function sanitize(str) {
     .slice(0, 256);
 }
 
-/** Basic email format check (not RFC-exhaustive, but good enough client-side) */
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/** Password must be ≥8 chars */
 function isValidPassword(password) {
   return typeof password === "string" && password.length >= 8;
 }
 
-// ── Client-side rate limiter ───────────────────────────────────────────────────
-// Stores timestamps in memory; resets on page reload.
-const RATE_LIMIT_MAX = 5; // attempts
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000;
 
 function createRateLimiter() {
   const timestamps = [];
 
   return {
-    /** Returns true when the caller is allowed to proceed. */
     attempt() {
       const now = Date.now();
-      // Prune old entries outside the window
       while (timestamps.length && now - timestamps[0] > RATE_LIMIT_WINDOW_MS) {
         timestamps.shift();
       }
@@ -57,8 +45,6 @@ function createRateLimiter() {
 
 const rateLimiter = createRateLimiter();
 
-// ── Validation ────────────────────────────────────────────────────────────────
-
 function validate(fields) {
   const errors = {};
   if (!fields.email) {
@@ -74,8 +60,6 @@ function validate(fields) {
   return errors;
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
 export function useLogin() {
   const navigate = useNavigate();
 
@@ -86,13 +70,11 @@ export function useLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Prevent double-submit
   const submitting = useRef(false);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFields((prev) => ({ ...prev, [name]: value }));
-    // Clear per-field error on change
     setErrors((prev) => ({ ...prev, [name]: "" }));
     setGlobalError("");
   }, []);
@@ -106,14 +88,12 @@ export function useLogin() {
 
       setGlobalError("");
 
-      // Validate
       const fieldErrors = validate(fields);
       if (Object.keys(fieldErrors).length) {
         setErrors(fieldErrors);
         return;
       }
 
-      // Rate limit
       if (!rateLimiter.attempt()) {
         const wait = Math.ceil(rateLimiter.remaining() / 1000);
         setGlobalError(
@@ -127,7 +107,7 @@ export function useLogin() {
 
       try {
         const email = sanitize(fields.email);
-        const { password } = fields; // password not sanitized (preserve special chars)
+        const { password } = fields;
 
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -135,7 +115,6 @@ export function useLogin() {
         });
 
         if (error) {
-          // Map Supabase errors to user-friendly messages
           if (
             error.message.toLowerCase().includes("invalid") ||
             error.message.toLowerCase().includes("credentials")

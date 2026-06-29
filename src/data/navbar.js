@@ -1,5 +1,5 @@
 // src/data/navbar.js
-import Logo from "../assets/images/logo.png";
+import Logo from "../assets/images/logo.webp";
 
 export const banner = {
   phone: { display: "(+63) 9123456789", href: "tel:+639123456789" },

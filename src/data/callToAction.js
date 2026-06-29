@@ -1,5 +1,5 @@
 // src/data/callToAction.js
-import CtaBg from "../assets/images/cta-bg.png";
+import CtaBg from "../assets/images/cta-bg.webp";
 
 export const callToAction = {
   heading: "Ready for a Healthier and Brighter Smile?",

@@ -39,7 +39,7 @@ export const BrandLogo = styled.img`
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   flex-shrink: 0;
 `;
 

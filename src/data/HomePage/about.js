@@ -1,5 +1,5 @@
 // src/data/HomePage/about.js
-import AboutBg from "../../assets/images/about-bg.png"
+import AboutBg from "../../assets/images/about-bg.webp";
 
 import {
   FaUserFriends,
@@ -21,7 +21,11 @@ export const about = {
     { id: "team", Icon: FaUserFriends, label: "Friendly Dental Team" },
     { id: "equipment", Icon: FaTooth, label: "Modern Dental Equipment" },
     { id: "affordable", Icon: FaTag, label: "Affordable Treatment Options" },
-    { id: "clean", Icon: FaClinicMedical, label: "Clean & Comfortable Clinics" },
+    {
+      id: "clean",
+      Icon: FaClinicMedical,
+      label: "Clean & Comfortable Clinics",
+    },
     { id: "care", Icon: FaHeart, label: "Personalized Patient Care" },
   ],
   image: {

@@ -3,6 +3,7 @@ import { Spin } from "antd";
 import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { AiOutlineWarning } from "react-icons/ai";
 import { FiLoader } from "react-icons/fi";
+import Logo from "../../assets/images/logo.png"
 
 import { useLogin } from "./useLogin";
 import {
@@ -35,7 +36,7 @@ const Brand = memo(function Brand() {
   return (
     <BrandRow>
       <BrandLogo
-        src="https://picsum.photos/seed/leidi-dental/70/70"
+        src={Logo}
         alt="Leidi Bud Dentals logo"
         width={70}
         height={70}
@@ -79,7 +80,6 @@ const GoogleSVG = memo(function GoogleSVG() {
   );
 });
 
-// ── Main component ────────────────────────────────────────────────────────────
 
 function Login() {
   const {
@@ -101,10 +101,8 @@ function Login() {
   return (
     <PageWrapper>
       <Card role="main">
-        {/* ── Branding ── */}
         <Brand />
 
-        {/* ── Form ── */}
         <FormSection aria-labelledby="login-heading">
           <FormTitle id="login-heading">Welcome Back</FormTitle>
 
@@ -121,7 +119,6 @@ function Login() {
             autoComplete="on"
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              {/* Email */}
               <FieldGroup>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <InputWrapper>
