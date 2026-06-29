@@ -10,7 +10,12 @@ import {
 import { BsCalendar2Check } from "react-icons/bs";
 
 export const sidebarNavItems = [
-  { key: "dashboard", label: "Dashboard", icon: MdDashboard, path: "/admin" },
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: MdDashboard,
+    path: "/admin/dashboard",
+  },
   {
     key: "appointment",
     label: "Appointment",

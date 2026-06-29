@@ -1,3 +1,4 @@
+// src\routes\ProtectedRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
 import { Spin } from "antd";
 import { useAuthStore } from "../store/authStore";

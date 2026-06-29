@@ -1,3 +1,4 @@
+// src/routes/PublicRoutes.jsx
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "../utils/ScrollToTop";
@@ -5,14 +6,13 @@ import ProtectedRoute from "./ProtectedRoute";
 import { useAuthStore } from "../store/authStore";
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
-
 const Home = lazy(() => import("../pages/public/Home"));
 const BookAppointment = lazy(() => import("../pages/public/BookAppointment"));
 const Login = lazy(() => import("../pages/auth"));
 const Dashboard = lazy(() => import("../pages/admin/Dashboard/Dashboard"));
+const Appointment = lazy(() => import("../pages/admin/Appointment"));
 
 // ── Fallbacks ─────────────────────────────────────────────────────────────────
-
 const PageFallback = () => (
   <div
     style={{ minHeight: "100dvh", background: "#fff" }}
@@ -20,7 +20,6 @@ const PageFallback = () => (
     aria-label="Loading page"
   />
 );
-
 
 function GuestRoute({ children }) {
   const user = useAuthStore((s) => s.user);
@@ -31,7 +30,6 @@ function GuestRoute({ children }) {
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
-
 export default function PublicRoutes() {
   return (
     <Suspense fallback={<PageFallback />}>
@@ -50,8 +48,10 @@ export default function PublicRoutes() {
           }
         />
 
+        {/* Admin (protected) */}
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="appointments" element={<Appointment />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

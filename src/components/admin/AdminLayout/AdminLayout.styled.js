@@ -1,3 +1,4 @@
+// src/components/admin/AdminLayout/AdminLayout.styled.js
 import styled, { css } from "styled-components";
 import adminTheme from "../../../styles/adminTheme";
 
