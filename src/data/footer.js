@@ -16,8 +16,18 @@ export const footer = {
   },
 
   socials: [
-    { id: "facebook", Icon: IoLogoFacebook, href: "#", label: "Facebook" },
-    { id: "instagram", Icon: RiInstagramFill, href: "#", label: "Instagram" },
+    {
+      id: "facebook",
+      Icon: IoLogoFacebook,
+      href: "https://www.facebook.com/Leidi.Bud.Dentals",
+      label: "Facebook",
+    },
+    {
+      id: "instagram",
+      Icon: RiInstagramFill,
+      href: "https://www.instagram.com/leidi_bud_dentals/",
+      label: "Instagram",
+    },
     { id: "twitter", Icon: FaTwitter, href: "#", label: "Twitter" },
     { id: "youtube", Icon: FaYoutube, href: "#", label: "YouTube" },
   ],
@@ -88,7 +98,6 @@ export const footer = {
   legal: [
     { label: "Privacy Policy", href: "#" },
     { label: "Terms & Conditions", href: "#" },
-    { label: "Sitemap", href: "#" },
   ],
 
   copyright: "© 2026 Leidi Bud Dentals. All Rights Reserved.",

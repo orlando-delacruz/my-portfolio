@@ -30,10 +30,10 @@ const Header = () => {
         </div>
         <div className="right-details">
           <p className="operating-hours">{banner.hours}</p>
-          <a className="social-link" href={banner.facebook} aria-label="Facebook">
+          <a className="social-link" href={banner.facebook} aria-label="Facebook" target="_blank" rel="noopener noreferrer">
             <IoLogoFacebook />
           </a>
-          <a className="social-link" href={banner.instagram} aria-label="Instagram">
+          <a className="social-link" href={banner.instagram} aria-label="Instagram" target="_blank" rel="noopener noreferrer" >
             <RiInstagramFill />
           </a>
         </div>

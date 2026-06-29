@@ -8,8 +8,8 @@ export const banner = {
     href: "mailto:leidibuddentals@gmail.com",
   },
   hours: "Mon–Fri: 9:00 AM – 5:00 PM",
-  facebook: "#",
-  instagram: "#",
+  facebook: "https://www.facebook.com/Leidi.Bud.Dentals",
+  instagram: "https://www.instagram.com/leidi_bud_dentals/",
 };
 
 export const navlivnks = [
