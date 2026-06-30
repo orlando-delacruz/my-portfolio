@@ -1,17 +1,39 @@
+// src/components/admin/Modal/AppointmentModal/useAppointmentModal.js
 import { useState, useCallback } from "react";
 import { message } from "antd";
 import dayjs from "dayjs";
+import { useAuthStore } from "../../../../store/authStore";
+import { findOrCreatePatient } from "../../../../services/patients";
+import { fetchServiceBranchById } from "../../../../services/serviceBranches";
+import {
+  adminCreateAppointment,
+  adminRescheduleAppointment,
+  dbStatusToForm,
+} from "../../../../services/appointments";
 
-/**
- * useAppointmentModal
- *
- * Manages state and handlers for both Add and Reschedule modals.
- * Returns everything the modal UI needs — no JSX here.
- *
- * @param {function} onAddSuccess        — called after a successful Add
- * @param {function} onRescheduleSuccess — called after a successful Reschedule
- */
+// Converts a raw Supabase appointment row (with joined relations) into the
+// flat shape the Appointments table/UI expects (see src/data/admin/appointment.js)
+function toRow(apt) {
+  return {
+    id: apt.id,
+    referenceNo: apt.reference_number,
+    patientName:
+      `${apt.patients?.first_name ?? ""} ${apt.patients?.last_name ?? ""}`.trim(),
+    contactNumber: apt.patients?.phone_number ?? "",
+    branch: apt.service_branches?.branch_id,
+    serviceBranchId: apt.service_branch_id,
+    date: dayjs(apt.confirmed_date ?? apt.preferred_date).format("MMM D, YYYY"),
+    time: dayjs(apt.confirmed_time ?? apt.preferred_time, "HH:mm:ss").format(
+      "h:mm A",
+    ),
+    reason: apt.snapshot_service_name ?? apt.service_branches?.services?.name,
+    status: dbStatusToForm(apt.approval_status, apt.appointment_status),
+  };
+}
+
 const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
+  const profile = useAuthStore((s) => s.profile);
+
   // ── Add modal ─────────────────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -23,32 +45,41 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
     async (values, form) => {
       setAddLoading(true);
       try {
-        // TODO: replace with real Supabase insert
-        await new Promise((res) => setTimeout(res, 700));
+        const patient = await findOrCreatePatient({
+          patientName: values.patientName,
+          contactNumber: values.contactNumber,
+        });
+        const serviceBranch = await fetchServiceBranchById(values.reason);
 
-        const newRecord = {
-          id: `apt-${Date.now()}`,
-          referenceNo: `REF-${dayjs().format("YYYYMMDD")}-${Math.floor(Math.random() * 900 + 100)}`,
-          patientName: values.patientName.trim(),
-          contactNumber: values.contactNumber.trim(),
-          branch: values.branch,
-          date: dayjs(values.date).format("MMM D, YYYY"),
-          time: dayjs(values.time).format("h:mm A"),
-          reason: values.reason,
-          status: values.status ?? "pending",
-        };
+        const created = await adminCreateAppointment({
+          patient,
+          serviceBranch,
+          date: dayjs(values.date),
+          time: dayjs(values.time),
+          adminId: profile?.id,
+        });
+
+        const newRecord = toRow({
+          ...created,
+          patients: patient,
+          service_branches: {
+            branch_id: values.branch,
+            services: { name: serviceBranch.name },
+          },
+        });
 
         message.success(`Appointment for ${newRecord.patientName} added!`);
         form.resetFields();
         setAddOpen(false);
         onAddSuccess?.(newRecord);
-      } catch {
+      } catch (err) {
+        console.error(err);
         message.error("Failed to add appointment. Please try again.");
       } finally {
         setAddLoading(false);
       }
     },
-    [onAddSuccess],
+    [onAddSuccess, profile],
   );
 
   // ── Reschedule modal ──────────────────────────────────────────────────────
@@ -68,45 +99,41 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
 
   const handleReschedule = useCallback(
     async (values, form) => {
+      if (!rescheduleTarget) return;
       setRescheduleLoading(true);
       try {
-        // TODO: replace with real Supabase update
-        await new Promise((res) => setTimeout(res, 700));
-
-        const updated = {
-          ...rescheduleTarget,
-          patientName: values.patientName.trim(),
-          contactNumber: values.contactNumber.trim(),
-          branch: values.branch,
-          date: dayjs(values.date).format("MMM D, YYYY"),
-          time: dayjs(values.time).format("h:mm A"),
-          reason: values.reason,
+        const updated = await adminRescheduleAppointment({
+          appointmentId: rescheduleTarget.id,
+          date: dayjs(values.date),
+          time: dayjs(values.time),
           status: values.status,
-        };
+          adminId: profile?.id,
+        });
 
-        message.success(`Appointment for ${updated.patientName} updated!`);
+        const row = toRow(updated);
+
+        message.success(`Appointment for ${row.patientName} updated!`);
         form.resetFields();
         setRescheduleOpen(false);
         setRescheduleTarget(null);
-        onRescheduleSuccess?.(updated);
-      } catch {
+        onRescheduleSuccess?.(row);
+      } catch (err) {
+        console.error(err);
         message.error("Failed to update appointment. Please try again.");
       } finally {
         setRescheduleLoading(false);
       }
     },
-    [rescheduleTarget, onRescheduleSuccess],
+    [rescheduleTarget, onRescheduleSuccess, profile],
   );
 
   return {
-    // Add
     addOpen,
     addLoading,
     openAdd,
     closeAdd,
     handleAdd,
 
-    // Reschedule
     rescheduleOpen,
     rescheduleLoading,
     rescheduleTarget,

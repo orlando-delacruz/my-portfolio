@@ -1,3 +1,4 @@
+// src/data/admin/dashboard.js
 import {
   MdCalendarToday,
   MdUpcoming,
