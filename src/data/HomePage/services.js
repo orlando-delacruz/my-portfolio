@@ -2,175 +2,155 @@
 
 const rosarioServices = [
   {
-    id: "general-dentistry",
-    title: "General Dentistry",
-    titleTl: "Pangkalahatang Dentisterya",
-    price: 300,
-    shortDesc:
-      "Comprehensive oral examinations, consultations, and preventive dental care for patients of all ages.",
+    id: "consultation",
+    title: "Consultation",
+    titleTl: "Konsultasyon",
+    price: "300",
+    shortDesc: "Professional dental consultation and oral examination.",
     fullDesc:
-      "Our General Dentistry service covers complete oral health evaluations, digital X-rays, treatment planning, and consultations. We focus on early detection and prevention to keep your teeth and gums healthy for life. Suitable for patients of all ages, from toddlers to seniors.",
-    image: "https://picsum.photos/seed/general-dentistry/600/300",
-    imageAlt: "Dentist performing a general oral examination",
+      "Receive a comprehensive dental consultation, oral examination, and professional recommendations regarding your oral health.",
+    image: "https://picsum.photos/seed/consultation/600/300",
+    imageAlt: "Dental consultation",
   },
   {
-    id: "dental-cleaning",
-    title: "Dental Cleaning",
-    titleTl: "Paglilinis ng Ngipin",
-    price: 500,
+    id: "consultation-certificate",
+    title: "Consultation with Dental Certificate and/or Treatment Plan",
+    titleTl: "Konsultasyon na may Dental Certificate o Treatment Plan",
+    price: "500",
     shortDesc:
-      "Professional teeth cleaning procedures to remove plaque, tartar, and maintain healthy gums.",
+      "Dental consultation with an official certificate and/or treatment plan.",
     fullDesc:
-      "Professional prophylaxis (cleaning) removes hardened tartar and surface stains that regular brushing can't reach. Our hygienists use ultrasonic scalers and polishing tools to leave your teeth smooth and clean, reducing the risk of cavities and gum disease.",
-    image: "https://picsum.photos/seed/dental-cleaning/600/300",
-    imageAlt: "Dental hygienist performing professional teeth cleaning",
+      "Includes a comprehensive dental examination along with a dental certificate and/or a detailed treatment plan based on the dentist's assessment.",
+    image: "https://picsum.photos/seed/certificate/600/300",
+    imageAlt: "Dental certificate consultation",
+  },
+  {
+    id: "fluoride-application",
+    title: "Topical Fluoride Application",
+    titleTl: "Fluoride Application",
+    price: "1,000",
+    shortDesc:
+      "Professional fluoride treatment to strengthen teeth and prevent cavities.",
+    fullDesc:
+      "A fluoride treatment that helps strengthen enamel, reduce tooth sensitivity, and prevent cavities for both children and adults.",
+    image: "https://picsum.photos/seed/fluoride/600/300",
+    imageAlt: "Topical fluoride application",
+  },
+  {
+    id: "oral-prophylaxis",
+    title: "Oral Prophylaxis",
+    titleTl: "Paglilinis ng Ngipin",
+    price: "1,000–3,500",
+    shortDesc:
+      "Professional teeth cleaning based on the severity of plaque and tartar buildup.",
+    fullDesc:
+      "Oral prophylaxis removes plaque, tartar, and stains to maintain healthy gums and teeth.\n\nPricing:\n• Mild – ₱1,000–₱1,500\n• Moderate – ₱2,000–₱2,500\n• Heavy/Severe – ₱3,000–₱3,500",
+    image: "https://picsum.photos/seed/prophylaxis/600/300",
+    imageAlt: "Professional teeth cleaning",
+  },
+  {
+    id: "perio-case",
+    title: "Perio Case",
+    titleTl: "Paggamot sa Gilagid",
+    price: "3,500–4,500",
+    shortDesc: "Treatment for gum disease and advanced periodontal conditions.",
+    fullDesc:
+      "Periodontal treatment focuses on managing gum disease through deep cleaning and specialized procedures to restore healthy gums.",
+    image: "https://picsum.photos/seed/perio/600/300",
+    imageAlt: "Periodontal treatment",
   },
   {
     id: "tooth-extraction",
     title: "Tooth Extraction",
     titleTl: "Pagbubunot ng Ngipin",
-    price: 800,
-    shortDesc:
-      "Safe and comfortable tooth extraction procedures performed with patient care and precision.",
+    price: "1,000–3,500",
+    shortDesc: "Safe and comfortable tooth extraction procedures.",
     fullDesc:
-      "When a tooth is too damaged to save, our dentists perform gentle extractions using local anesthesia to keep you comfortable. We also offer post-extraction care instructions and discuss replacement options such as implants or dentures.",
-    image: "https://picsum.photos/seed/tooth-extraction/600/300",
-    imageAlt: "Dental procedure for tooth extraction",
+      "Extraction services include:\n\n• Simple Extraction (Pedo/Adult) – ₱1,000\n• Complicated Extraction – ₱1,500–₱2,500\n• Erupted Wisdom Tooth Extraction – ₱1,500–₱3,500",
+    image: "https://picsum.photos/seed/extraction/600/300",
+    imageAlt: "Tooth extraction",
   },
   {
-    id: "tooth-fillings",
-    title: "Tooth Fillings",
-    titleTl: "Pasta ng Ngipin",
-    price: 1200,
-    shortDesc:
-      "Restore damaged or decayed teeth using durable and natural-looking filling materials.",
+    id: "dental-suture",
+    title: "Dental Suture",
+    titleTl: "Dental Suture",
+    price: "350",
+    shortDesc: "Dental suturing after oral surgical procedures.",
     fullDesc:
-      "We use tooth-colored composite resin fillings that blend naturally with your existing teeth. The procedure involves removing decayed material, cleaning the cavity, and sealing it with a durable filling — all in a single visit.",
-    image: "https://picsum.photos/seed/tooth-fillings/600/300",
-    imageAlt: "Tooth filling procedure with composite resin",
-  },
-  {
-    id: "root-canal",
-    title: "Root Canal Treatment",
-    titleTl: "Paggamot ng Ugat ng Ngipin",
-    price: 5000,
-    shortDesc:
-      "Effective treatment designed to save infected teeth and relieve dental pain.",
-    fullDesc:
-      "Root canal therapy removes infected pulp tissue from inside the tooth, cleans and shapes the root canals, then seals them to prevent reinfection. Modern techniques and anesthesia make this procedure comfortable and effective at saving natural teeth.",
-    image: "https://picsum.photos/seed/root-canal/600/300",
-    imageAlt: "Root canal treatment procedure illustration",
-  },
-  {
-    id: "pediatric-dentistry",
-    title: "Pediatric Dentistry",
-    titleTl: "Dentisterya para sa mga Bata",
-    price: 400,
-    shortDesc:
-      "Gentle and friendly dental care specially designed for children.",
-    fullDesc:
-      "Our child-friendly environment and gentle approach help young patients feel at ease. We offer cleanings, fluoride treatments, sealants, and early orthodontic assessments. Building good oral habits early sets children up for a lifetime of healthy smiles.",
-    image: "https://picsum.photos/seed/pediatric-dentistry/600/300",
-    imageAlt: "Child-friendly dental care session",
-  },
-  {
-    id: "teeth-whitening",
-    title: "Teeth Whitening",
-    titleTl: "Pagpapaputi ng Ngipin",
-    price: 3500,
-    shortDesc:
-      "Professional in-clinic whitening treatments for a noticeably brighter smile.",
-    fullDesc:
-      "Our professional-grade whitening systems can lighten teeth by several shades in just one session. We use safe, clinically tested bleaching agents with custom-fitted trays to protect your gums and deliver even, long-lasting results.",
-    image: "https://picsum.photos/seed/teeth-whitening/600/300",
-    imageAlt: "Teeth whitening treatment",
-  },
-  {
-    id: "orthodontics",
-    title: "Orthodontics",
-    titleTl: "Ortodontiya",
-    price: 25000,
-    shortDesc:
-      "Braces and clear aligner solutions to straighten teeth and improve your bite.",
-    fullDesc:
-      "We offer traditional metal braces and clear aligner options for children, teens, and adults. Our orthodontic assessments include digital imaging and bite analysis to create a customized treatment plan that fits your lifestyle and budget.",
-    image: "https://picsum.photos/seed/orthodontics/600/300",
-    imageAlt: "Orthodontic braces treatment",
+      "Dental sutures are placed after tooth extractions or oral surgery to promote proper healing and protect the surgical site.",
+    image: "https://picsum.photos/seed/suture/600/300",
+    imageAlt: "Dental suture",
   },
 ];
 
 const sanJuanServices = [
+  ...rosarioServices,
+
   {
-    id: "sj-general-dentistry",
-    title: "General Dentistry",
-    titleTl: "Pangkalahatang Dentisterya",
-    price: 300,
-    shortDesc:
-      "Comprehensive oral examinations, consultations, and preventive dental care for patients of all ages.",
+    id: "periapical-xray",
+    title: "Periapical X-Ray",
+    titleTl: "Periapical X-Ray",
+    price: "400",
+    shortDesc: "Detailed dental X-ray for accurate diagnosis.",
     fullDesc:
-      "Our San Juan branch provides the same thorough general dentistry services — complete oral evaluations, digital X-rays, and personalized treatment planning — in a convenient location for the San Juan community.",
-    image: "https://picsum.photos/seed/sj-general/600/300",
-    imageAlt: "General dentistry consultation at San Juan branch",
+      "A periapical X-ray provides a detailed image of the entire tooth and surrounding bone, helping diagnose infections, fractures, and other dental conditions.",
+    image: "https://picsum.photos/seed/xray/600/300",
+    imageAlt: "Periapical dental x-ray",
   },
   {
-    id: "sj-cosmetic",
-    title: "Cosmetic Dentistry",
-    titleTl: "Kosmetikong Dentisterya",
-    price: 8000,
-    shortDesc:
-      "Smile makeovers using veneers, bonding, and whitening for a confident, beautiful smile.",
+    id: "tooth-restoration",
+    title: "Tooth Restoration",
+    titleTl: "Pagpapaayos ng Ngipin",
+    price: "1,000–2,500",
+    shortDesc: "Composite restorations for decayed or damaged teeth.",
     fullDesc:
-      "From porcelain veneers and dental bonding to complete smile makeovers, our San Juan cosmetic dentists combine artistry with clinical expertise to give you the smile you've always wanted — naturally beautiful and long-lasting.",
-    image: "https://picsum.photos/seed/sj-cosmetic/600/300",
-    imageAlt: "Cosmetic dental procedure at San Juan",
+      "Pricing depends on the type and severity of the cavity.\n\n• Class I (Incipient) – ₱1,000\n• Class I (Advanced) – ₱1,500\n• Class II (Incipient) – ₱1,500\n• Class II (Advanced) – ₱2,000\n• Class III – ₱1,000–₱1,500\n• Class IV Carious Lesion – ₱1,500–₱2,500\n• Class IV Fractured – ₱2,000–₱2,500\n• Class V Carious Lesion/Abrasion – ₱1,000",
+    image: "https://picsum.photos/seed/restoration/600/300",
+    imageAlt: "Tooth restoration",
   },
   {
-    id: "sj-implants",
-    title: "Dental Implants",
-    titleTl: "Dental Implants",
-    price: 35000,
-    shortDesc:
-      "Permanent tooth replacement solutions that look, feel, and function like natural teeth.",
+    id: "lstr",
+    title: "LSTR Cases",
+    titleTl: "LSTR Cases",
+    price: "1,500",
+    shortDesc: "Lesion Sterilization and Tissue Repair treatment.",
     fullDesc:
-      "Dental implants are titanium posts surgically placed in the jawbone to support crowns, bridges, or dentures. Our implant specialists provide thorough pre-surgical planning, placement, and follow-up care for permanent, natural-looking results.",
-    image: "https://picsum.photos/seed/sj-implants/600/300",
-    imageAlt: "Dental implant procedure",
+      "LSTR is a minimally invasive treatment used to disinfect infected primary teeth while preserving their structure.",
+    image: "https://picsum.photos/seed/lstr/600/300",
+    imageAlt: "LSTR treatment",
   },
   {
-    id: "sj-dentures",
-    title: "Dentures & Bridges",
-    titleTl: "Pustiso at Tulay na Ngipin",
-    price: 12000,
-    shortDesc:
-      "Custom-fitted dentures and bridges to restore missing teeth and improve function.",
+    id: "temporary-filling",
+    title: "Temporary Filling (IRM)",
+    titleTl: "Pansamantalang Pasta (IRM)",
+    price: "1,000",
+    shortDesc: "Temporary filling used before permanent restoration.",
     fullDesc:
-      "We fabricate custom full and partial dentures, as well as fixed bridges, to restore chewing ability and aesthetics. Each prosthetic is precision-fitted for comfort and made to match the natural color and shape of your remaining teeth.",
-    image: "https://picsum.photos/seed/sj-dentures/600/300",
-    imageAlt: "Custom dentures and dental bridges",
+      "IRM temporary fillings protect the tooth while waiting for permanent treatment or further procedures.",
+    image: "https://picsum.photos/seed/irm/600/300",
+    imageAlt: "Temporary dental filling",
   },
   {
-    id: "sj-periodontics",
-    title: "Periodontics",
-    titleTl: "Periodonsia",
-    price: 2500,
-    shortDesc:
-      "Diagnosis and treatment of gum disease to protect the foundation of your smile.",
+    id: "permanent-composite",
+    title: "Permanent Composite Filling",
+    titleTl: "Permanenteng Composite Filling",
+    price: "1,500–2,000",
+    shortDesc: "Permanent tooth-colored filling after LSTR or IRM.",
     fullDesc:
-      "Our periodontic services include deep cleaning (scaling and root planing), gum grafting, and ongoing maintenance for patients with gum disease. Early treatment prevents tooth loss and supports your overall health.",
-    image: "https://picsum.photos/seed/sj-periodontics/600/300",
-    imageAlt: "Periodontic gum treatment",
+      "A durable composite resin restoration placed after LSTR or temporary filling treatment to restore function and appearance.",
+    image: "https://picsum.photos/seed/composite/600/300",
+    imageAlt: "Composite filling",
   },
   {
-    id: "sj-oral-surgery",
-    title: "Oral Surgery",
-    titleTl: "Operasyon sa Bibig",
-    price: 4500,
-    shortDesc:
-      "Wisdom tooth removal and minor oral surgeries performed with precision and care.",
+    id: "composite-build-up",
+    title: "Composite Build-Up",
+    titleTl: "Composite Build-Up",
+    price: "2,000–2,500",
+    shortDesc: "Rebuild damaged tooth structure using composite resin.",
     fullDesc:
-      "Our oral surgery services cover wisdom tooth extractions, impacted tooth removal, minor cyst removal, and pre-prosthetic procedures. We provide sedation options to keep patients calm and comfortable throughout.",
-    image: "https://picsum.photos/seed/sj-oral-surgery/600/300",
-    imageAlt: "Oral surgery procedure at San Juan branch",
+      "Composite build-up restores severely damaged teeth by rebuilding lost tooth structure using high-quality tooth-colored composite material.",
+    image: "https://picsum.photos/seed/buildup/600/300",
+    imageAlt: "Composite build up",
   },
 ];
 
@@ -181,7 +161,15 @@ export const services = {
   viewAllLabel: "View All Services",
   initialCount: 6,
   branches: [
-    { id: "rosario", label: "Rosario Branch", items: rosarioServices },
-    { id: "sanjuan", label: "San Juan Branch", items: sanJuanServices },
+    {
+      id: "rosario",
+      label: "Rosario Branch",
+      items: rosarioServices,
+    },
+    {
+      id: "sanjuan",
+      label: "San Juan Branch",
+      items: sanJuanServices,
+    },
   ],
 };
