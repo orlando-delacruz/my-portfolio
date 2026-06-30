@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../services/supabase/supabase";
 
-export function useAppointments(branchId) {
+export function useAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,9 +12,9 @@ export function useAppointments(branchId) {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
-    // Build query — filter by branch only when branchId is provided
-    let query = supabase
+    supabase
       .from("appointments")
       .select(
         `
@@ -24,32 +24,21 @@ export function useAppointments(branchId) {
           id, price, duration_minutes,
           service:services(id, name),
           branch:branches(id, name)
-        ),
-        appointment_logs(
-          id, action, description, performed_by, created_at,
-          admin:admins(full_name)
         )
       `,
       )
-      .order("preferred_date", { ascending: true });
-
-    // Filter by branch via the service_branches join
-    // Supabase supports filtering on related table columns
-    if (branchId) {
-      query = query.eq("service_branch.branch_id", branchId);
-    }
-
-    query.then(({ data, error: fetchError }) => {
-      if (cancelled) return;
-      if (fetchError) setError(fetchError);
-      else setAppointments(data ?? []);
-      setLoading(false);
-    });
+      .order("preferred_date", { ascending: true })
+      .then(({ data, error: fetchError }) => {
+        if (cancelled) return;
+        if (fetchError) setError(fetchError);
+        else setAppointments(data ?? []);
+        setLoading(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [branchId, fetchTrigger]);
+  }, [fetchTrigger]);
 
   return { appointments, loading, error, refetch };
 }

@@ -13,13 +13,22 @@ import {
   useAppointmentModal,
 } from "../../../components/admin/Modal/AppointmentModal";
 
-import appointmentsData from "../../../data/admin/appointment";
+import { useAppointments } from "../../../hooks/useAppointments";
+import { mapAppointmentRow } from "../../../utils/mapAppointmentRow";
+import { adminUpdateAppointmentStatus } from "../../../services/appointments";
+import { useAuthStore } from "../../../store/authStore";
 import * as S from "./Appointment.styled";
 
 const DEFAULT_PAGE_SIZE = 10;
 
 const Appointment = () => {
-  const [appointments, setAppointments] = useState(appointmentsData);
+  const { appointments: rawAppointments, loading, refetch } = useAppointments();
+  const appointments = useMemo(
+    () => rawAppointments.map(mapAppointmentRow),
+    [rawAppointments]
+  );
+
+  const profile = useAuthStore((s) => s.profile);
 
   const [filters, setFilters] = useState({
     dateRange: null,
@@ -37,14 +46,8 @@ const Appointment = () => {
     rescheduleOpen, rescheduleLoading, rescheduleTarget,
     openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
-    onAddSuccess: (newRecord) => {
-      setAppointments((prev) => [newRecord, ...prev]);
-    },
-    onRescheduleSuccess: (updated) => {
-      setAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
-      );
-    },
+    onAddSuccess: () => refetch(),
+    onRescheduleSuccess: () => refetch(),
   });
 
   const filtered = useMemo(() => {
@@ -65,7 +68,7 @@ const Appointment = () => {
           apt.patientName.toLowerCase().includes(q) ||
           apt.contactNumber.includes(q) ||
           apt.referenceNo.toLowerCase().includes(q) ||
-          apt.reason.toLowerCase().includes(q)
+          apt.reason?.toLowerCase().includes(q)
       );
     }
 
@@ -112,12 +115,23 @@ const Appointment = () => {
     });
   }, []);
 
-  const handleSetStatus = useCallback((id, newStatus) => {
-    setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus } : apt))
-    );
-    message.success(`Status updated to ${newStatus}.`);
-  }, []);
+  const handleSetStatus = useCallback(
+    async (id, newStatus) => {
+      try {
+        await adminUpdateAppointmentStatus({
+          appointmentId: id,
+          status: newStatus,
+          adminId: profile?.id,
+        });
+        message.success(`Status updated to ${newStatus}.`);
+        refetch();
+      } catch (err) {
+        console.error(err);
+        message.error("Failed to update status. Please try again.");
+      }
+    },
+    [profile, refetch]
+  );
 
   const handleRescheduleById = useCallback(
     (id) => {
@@ -153,7 +167,7 @@ const Appointment = () => {
           pageSize={pageSize}
           onPageChange={setCurrentPage}
           onSizeChange={handlePageSizeChange}
-          loading={false}
+          loading={loading}
         />
       </S.PageContainer>
 

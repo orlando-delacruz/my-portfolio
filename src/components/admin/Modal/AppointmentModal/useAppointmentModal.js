@@ -5,31 +5,11 @@ import dayjs from "dayjs";
 import { useAuthStore } from "../../../../store/authStore";
 import { findOrCreatePatient } from "../../../../services/patients";
 import { fetchServiceBranchById } from "../../../../services/serviceBranches";
+import { toAppointmentRow } from "../../../../utils/appointmentMapper";
 import {
   adminCreateAppointment,
   adminRescheduleAppointment,
-  dbStatusToForm,
 } from "../../../../services/appointments";
-
-// Converts a raw Supabase appointment row (with joined relations) into the
-// flat shape the Appointments table/UI expects (see src/data/admin/appointment.js)
-function toRow(apt) {
-  return {
-    id: apt.id,
-    referenceNo: apt.reference_number,
-    patientName:
-      `${apt.patients?.first_name ?? ""} ${apt.patients?.last_name ?? ""}`.trim(),
-    contactNumber: apt.patients?.phone_number ?? "",
-    branch: apt.service_branches?.branch_id,
-    serviceBranchId: apt.service_branch_id,
-    date: dayjs(apt.confirmed_date ?? apt.preferred_date).format("MMM D, YYYY"),
-    time: dayjs(apt.confirmed_time ?? apt.preferred_time, "HH:mm:ss").format(
-      "h:mm A",
-    ),
-    reason: apt.snapshot_service_name ?? apt.service_branches?.services?.name,
-    status: dbStatusToForm(apt.approval_status, apt.appointment_status),
-  };
-}
 
 const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
   const profile = useAuthStore((s) => s.profile);
@@ -59,7 +39,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           adminId: profile?.id,
         });
 
-        const newRecord = toRow({
+        const newRecord = toAppointmentRow({
           ...created,
           patients: patient,
           service_branches: {
@@ -74,7 +54,9 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         onAddSuccess?.(newRecord);
       } catch (err) {
         console.error(err);
-        message.error("Failed to add appointment. Please try again.");
+        message.error(
+          err.message || "Failed to add appointment. Please try again.",
+        );
       } finally {
         setAddLoading(false);
       }
@@ -104,13 +86,14 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       try {
         const updated = await adminRescheduleAppointment({
           appointmentId: rescheduleTarget.id,
+          branchId: rescheduleTarget.branch,
           date: dayjs(values.date),
           time: dayjs(values.time),
           status: values.status,
           adminId: profile?.id,
         });
 
-        const row = toRow(updated);
+        const row = toAppointmentRow(updated);
 
         message.success(`Appointment for ${row.patientName} updated!`);
         form.resetFields();
@@ -119,7 +102,9 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         onRescheduleSuccess?.(row);
       } catch (err) {
         console.error(err);
-        message.error("Failed to update appointment. Please try again.");
+        message.error(
+          err.message || "Failed to add appointment. Please try again.",
+        );
       } finally {
         setRescheduleLoading(false);
       }

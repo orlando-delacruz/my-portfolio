@@ -15,6 +15,64 @@ export function dbStatusToForm(approval_status, appointment_status) {
   return "pending";
 }
 
+const MIN_INTERVAL_MINUTES = 60;
+
+function timeToMinutes(timeStr) {
+  // timeStr like "14:30:00" or "14:30"
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Checks whether a requested date/time at a branch conflicts with an
+ * existing (non-cancelled) appointment within MIN_INTERVAL_MINUTES.
+ *
+ * @param {string} branchId
+ * @param {dayjs.Dayjs} date
+ * @param {dayjs.Dayjs} time
+ * @param {string} [excludeAppointmentId] - skip this appointment (for reschedule)
+ * @returns {Promise<boolean>} true if there IS a conflict
+ */
+export async function hasBookingConflict({
+  branchId,
+  date,
+  time,
+  excludeAppointmentId,
+}) {
+  const dateStr = date.format("YYYY-MM-DD");
+  const requestedMinutes = time.hour() * 60 + time.minute();
+
+  let query = supabase
+    .from("appointments")
+    .select(
+      `
+      id,
+      preferred_time,
+      confirmed_time,
+      appointment_status,
+      approval_status,
+      service_branch:service_branches!inner(branch_id)
+    `,
+    )
+    .eq("service_branch.branch_id", branchId)
+    .or(`preferred_date.eq.${dateStr},confirmed_date.eq.${dateStr}`)
+    .neq("appointment_status", "cancelled");
+
+  if (excludeAppointmentId) {
+    query = query.neq("id", excludeAppointmentId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).some((apt) => {
+    const existingTimeStr = apt.confirmed_time ?? apt.preferred_time;
+    if (!existingTimeStr) return false;
+    const existingMinutes = timeToMinutes(existingTimeStr);
+    return Math.abs(existingMinutes - requestedMinutes) < MIN_INTERVAL_MINUTES;
+  });
+}
+
 async function generateReferenceNumber(dateStr) {
   const { count, error } = await supabase
     .from("appointments")
@@ -35,6 +93,18 @@ export async function adminCreateAppointment({
   time,
   adminId,
 }) {
+  const conflict = await hasBookingConflict({
+    branchId: serviceBranch.branch_id,
+    date,
+    time,
+  });
+
+  if (conflict) {
+    throw new Error(
+      `That time slot is too close to an existing appointment. Please choose a time at least ${MIN_INTERVAL_MINUTES} minutes apart.`,
+    );
+  }
+
   const dateStr = date.format("YYYYMMDD");
   const reference_number = await generateReferenceNumber(dateStr);
   const { approval_status, appointment_status } = STATUS_TO_DB.pending;
@@ -72,11 +142,25 @@ export async function adminCreateAppointment({
 
 export async function adminRescheduleAppointment({
   appointmentId,
+  branchId,
   date,
   time,
   status,
   adminId,
 }) {
+  const conflict = await hasBookingConflict({
+    branchId,
+    date,
+    time,
+    excludeAppointmentId: appointmentId,
+  });
+
+  if (conflict) {
+    throw new Error(
+      `That time slot is too close to an existing appointment. Please choose a time at least ${MIN_INTERVAL_MINUTES} minutes apart.`,
+    );
+  }
+
   const { approval_status, appointment_status } =
     STATUS_TO_DB[status] ?? STATUS_TO_DB.pending;
 
@@ -98,6 +182,40 @@ export async function adminRescheduleAppointment({
     appointment_id: appointmentId,
     action: "rescheduled",
     description: "Appointment rescheduled by admin",
+    performed_by: "admin",
+    admin_id: adminId ?? null,
+  });
+
+  return data;
+}
+
+export async function adminUpdateAppointmentStatus({
+  appointmentId,
+  status,
+  adminId,
+}) {
+  const { approval_status, appointment_status } =
+    STATUS_TO_DB[status] ?? STATUS_TO_DB.pending;
+
+  const extra = {};
+  if (appointment_status === "cancelled")
+    extra.cancelled_at = new Date().toISOString();
+  if (appointment_status === "completed")
+    extra.completed_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ approval_status, appointment_status, ...extra })
+    .eq("id", appointmentId)
+    .select(SELECT_WITH_RELATIONS)
+    .single();
+
+  if (error) throw error;
+
+  await supabase.from("appointment_logs").insert({
+    appointment_id: appointmentId,
+    action: "status_changed",
+    description: `Status set to ${status}`,
     performed_by: "admin",
     admin_id: adminId ?? null,
   });

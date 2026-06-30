@@ -8,7 +8,6 @@ import {
 import Pagination from "../../../../../components/admin/Pagination/Pagination";
 import {
   STATUS_CONFIG,
-  BRANCH_CONFIG,
   TABLE_COLUMNS,
 } from "../../../../../data/admin/appointment";
 import * as S from "./Table.styled";
@@ -29,15 +28,31 @@ const StatusBadge = memo(({ status }) => {
 });
 StatusBadge.displayName = "StatusBadge";
 
-const BranchBadge = memo(({ branch }) => {
-  const cfg = BRANCH_CONFIG[branch] ?? {
-    label: branch,
-    color: "#686868",
-    bg: "rgba(104,104,104,0.2)",
-  };
+const BRANCH_COLOR_MAP = {
+  "san juan branch": {
+    color: "#E963C8",
+    bg: "rgba(233,99,200,0.2)",
+    border: "rgba(233,99,200,0.5)",
+  },
+  "rosario branch": {
+    color: "#B388FF",
+    bg: "rgba(179,136,255,0.2)",
+    border: "rgba(179,136,255,0.5)",
+  },
+};
+
+const DEFAULT_BRANCH_COLOR = {
+  color: "#686868",
+  bg: "rgba(104,104,104,0.2)",
+  border: "rgba(104,104,104,0.5)",
+};
+
+const BranchBadge = memo(({ branchName }) => {
+  const cfg =
+    BRANCH_COLOR_MAP[branchName?.toLowerCase()] ?? DEFAULT_BRANCH_COLOR;
   return (
-    <S.BranchBadge $color={cfg.color} $bg={cfg.bg}>
-      {cfg.label}
+    <S.BranchBadge $color={cfg.color} $bg={cfg.bg} $border={cfg.border}>
+      {branchName ?? "—"}
     </S.BranchBadge>
   );
 });
@@ -153,7 +168,7 @@ const AppointmentTable = ({
                   <S.TD>{apt.patientName}</S.TD>
                   <S.TD>{apt.contactNumber}</S.TD>
                   <S.TD>
-                    <BranchBadge branch={apt.branch} />
+                    <BranchBadge branchName={apt.branchName} />
                   </S.TD>
                   <S.TD>{apt.date}</S.TD>
                   <S.TD>{apt.time}</S.TD>
