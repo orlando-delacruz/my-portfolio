@@ -243,3 +243,76 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
     });
   }
 }
+
+// src/services/appointments.js (add at the end)
+
+/**
+ * Fetch a single appointment by ID with all relations (patient, branch, service)
+ */
+
+export async function findOrCreatePatient({
+  firstName,
+  middleName,
+  lastName,
+  birthDate,
+  gender,
+  email,
+  phoneNumber,
+  address,
+}) {
+  // Try to find existing patient by matching first_name, last_name, and phone
+  let query = supabase
+    .from("patients")
+    .select("*")
+    .eq("first_name", firstName)
+    .eq("last_name", lastName);
+
+  if (phoneNumber) {
+    query = query.eq("phone_number", phoneNumber);
+  }
+
+  const { data: existing, error: findErr } = await query.maybeSingle();
+
+  if (findErr) throw findErr;
+  if (existing) return existing;
+
+  // Create new patient
+  const { data: created, error: createErr } = await supabase
+    .from("patients")
+    .insert({
+      first_name: firstName,
+      middle_name: middleName || null,
+      last_name: lastName,
+      birth_date: birthDate || null,
+      gender: gender || null,
+      email: email || null,
+      phone_number: phoneNumber || null,
+      address: address || null,
+    })
+    .select()
+    .single();
+
+  if (createErr) throw createErr;
+  return created;
+}
+
+export async function getAppointmentById(appointmentId) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(
+      `
+      *,
+      patient:patients(*),
+      service_branch:service_branches(
+        *,
+        branch:branches(*),
+        service:services(*)
+      )
+    `,
+    )
+    .eq("id", appointmentId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}

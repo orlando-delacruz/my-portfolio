@@ -1,4 +1,3 @@
-// src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../styles/adminTheme";
 
@@ -21,6 +20,16 @@ export const InfoGrid = styled.div`
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
   }
+`;
+
+export const SectionTitle = styled.h3`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  margin: 16px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid ${adminTheme.colors.champagne};
+  grid-column: 1 / -1;
 `;
 
 export const InfoItem = styled.div`

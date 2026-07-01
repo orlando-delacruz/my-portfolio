@@ -1,4 +1,6 @@
+// src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.styled.js
 import styled, { keyframes } from "styled-components";
+import { DatePicker, TimePicker } from "antd";
 import theme from "../../../../styles/theme";
 
 const fadeIn = keyframes`
@@ -93,7 +95,6 @@ export const FieldRow = styled.div`
 export const FieldGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 14px;
   padding: 10px 0;
 `;
 
@@ -150,5 +151,132 @@ export const SubmitButton = styled.button`
   @media ${theme.media.mobile} {
     width: 100%;
     justify-content: center;
+  }
+`;
+
+/* ─── Text area (for multiline) ───────────────────────── */
+export const TextArea = styled.textarea`
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary};
+  }
+`;
+
+/* ─── Shared label and error text ────────────────────── */
+export const FieldLabel = styled.label`
+  display: block;
+  font-size: ${theme.typography.size.lg};
+  font-weight: ${theme.typography.weight.medium};
+  color: ${theme.colors.black};
+  margin-bottom: 4px;
+`;
+
+export const ErrorText = styled.span`
+  color: ${theme.colors.danger};
+  font-size: 12px;
+  margin-top: 4px;
+`;
+
+export const StyledDatePicker = styled(DatePicker)`
+  && {
+    width: 100%;
+    height: 44px; /* fixed height to match Select */
+    border-radius: 50px !important;
+    border: 1.5px solid ${theme.colors.primary} !important;
+    background: ${theme.colors.white} !important;
+    font-size: ${theme.typography.size.body} !important;
+    font-family: inherit !important;
+    color: ${theme.colors.black} !important;
+    padding: 0 !important; /* remove extra padding from container */
+    box-sizing: border-box !important;
+
+    .ant-picker-input {
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 0 20px !important;
+
+      input {
+        font-size: ${theme.typography.size.body} !important;
+        color: ${theme.colors.black} !important;
+        height: 100% !important;
+        padding: 0 !important;
+        &::placeholder {
+          color: #555555 !important;
+        }
+      }
+
+      .ant-picker-suffix {
+        color: ${theme.colors.primary} !important;
+      }
+    }
+
+    &:hover,
+    &.ant-picker-focused {
+      border-color: ${theme.colors.primaryDark} !important;
+      box-shadow: 0 0 0 3px ${theme.colors.primary}22 !important;
+    }
+
+    &.ant-picker-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+`;
+
+/* ─── Custom TimePicker to match form styling ────────── */
+export const StyledTimePicker = styled(TimePicker)`
+  && {
+    width: 100%;
+    height: 44px; /* fixed height to match Select */
+    border-radius: 50px !important;
+    border: 1.5px solid ${theme.colors.primary} !important;
+    background: ${theme.colors.white} !important;
+    font-size: ${theme.typography.size.body} !important;
+    font-family: inherit !important;
+    color: ${theme.colors.black} !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+
+    .ant-picker-input {
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 0 20px !important;
+
+      input {
+        font-size: ${theme.typography.size.body} !important;
+        color: ${theme.colors.black} !important;
+        height: 100% !important;
+        padding: 0 !important;
+        &::placeholder {
+          color: #555555 !important;
+        }
+      }
+
+      .ant-picker-suffix {
+        color: ${theme.colors.primary} !important;
+      }
+    }
+
+    &:hover,
+    &.ant-picker-focused {
+      border-color: ${theme.colors.primaryDark} !important;
+      box-shadow: 0 0 0 3px ${theme.colors.primary}22 !important;
+    }
+
+    &.ant-picker-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 `;

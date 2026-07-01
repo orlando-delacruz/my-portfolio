@@ -1,28 +1,12 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { AiOutlineSend } from "react-icons/ai";
+import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
-import { TextField, SelectField, BranchToggleField } from "../../Fields";
+import { TextField, SelectField } from "../../Fields";
 import SuccessView from "../../SuccessView";
 import { useBookAppointmentForm } from "./useBookAppointmentForm";
 import Logo from "../../../../assets/images/logo.webp";
-
-const BRANCH_OPTIONS = [
-  { value: "rosario", label: "Rosario Branch" },
-  { value: "sanjuan", label: "San Juan Branch" },
-];
-
-const REASON_OPTIONS = [
-  { value: "general", label: "General Check-up" },
-  { value: "cleaning", label: "Dental Cleaning" },
-  { value: "extraction", label: "Tooth Extraction" },
-  { value: "filling", label: "Tooth Filling" },
-  { value: "root-canal", label: "Root Canal Treatment" },
-  { value: "whitening", label: "Teeth Whitening" },
-  { value: "orthodontics", label: "Orthodontics / Braces" },
-  { value: "pediatric", label: "Pediatric Dentistry" },
-  { value: "other", label: "Other" },
-];
 
 const BookAppointmentForm = () => {
   const {
@@ -30,18 +14,52 @@ const BookAppointmentForm = () => {
     errors,
     loading,
     submitted,
+    branches,
+    services,
+    branchesLoading,
+    servicesLoading,
+    disabledTime,
+    disabledDate,
     handleChange,
     handleBranchChange,
+    handleDateChange,
+    handleTimeChange,
+    handleBirthDateChange,
     handleSubmit,
     handleReset,
+    setFields,
+    setErrors,
   } = useBookAppointmentForm();
 
-  if (submitted)
+  // Format phone number as "0912 345 6789"
+  const formatPhoneDisplay = (digits) => {
+    if (!digits) return '';
+    const raw = digits.replace(/\D/g, '');
+    if (raw.length > 7) {
+      return raw.slice(0, 4) + ' ' + raw.slice(4, 7) + ' ' + raw.slice(7);
+    }
+    if (raw.length > 4) {
+      return raw.slice(0, 4) + ' ' + raw.slice(4);
+    }
+    return raw;
+  };
+
+  const handlePhoneChange = useCallback((e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (raw.length > 11) return;
+    setFields((prev) => ({ ...prev, phoneNumber: raw }));
+    if (errors.phoneNumber) {
+      setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+    }
+  }, [setFields, setErrors, errors.phoneNumber]);
+
+  if (submitted) {
     return (
       <S.FormCard>
         <SuccessView onReset={handleReset} />
       </S.FormCard>
     );
+  }
 
   return (
     <S.FormCard>
@@ -72,6 +90,15 @@ const BookAppointmentForm = () => {
                 required
               />
               <TextField
+                id="middleName"
+                name="middleName"
+                label="Middle Name"
+                placeholder="(Optional)"
+                value={fields.middleName}
+                onChange={handleChange}
+                error={errors.middleName}
+              />
+              <TextField
                 id="lastName"
                 name="lastName"
                 label="Last Name"
@@ -83,18 +110,40 @@ const BookAppointmentForm = () => {
               />
             </S.FieldRow>
 
-            <S.FieldGroup>
-              <TextField
-                id="mobile"
-                name="mobile"
-                label="Mobile Number"
-                type="tel"
-                placeholder="09123456789"
-                value={fields.mobile}
+            <S.FieldRow>
+              <S.FieldGroup>
+                <S.FieldLabel htmlFor="birthDate">Birthdate</S.FieldLabel>
+                <S.StyledDatePicker
+                  id="birthDate"
+                  style={{ width: "100%" }}
+                  format="MMM D, YYYY"
+                  placeholder="Select birthdate"
+                  value={fields.birthDate ? dayjs(fields.birthDate) : null}
+                  onChange={handleBirthDateChange}
+                  disabledDate={(current) => current && current > dayjs().endOf('day')}
+                  aria-required="true"
+                  aria-invalid={!!errors.birthDate}
+                />
+                {errors.birthDate && <S.ErrorText>{errors.birthDate}</S.ErrorText>}
+              </S.FieldGroup>
+              <SelectField
+                id="gender"
+                name="gender"
+                label="Gender"
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                  { value: "other", label: "Other" },
+                  { value: "prefer-not-to-say", label: "Prefer not to say" },
+                ]}
+                value={fields.gender}
                 onChange={handleChange}
-                error={errors.mobile}
-                required
+                placeholder="Select"
+                error={errors.gender}
               />
+            </S.FieldRow>
+
+            <S.FieldGroup>
               <TextField
                 id="email"
                 name="email"
@@ -104,16 +153,26 @@ const BookAppointmentForm = () => {
                 value={fields.email}
                 onChange={handleChange}
                 error={errors.email}
+              />
+              <TextField
+                id="phoneNumber"
+                name="phoneNumber"
+                label="Contact Number"
+                type="tel"
+                placeholder="0912 345 6789"
+                value={formatPhoneDisplay(fields.phoneNumber)}
+                onChange={handlePhoneChange}
+                error={errors.phoneNumber}
                 required
               />
               <TextField
-                id="facebookName"
-                name="facebookName"
-                label="Facebook Name"
-                placeholder="Juan Dela Cruz"
-                value={fields.facebookName}
+                id="address"
+                name="address"
+                label="Complete Address"
+                placeholder="123 Street, City, Province"
+                value={fields.address}
                 onChange={handleChange}
-                error={errors.facebookName}
+                error={errors.address}
               />
             </S.FieldGroup>
           </S.FormSection>
@@ -125,49 +184,81 @@ const BookAppointmentForm = () => {
             </S.FormSectionTitle>
 
             <S.FieldGroup>
-              <BranchToggleField
-                id="branch"
+              <SelectField
+                id="branchId"
+                name="branchId"
                 label="Choose Branch"
-                options={BRANCH_OPTIONS}
-                value={fields.branch}
+                options={branches.map((b) => ({ value: b.id, label: b.name }))}
+                value={fields.branchId}
                 onChange={handleBranchChange}
-                error={errors.branch}
+                placeholder="Select a branch"
+                error={errors.branchId}
+                loading={branchesLoading}
                 required
               />
 
               <S.FieldRow>
-                <TextField
-                  id="date"
-                  name="date"
-                  label="Preferred Date"
-                  type="date"
-                  value={fields.date}
-                  onChange={handleChange}
-                  error={errors.date}
-                  required
-                />
-                <TextField
-                  id="time"
-                  name="time"
-                  label="Preferred Time"
-                  type="time"
-                  value={fields.time}
-                  onChange={handleChange}
-                  error={errors.time}
-                  required
-                />
+                <S.FieldGroup>
+                  <S.FieldLabel htmlFor="date">Preferred Date</S.FieldLabel>
+                  <S.StyledDatePicker
+                    id="date"
+                    style={{ width: "100%" }}
+                    format="MMM D, YYYY"
+                    placeholder="Select date"
+                    value={fields.date ? dayjs(fields.date) : null}
+                    onChange={handleDateChange}
+                    disabledDate={disabledDate}
+                    disabled={!fields.branchId}
+                  />
+                  {errors.date && <S.ErrorText>{errors.date}</S.ErrorText>}
+                </S.FieldGroup>
+                <S.FieldGroup>
+                  <S.FieldLabel htmlFor="time">Preferred Time</S.FieldLabel>
+                  <S.StyledTimePicker
+                    id="time"
+                    style={{ width: "100%" }}
+                    format="h:mm A"
+                    use12Hours
+                    placeholder="Select time"
+                    value={fields.time ? dayjs(fields.time, "HH:mm:ss") : null}
+                    onChange={handleTimeChange}
+                    disabledTime={disabledTime}
+                    hideDisabledOptions
+                    disabled={!fields.branchId || !fields.date}
+                    popupStyle={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                    }}
+                    popupClassName="time-picker-no-scrollbar"
+                  />
+                  {errors.time && <S.ErrorText>{errors.time}</S.ErrorText>}
+                </S.FieldGroup>
               </S.FieldRow>
 
               <SelectField
-                id="reason"
-                name="reason"
-                label="Reason for Visit"
-                options={REASON_OPTIONS}
-                value={fields.reason}
+                id="serviceBranchId"
+                name="serviceBranchId"
+                label="Service"
+                options={services.map((s) => ({ value: s.service_branch_id, label: s.name }))}
+                value={fields.serviceBranchId}
                 onChange={handleChange}
-                placeholder="Select"
-                error={errors.reason}
+                placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
+                error={errors.serviceBranchId}
+                loading={servicesLoading}
+                disabled={!fields.branchId || services.length === 0}
                 required
+              />
+
+              <TextField
+                id="notes"
+                name="notes"
+                label="Notes / Remarks"
+                placeholder="Any special requests or additional information"
+                value={fields.notes}
+                onChange={handleChange}
+                error={errors.notes}
+                multiline
+                rows={3}
               />
             </S.FieldGroup>
           </S.FormSection>
@@ -181,7 +272,7 @@ const BookAppointmentForm = () => {
             disabled={loading}
             aria-label="Submit appointment request"
           >
-            {loading ? "Submitting…" : "Submit Appointment"}
+            {loading ? "Submitting…" : "Book Appointment"}
             {!loading && <AiOutlineSend aria-hidden="true" />}
           </S.SubmitButton>
         </div>

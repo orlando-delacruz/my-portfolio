@@ -1,144 +1,223 @@
-import { useState, useCallback } from "react";
+// src/components/ui/Form/BookAppointmentForm/useBookAppointmentForm.js
+import { useState, useCallback, useEffect } from "react";
+import { message } from "antd";
+import dayjs from "dayjs";
+import { useBranches } from "../../../../hooks/useBranches";
+import { useServiceBranches } from "../../../../hooks/useServiceBranches";
+import { useScheduling } from "../../../../hooks/useScheduling";
+import { bookPublicAppointment } from "../../../../services/publicBooking";
 import { supabase } from "../../../../services/supabase/supabase";
 
 const INITIAL_STATE = {
   firstName: "",
+  middleName: "",
   lastName: "",
-  mobile: "",
+  birthDate: "",
+  gender: "",
   email: "",
-  facebookName: "",
-  branch: "",
-  service: "",
+  phoneNumber: "",
+  address: "",
+  branchId: "",
+  serviceBranchId: "",
   date: "",
   time: "",
-  chiefComplaint: "",
+  notes: "",
 };
 
-const validate = (fields) => {
+const validateForm = (fields) => {
   const errors = {};
-  if (!fields.firstName.trim()) errors.firstName = "First name is required.";
-  if (!fields.lastName.trim()) errors.lastName = "Last name is required.";
-
-  if (!fields.mobile.trim()) {
-    errors.mobile = "Mobile number is required.";
-  } else if (!/^(09|\+639)\d{9}$/.test(fields.mobile.trim())) {
-    errors.mobile = "Enter a valid PH mobile number (e.g. 09123456789).";
+  if (!fields.firstName?.trim()) errors.firstName = "First name is required.";
+  if (!fields.lastName?.trim()) errors.lastName = "Last name is required.";
+  if (!fields.phoneNumber?.trim())
+    errors.phoneNumber = "Contact number is required.";
+  else if (!/^(\+63|0)\d{10}$/.test(fields.phoneNumber.replace(/\s/g, ""))) {
+    errors.phoneNumber =
+      "Enter a valid Philippine number (e.g., 09123456789 or +639123456789).";
   }
-
-  if (!fields.email.trim()) {
-    errors.email = "Email address is required.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.trim())) {
+  if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
     errors.email = "Enter a valid email address.";
   }
-
-  if (!fields.branch) errors.branch = "Please choose a branch.";
-  if (!fields.service) errors.service = "Please choose a service.";
-  if (!fields.date) errors.date = "Please select a preferred date.";
-  if (!fields.time) errors.time = "Please select a preferred time.";
-
+  if (fields.birthDate && dayjs(fields.birthDate).isAfter(dayjs(), "day")) {
+    errors.birthDate = "Birthdate cannot be in the future.";
+  }
+  if (!fields.birthDate) errors.birthDate = "Birthdate is required.";
+  if (!fields.branchId) errors.branchId = "Please select a branch.";
+  if (!fields.serviceBranchId)
+    errors.serviceBranchId = "Please select a service.";
+  if (!fields.date) errors.date = "Please select a date.";
+  else if (dayjs(fields.date).isBefore(dayjs(), "day")) {
+    errors.date = "Date cannot be in the past.";
+  }
+  if (!fields.time) errors.time = "Please select a time.";
   return errors;
 };
 
-// Generate a short reference number e.g. "LBD-20250629-A3F2"
-function generateReferenceNumber() {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `LBD-${date}-${rand}`;
-}
-
-export const useBookAppointmentForm = () => {
+export function useBookAppointmentForm() {
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [closures, setClosures] = useState([]);
 
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFields((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  const { branches, loading: branchesLoading } = useBranches();
+  const { serviceBranches: services, loading: servicesLoading } =
+    useServiceBranches(fields.branchId);
+
+  // Scheduling hook for disabled times
+  const selectedDate = fields.date ? dayjs(fields.date) : null;
+  const { disabledTime } = useScheduling(fields.branchId, selectedDate);
+
+  // Fetch closures for the selected branch
+  useEffect(() => {
+    async function loadClosures() {
+      if (!fields.branchId) {
+        setClosures([]);
+        return;
+      }
+      try {
+        const start = dayjs().subtract(1, "month").format("YYYY-MM-DD");
+        const end = dayjs().add(2, "months").format("YYYY-MM-DD");
+        const { data, error } = await supabase
+          .from("clinic_closures")
+          .select("start_date, end_date")
+          .eq("branch_id", fields.branchId)
+          .eq("is_cancelled", false)
+          .eq("affects_booking", true)
+          .or(`start_date.lte.${end},end_date.gte.${start}`);
+        if (error) throw error;
+        setClosures(data || []);
+      } catch (err) {
+        console.error("Failed to load closures:", err);
+        setClosures([]);
+      }
+    }
+    loadClosures();
+  }, [fields.branchId]);
+
+  // Synchronous disabledDate
+  const disabledDate = useCallback(
+    (current) => {
+      if (!fields.branchId) return true;
+      if (!current) return false;
+      const dateStr = dayjs(current).format("YYYY-MM-DD");
+      return closures.some((c) => {
+        const start = dayjs(c.start_date);
+        const end = dayjs(c.end_date);
+        return dayjs(dateStr).isBetween(start, end, "day", "[]");
+      });
+    },
+    [fields.branchId, closures],
+  );
+
+  const handleBranchChange = useCallback((e) => {
+    const value = e.target.value;
+    setFields((prev) => ({
+      ...prev,
+      branchId: value,
+      serviceBranchId: "",
+      date: "",
+      time: "",
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      branchId: undefined,
+      serviceBranchId: undefined,
+      date: undefined,
+      time: undefined,
+    }));
   }, []);
 
-  const handleBranchChange = useCallback((value) => {
-    setFields((prev) => ({ ...prev, branch: value, service: "" })); // reset service on branch change
-    setErrors((prev) => ({ ...prev, branch: undefined }));
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value, type, checked } = e.target;
+      setFields((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+      if (errors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: undefined }));
+      }
+    },
+    [errors],
+  );
+
+  const handleDateChange = useCallback((date) => {
+    setFields((prev) => ({
+      ...prev,
+      date: date ? dayjs(date).format("YYYY-MM-DD") : "",
+      time: "",
+    }));
+    setErrors((prev) => ({ ...prev, date: undefined, time: undefined }));
   }, []);
 
-  const handleServiceChange = useCallback((value) => {
-    setFields((prev) => ({ ...prev, service: value }));
-    setErrors((prev) => ({ ...prev, service: undefined }));
+  const handleTimeChange = useCallback((time) => {
+    if (time && dayjs.isDayjs(time) && time.isValid()) {
+      setFields((prev) => ({
+        ...prev,
+        time: time.format("HH:mm:ss"),
+      }));
+    } else {
+      setFields((prev) => ({
+        ...prev,
+        time: "",
+      }));
+    }
+    setErrors((prev) => ({ ...prev, time: undefined }));
+  }, []);
+
+  const handleBirthDateChange = useCallback((date) => {
+    setFields((prev) => ({
+      ...prev,
+      birthDate: date ? dayjs(date).format("YYYY-MM-DD") : "",
+    }));
+    setErrors((prev) => ({ ...prev, birthDate: undefined }));
   }, []);
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      const validationErrors = validate(fields);
+      const validationErrors = validateForm(fields);
       if (Object.keys(validationErrors).length > 0) {
         setErrors(validationErrors);
-        document.getElementById(Object.keys(validationErrors)[0])?.focus();
+        return;
+      }
+
+      if (!fields.time || !dayjs(fields.time, "HH:mm:ss").isValid()) {
+        setErrors({ ...errors, time: "Please select a valid time." });
         return;
       }
 
       setLoading(true);
+      setErrors({});
+
       try {
-        // 1. Find or create patient by phone number (business rule from v3 design)
-        let patientId;
-        const { data: existing } = await supabase
-          .from("patients")
-          .select("id")
-          .eq("phone_number", fields.mobile.trim())
-          .maybeSingle();
+        await bookPublicAppointment({
+          firstName: fields.firstName.trim(),
+          middleName: fields.middleName.trim() || undefined,
+          lastName: fields.lastName.trim(),
+          birthDate: fields.birthDate || undefined,
+          gender: fields.gender || undefined,
+          email: fields.email.trim() || undefined,
+          phoneNumber: fields.phoneNumber.trim(),
+          address: fields.address.trim() || undefined,
+          branchId: fields.branchId,
+          serviceBranchId: fields.serviceBranchId,
+          date: fields.date,
+          time: fields.time,
+          notes: fields.notes.trim() || undefined,
+        });
 
-        if (existing) {
-          patientId = existing.id;
-        } else {
-          const { data: newPatient, error: patientError } = await supabase
-            .from("patients")
-            .insert({
-              first_name: fields.firstName.trim(),
-              last_name: fields.lastName.trim(),
-              email: fields.email.trim(),
-              phone_number: fields.mobile.trim(),
-              patient_number: `P-${Date.now()}`, // replace with a proper sequence if needed
-            })
-            .select("id")
-            .single();
-          if (patientError) throw patientError;
-          patientId = newPatient.id;
-        }
-
-        // 2. Fetch service_branch snapshot data (price + duration at booking time)
-        const { data: sb, error: sbError } = await supabase
-          .from("service_branches")
-          .select("price, duration_minutes, services(name)")
-          .eq("id", fields.service)
-          .single();
-        if (sbError) throw sbError;
-
-        // 3. Create appointment
-        const { error: apptError } = await supabase
-          .from("appointments")
-          .insert({
-            reference_number: generateReferenceNumber(),
-            patient_id: patientId,
-            service_branch_id: fields.service,
-            booked_by: "website",
-            preferred_date: fields.date,
-            preferred_time: fields.time,
-            chief_complaint: fields.chiefComplaint.trim() || null,
-            approval_status: "waiting",
-            appointment_status: "scheduled",
-            notification_method: "email",
-            // Snapshot fields — preserved even if service price changes later
-            snapshot_service_name: sb.services?.name ?? null,
-            snapshot_price: sb.price ?? null,
-            snapshot_duration_minutes: sb.duration_minutes ?? null,
-          });
-        if (apptError) throw apptError;
-
+        message.success(
+          "Appointment booked successfully! You will receive a confirmation email shortly.",
+        );
         setSubmitted(true);
-        setFields(INITIAL_STATE);
-      } catch {
-        setErrors({ form: "Something went wrong. Please try again." });
+      } catch (err) {
+        console.error("Booking error:", err);
+        setErrors({
+          form:
+            err.message ||
+            "Failed to book appointment. Please try again later.",
+        });
       } finally {
         setLoading(false);
       }
@@ -147,9 +226,9 @@ export const useBookAppointmentForm = () => {
   );
 
   const handleReset = useCallback(() => {
-    setSubmitted(false);
-    setErrors({});
     setFields(INITIAL_STATE);
+    setErrors({});
+    setSubmitted(false);
   }, []);
 
   return {
@@ -157,10 +236,20 @@ export const useBookAppointmentForm = () => {
     errors,
     loading,
     submitted,
+    branches,
+    services,
+    branchesLoading,
+    servicesLoading,
+    disabledTime,
+    disabledDate,
     handleChange,
     handleBranchChange,
-    handleServiceChange,
+    handleDateChange,
+    handleTimeChange,
+    handleBirthDateChange,
     handleSubmit,
     handleReset,
+    setFields,
+    setErrors,
   };
-};
+}

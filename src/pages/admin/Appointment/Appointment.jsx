@@ -71,7 +71,7 @@ const Appointment = () => {
 
   // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
@@ -81,7 +81,6 @@ const Appointment = () => {
     onAddSuccess: () => refetch(),
     onRescheduleSuccess: () => {
       refetch();
-      // Close details modal if open (since we close it when reschedule opens)
     },
   });
 
@@ -150,7 +149,6 @@ const Appointment = () => {
     });
   }, []);
 
-  // ── Status update with optional details modal close ──
   const handleSetStatus = useCallback(
     async (id, newStatus) => {
       try {
@@ -161,17 +159,17 @@ const Appointment = () => {
         });
         message.success(`Status updated to ${newStatus}.`);
         await refetch();
-        // Close details modal if it's open and the updated appointment is the one being viewed
-        if (detailsModalOpen && selectedAppointment?.id === id) {
+        // If details modal is open for this appointment, close it
+        if (detailsModalOpen && selectedAppointmentId === id) {
           setDetailsModalOpen(false);
-          setSelectedAppointment(null);
+          setSelectedAppointmentId(null);
         }
       } catch (err) {
         console.error(err);
         message.error("Failed to update status. Please try again.");
       }
     },
-    [profile, refetch, detailsModalOpen, selectedAppointment]
+    [profile, refetch, detailsModalOpen, selectedAppointmentId]
   );
 
   const handleRescheduleById = useCallback(
@@ -181,7 +179,7 @@ const Appointment = () => {
         // Close details modal if open
         if (detailsModalOpen) {
           setDetailsModalOpen(false);
-          setSelectedAppointment(null);
+          setSelectedAppointmentId(null);
         }
         openReschedule(apt);
       }
@@ -194,7 +192,6 @@ const Appointment = () => {
     setCurrentPage(1);
   }, []);
 
-  // ── Reset filters ──
   const handleResetFilters = useCallback(() => {
     setFilters({
       dateRange: null,
@@ -206,7 +203,6 @@ const Appointment = () => {
     setCurrentPage(1);
   }, []);
 
-  // ── Bulk Delete ──
   const handleDeleteSelected = useCallback(() => {
     const count = selected.size;
     if (count === 0) return;
@@ -249,18 +245,16 @@ const Appointment = () => {
     });
   }, [selected, profile, refetch]);
 
-  // ── Row click handler ──
   const handleRowClick = useCallback((appointment) => {
-    setSelectedAppointment(appointment);
+    setSelectedAppointmentId(appointment.id);
     setDetailsModalOpen(true);
   }, []);
 
   const handleCloseDetails = useCallback(() => {
     setDetailsModalOpen(false);
-    setSelectedAppointment(null);
+    setSelectedAppointmentId(null);
   }, []);
 
-  // ── Render selection toolbar ──
   const renderSelectionToolbar = () => {
     if (selected.size === 0) return null;
 
@@ -330,7 +324,7 @@ const Appointment = () => {
 
       <AppointmentDetailsModal
         open={detailsModalOpen}
-        appointment={selectedAppointment}
+        appointmentId={selectedAppointmentId}
         onClose={handleCloseDetails}
         onSetStatus={handleSetStatus}
         onReschedule={handleRescheduleById}

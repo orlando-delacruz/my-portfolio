@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
+import { useScheduling } from "../../../../hooks/useScheduling";
 import * as S from "./AppointmentModal.styled";
 
 const { Option } = Select;
@@ -42,33 +43,15 @@ function validatePhone(value) {
   return Promise.resolve();
 }
 
-// ── Time restrictions ─────────────────────────────────────────────────────────
-// Mon–Thu, Sat–Sun : 10:30 AM – 5:00 PM
-// Friday           : 10:30 AM – 4:00 PM
-function getDisabledTime(selectedDate) {
-  const isFriday = selectedDate ? dayjs(selectedDate).day() === 5 : false;
-  const lastHour = isFriday ? 16 : 17; // 4 PM or 5 PM
-
-  return {
-    disabledHours: () => [
-      ...Array.from({ length: 10 }, (_, i) => i),                              // 0–9
-      ...Array.from({ length: 23 - lastHour }, (_, i) => lastHour + 1 + i),   // after lastHour
-    ],
-    disabledMinutes: (h) => {
-      if (h === 10) return Array.from({ length: 30 }, (_, i) => i); // 0–29 at 10 AM
-      if (h === lastHour) return Array.from({ length: 59 }, (_, i) => i + 1); // :01–:59 at close hour
-      return [];
-    },
-    disabledSeconds: () => [],
-  };
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 const AppointmentForm = memo(({ form, showStatus = false }) => {
   const { branches, loading: branchesLoading } = useBranches();
   const selectedBranch = Form.useWatch("branch", form);
   const selectedDate = Form.useWatch("date", form);
   const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
+
+  // Use shared scheduling hook
+  const { disabledTime } = useScheduling(selectedBranch, selectedDate);
 
   const prevBranchRef = useRef(selectedBranch);
 
@@ -81,11 +64,6 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
     }
     prevBranchRef.current = selectedBranch;
   }, [selectedBranch, form]);
-
-  const disabledTime = useCallback(
-    () => getDisabledTime(selectedDate),
-    [selectedDate]
-  );
 
   const handlePhoneChange = useCallback(
     (e) => {
@@ -174,7 +152,7 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           />
         </Form.Item>
 
-        {/* Preferred Time - NOW WITH ANY MINUTE AND NO SCROLLBAR */}
+        {/* Preferred Time */}
         <Form.Item
           name="time"
           label="Preferred Time"
@@ -190,15 +168,12 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
             format="h:mm A"
             use12Hours
             placeholder="Select time"
-            // Removed minuteStep to allow any minute
             disabledTime={disabledTime}
             hideDisabledOptions
-            // Hide scrollbar via popupStyle
             popupStyle={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}
-            // Also add a class for webkit
             popupClassName="time-picker-no-scrollbar"
           />
         </Form.Item>

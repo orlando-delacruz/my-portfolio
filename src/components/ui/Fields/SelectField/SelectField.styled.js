@@ -7,6 +7,7 @@ export const FieldWrapper = styled.div`
   flex-direction: column;
   gap: 8px;
   width: 100%;
+  margin-bottom: 1rem;
 `;
 
 export const Label = styled.label`
@@ -14,6 +15,7 @@ export const Label = styled.label`
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
+  margin-bottom: 4px; /* added to match FieldLabel */
 `;
 
 export const Required = styled.span`
@@ -44,6 +46,8 @@ export const Select = styled.select`
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+  height: 44px; /* fixed height to match DatePicker */
+  box-sizing: border-box;
 
   &:focus {
     border-color: ${theme.colors.primaryDark};

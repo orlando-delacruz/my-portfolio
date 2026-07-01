@@ -1,7 +1,7 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Spin, Alert, Tooltip } from 'antd';
+import { Spin, Alert, Tooltip, message } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import updateLocale from 'dayjs/plugin/updateLocale';
@@ -26,7 +26,10 @@ import {
   AddAppointmentModal,
   useAppointmentModal,
 } from '../../../components/admin/Modal/AppointmentModal';
+import AppointmentDetailsModal from '../../../components/admin/Modal/AppointmentDetailsModal';
 import { STATUS_CONFIG } from '../../../data/admin/appointment';
+import { adminUpdateAppointmentStatus } from '../../../services/appointments';
+import { useAuthStore } from '../../../store/authStore';
 import * as S from './Dashboard.styled';
 
 // ── Extend dayjs with relative time plugins ──────────────────
@@ -96,6 +99,7 @@ StatCard.displayName = 'StatCard';
 // ── Main Dashboard ────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
+  const profile = useAuthStore((s) => s.profile);
   const { greeting, formattedDate, dayName } = useDashboard('DOCTOR YENYEN');
 
   // ── Fetch real dashboard data ──────────────────────────
@@ -109,9 +113,15 @@ const Dashboard = () => {
   // ── Modal hook ──────────────────────────────────────────
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
+    openReschedule,
   } = useAppointmentModal({
     onAddSuccess: () => refetch(),
+    onRescheduleSuccess: () => refetch(),
   });
+
+  // ── Details Modal state ────────────────────────────────
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
   // ── Navigation helpers ──────────────────────────────────
   const goTo = useCallback((path) => navigate(path), [navigate]);
@@ -123,8 +133,7 @@ const Dashboard = () => {
     } else if (action.id === 'qa4') {
       goTo('/admin/appointments'); // Appointment List
     } else {
-      // Other actions are placeholders
-      goTo('/admin/dashboard');
+      goTo('/admin/dashboard'); // placeholder
     }
   }, [openAdd, goTo]);
 
@@ -171,6 +180,50 @@ const Dashboard = () => {
     [data]
   );
 
+  // ── Handlers for Details Modal ──────────────────────────
+  const handleViewAppointment = useCallback(() => {
+    const nextAppt = data?.nextAppointment;
+    if (nextAppt?.id) {
+      setSelectedAppointmentId(nextAppt.id);
+      setDetailsModalOpen(true);
+    }
+  }, [data?.nextAppointment]);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedAppointmentId(null);
+  }, []);
+
+  const handleSetStatusFromDetails = useCallback(
+    async (id, newStatus) => {
+      try {
+        await adminUpdateAppointmentStatus({
+          appointmentId: id,
+          status: newStatus,
+          adminId: profile?.id,
+        });
+        message.success(`Status updated to ${newStatus}.`);
+        await refetch();
+        // Close details modal after successful update
+        handleCloseDetails();
+      } catch (err) {
+        console.error(err);
+        message.error('Failed to update status. Please try again.');
+      }
+    },
+    [profile, refetch, handleCloseDetails]
+  );
+
+  const handleRescheduleFromDetails = useCallback(
+    (appointment) => {
+      // Close details modal
+      handleCloseDetails();
+      // Open reschedule modal with the appointment object
+      openReschedule(appointment);
+    },
+    [handleCloseDetails, openReschedule]
+  );
+
   // ── Loading / Error states ─────────────────────────────
   if (loading) {
     return (
@@ -209,6 +262,7 @@ const Dashboard = () => {
     date: '-',
     service: '-',
     avatarColor: '#888888',
+    id: null,
   };
 
   // ── Render ──────────────────────────────────────────────
@@ -265,7 +319,10 @@ const Dashboard = () => {
 
             <div>
               <S.Divider />
-              <S.ViewApptBtn onClick={() => goTo('/admin/appointments')}>
+              <S.ViewApptBtn
+                onClick={handleViewAppointment}
+                disabled={!nextAppointment.id}
+              >
                 View Appointment
               </S.ViewApptBtn>
             </div>
@@ -459,6 +516,15 @@ const Dashboard = () => {
         loading={addLoading}
         onClose={closeAdd}
         onSubmit={handleAdd}
+      />
+
+      {/* ── Appointment Details Modal ───────────────────────── */}
+      <AppointmentDetailsModal
+        open={detailsModalOpen}
+        appointmentId={selectedAppointmentId}
+        onClose={handleCloseDetails}
+        onSetStatus={handleSetStatusFromDetails}
+        onReschedule={handleRescheduleFromDetails}
       />
     </AdminLayout>
   );
