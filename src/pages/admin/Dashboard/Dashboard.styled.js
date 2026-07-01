@@ -16,6 +16,11 @@ export const Page = styled.div`
     padding: 16px;
     gap: 16px;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    gap: 12px;
+  }
 `;
 
 // ── Welcome bar ───────────────────────────────────────────────────────────────
@@ -63,6 +68,14 @@ export const DateBadge = styled.div`
     font-size: 28px;
     color: ${adminTheme.colors.black};
   }
+
+  @media (max-width: 480px) {
+    padding: 8px 14px;
+    gap: 6px;
+    svg {
+      font-size: 20px;
+    }
+  }
 `;
 
 export const DateInfo = styled.div`
@@ -75,6 +88,10 @@ export const DateText = styled.span`
   font-weight: 500;
   color: ${adminTheme.colors.black};
   line-height: 1.5;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
 `;
 
 export const DayText = styled.span`
@@ -82,21 +99,25 @@ export const DayText = styled.span`
   color: ${adminTheme.colors.black};
   opacity: 0.6;
   line-height: 1.5;
+
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
-// ── Stats grid: 4 cols desktop → 2 cols tablet/mobile ────────────────────────
+// ── Stats grid ─────────────────────────────────────────────────────────────────
 export const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 
-  @media (max-width: 1200px) {
+  @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
   }
 
   @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 `;
 
@@ -109,6 +130,14 @@ export const StatCard = styled.div`
   border: 1px solid ${champagne};
   border-radius: 16px;
   box-shadow: 1px 1px 4px ${champagne};
+  min-width: 0; /* prevent overflow */
+  overflow: hidden;
+
+  @media (max-width: 480px) {
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 12px;
+  }
 `;
 
 export const StatIconWrap = styled.div`
@@ -125,6 +154,14 @@ export const StatIconWrap = styled.div`
     font-size: 24px;
     color: ${({ $color }) => $color};
   }
+
+  @media (max-width: 480px) {
+    width: 44px;
+    height: 44px;
+    svg {
+      font-size: 20px;
+    }
+  }
 `;
 
 export const StatBody = styled.div`
@@ -132,6 +169,7 @@ export const StatBody = styled.div`
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex: 1;
 `;
 
 export const StatLabel = styled.span`
@@ -141,6 +179,10 @@ export const StatLabel = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 export const StatValue = styled.span`
@@ -148,12 +190,23 @@ export const StatValue = styled.span`
   font-weight: 500;
   color: ${adminTheme.colors.black};
   line-height: 1.4;
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
 `;
 
 export const StatNote = styled.span`
   font-size: 11px;
   color: ${({ $color }) => $color};
   line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
 // ── Two-column grid: Next Appt + Schedule ────────────────────────────────────
@@ -207,6 +260,12 @@ export const AvatarCircle = styled.div`
   font-size: 26px;
   color: ${adminTheme.colors.white};
   flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
 `;
 
 export const NextApptInfo = styled.div`
@@ -221,6 +280,13 @@ export const NextApptName = styled.span`
   font-size: 15px;
   font-weight: 500;
   color: ${adminTheme.colors.white};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 export const NextApptMeta = styled.div`
@@ -246,6 +312,9 @@ export const NextApptDate = styled.span`
 export const NextApptService = styled.span`
   font-size: 12px;
   color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const Divider = styled.hr`
@@ -354,6 +423,10 @@ export const ScheduleTd = styled.td`
         : adminTheme.colors.black};
   font-weight: ${({ $status }) => ($status ? 600 : 400)};
   border-bottom: 1px solid ${champagne};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 
   tr:last-child & {
     border-bottom: none;
@@ -362,6 +435,11 @@ export const ScheduleTd = styled.td`
   @media (max-width: 600px) {
     padding: 8px 10px;
     font-size: 12px;
+    max-width: 100px;
+  }
+
+  @media (max-width: 480px) {
+    max-width: 70px;
   }
 `;
 
@@ -386,6 +464,7 @@ export const Panel = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow: hidden;
 `;
 
 export const PanelHeader = styled.div`
@@ -427,6 +506,7 @@ export const ApptRow = styled.div`
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid #f4f0eb;
+  gap: 8px;
 
   &:last-child {
     border-bottom: none;
@@ -451,6 +531,12 @@ export const ApptAvatar = styled.div`
   font-size: 18px;
   color: ${adminTheme.colors.white};
   flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
 `;
 
 export const ApptDetails = styled.div`
@@ -467,6 +553,11 @@ export const ApptName = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 130px;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    max-width: 100px;
+  }
 `;
 
 export const ApptService = styled.span`
@@ -546,6 +637,7 @@ export const ActivityDetail = styled.span`
   font-size: 10px;
   color: ${adminTheme.colors.grayLight};
   line-height: 1.5;
+  word-break: break-word;
 `;
 
 export const ActivityTime = styled.span`
@@ -577,6 +669,7 @@ export const QuickBtn = styled.button`
     opacity 0.2s,
     transform 0.15s;
   font-family: inherit;
+  min-width: 0;
 
   svg {
     font-size: 20px;
@@ -589,6 +682,7 @@ export const QuickBtn = styled.button`
     color: ${({ $color }) => $color};
     text-align: center;
     line-height: 1.3;
+    word-break: break-word;
   }
 
   &:hover {
