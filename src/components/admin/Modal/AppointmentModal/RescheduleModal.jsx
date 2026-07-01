@@ -13,8 +13,8 @@ const RescheduleModal = memo(({ open, loading, appointment, onClose, onSubmit })
       form.setFieldsValue({
         patientName: appointment.patientName,
         contactNumber: appointment.contactNumber,
-        branch: appointment.branch,           // UUID — matches Branch dropdown
-        reason: appointment.serviceBranchId,  // UUID — matches Reason dropdown
+        branch: appointment.branch,
+        reason: appointment.serviceBranchId,
         status: appointment.status,
         date: appointment.date ? dayjs(appointment.date, "MMM D, YYYY") : null,
         time: appointment.time ? dayjs(appointment.time, "h:mm A") : null,
@@ -48,7 +48,7 @@ const RescheduleModal = memo(({ open, loading, appointment, onClose, onSubmit })
       }
       width={680}
       centered
-      destroyOnHidden
+      destroyOnHidden   // already using the correct prop
       aria-label="Reschedule appointment"
     >
       <AppointmentForm form={form} showStatus={true} />

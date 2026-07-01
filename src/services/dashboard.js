@@ -1,5 +1,6 @@
 // src/services/dashboard.js
 import { supabase } from "./supabase/supabase";
+import dayjs from "dayjs";
 
 /**
  * Fetch all dashboard data in a single API call
@@ -8,9 +9,14 @@ import { supabase } from "./supabase/supabase";
  * @returns {Promise<Object>} Dashboard data
  */
 export async function getDashboardData(adminId = null, branchId = null) {
+  const today = dayjs().format("YYYY-MM-DD");
+  const now = dayjs().toISOString(); // ISO 8601 with timezone
+
   const { data, error } = await supabase.rpc("get_dashboard_all_data", {
     p_admin_id: adminId,
     p_branch_id: branchId || null,
+    p_today_date: today,
+    p_now: now,
   });
 
   if (error) throw error;

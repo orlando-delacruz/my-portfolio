@@ -1,0 +1,110 @@
+// src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.styled.js
+import styled from "styled-components";
+import adminTheme from "../../../../styles/adminTheme";
+
+export const ModalTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  margin: 0;
+`;
+
+export const Content = styled.div`
+  padding: 8px 0;
+`;
+
+export const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const InfoItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+export const InfoLabel = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${adminTheme.colors.gray};
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+`;
+
+export const InfoValue = styled.span`
+  font-size: 14px;
+  font-weight: 400;
+  color: ${adminTheme.colors.black};
+  word-break: break-word;
+`;
+
+export const StatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $color }) => $color};
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  width: fit-content;
+`;
+
+export const StatusDot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  flex-shrink: 0;
+`;
+
+export const Footer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+`;
+
+export const ActionBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+
+  ${({ $variant }) =>
+    $variant === "primary"
+      ? `
+        background: ${adminTheme.colors.primary};
+        color: #fff;
+        &:hover { background: ${adminTheme.colors.primaryDark}; }
+      `
+      : `
+        background: transparent;
+        color: ${adminTheme.colors.black};
+        border: 1px solid ${adminTheme.colors.champagne};
+        &:hover { background: ${adminTheme.colors.ivory}; }
+      `}
+
+  &:focus-visible {
+    outline: 2px solid ${adminTheme.colors.primary};
+    outline-offset: 2px;
+  }
+`;

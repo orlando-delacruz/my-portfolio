@@ -111,10 +111,30 @@ const AppointmentTable = ({
   onPageChange,
   onSizeChange,
   loading,
+  onRowClick, // new prop
 }) => {
   const handleSelectAll = useCallback(
     (e) => onSelectAll(e.target.checked),
     [onSelectAll]
+  );
+
+  // ── Row click handler ──
+  const handleRowClick = useCallback(
+    (e, appointment) => {
+      const target = e.target;
+      // Ignore clicks on interactive elements inside the row
+      if (
+        target.closest('input[type="checkbox"]') ||
+        target.closest('button') ||
+        target.closest('.ant-dropdown-trigger') ||
+        target.closest('.ant-checkbox') ||
+        target.closest('[role="button"]')
+      ) {
+        return;
+      }
+      onRowClick?.(appointment);
+    },
+    [onRowClick]
   );
 
   return (
@@ -156,7 +176,12 @@ const AppointmentTable = ({
               </S.TR>
             ) : (
               appointments.map((apt) => (
-                <S.TR key={apt.id} $selected={selected.has(apt.id)}>
+                <S.TR
+                  key={apt.id}
+                  $selected={selected.has(apt.id)}
+                  onClick={(e) => handleRowClick(e, apt)}
+                  style={{ cursor: onRowClick ? "pointer" : "default" }}
+                >
                   <S.TD $checkbox>
                     <Checkbox
                       checked={selected.has(apt.id)}

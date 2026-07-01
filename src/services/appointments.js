@@ -1,7 +1,6 @@
 // src/services/appointments.js
 import { supabase } from "./supabase/supabase";
 
-// Maps the simplified form status to the schema's split status columns
 export const STATUS_TO_DB = {
   pending: { approval_status: "waiting", appointment_status: "scheduled" },
   confirmed: { approval_status: "approved", appointment_status: "scheduled" },
@@ -19,21 +18,10 @@ export function dbStatusToForm(approval_status, appointment_status) {
 const MIN_INTERVAL_MINUTES = 60;
 
 function timeToMinutes(timeStr) {
-  // timeStr like "14:30:00" or "14:30"
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 }
 
-/**
- * Checks whether a requested date/time at a branch conflicts with an
- * existing (non-cancelled) appointment within MIN_INTERVAL_MINUTES.
- *
- * @param {string} branchId
- * @param {dayjs.Dayjs} date
- * @param {dayjs.Dayjs} time
- * @param {string} [excludeAppointmentId] - skip this appointment (for reschedule)
- * @returns {Promise<boolean>} true if there IS a conflict
- */
 export async function hasBookingConflict({
   branchId,
   date,
@@ -130,12 +118,15 @@ export async function adminCreateAppointment({
 
   if (error) throw error;
 
+  const logStatus = dbStatusToForm(approval_status, appointment_status);
+
   await supabase.from("appointment_logs").insert({
     appointment_id: data.id,
     action: "created",
     description: "Appointment created by admin",
     performed_by: "admin",
     admin_id: adminId ?? null,
+    status: logStatus, // ✅ stored
   });
 
   return data;
@@ -179,12 +170,15 @@ export async function adminRescheduleAppointment({
 
   if (error) throw error;
 
+  const logStatus = dbStatusToForm(approval_status, appointment_status);
+
   await supabase.from("appointment_logs").insert({
     appointment_id: appointmentId,
     action: "rescheduled",
     description: "Appointment rescheduled by admin",
     performed_by: "admin",
     admin_id: adminId ?? null,
+    status: logStatus, // ✅ stored
   });
 
   return data;
@@ -213,31 +207,24 @@ export async function adminUpdateAppointmentStatus({
 
   if (error) throw error;
 
+  // status parameter is already the form status (e.g., 'pending', 'confirmed', etc.)
   await supabase.from("appointment_logs").insert({
     appointment_id: appointmentId,
     action: "status_changed",
     description: `Status set to ${status}`,
     performed_by: "admin",
     admin_id: adminId ?? null,
+    status, // ✅ stored (already correct)
   });
 
   return data;
 }
 
-/**
- * Bulk delete multiple appointments by their IDs.
- * Logs a single audit entry for the entire batch.
- *
- * @param {string[]} appointmentIds - Array of appointment UUIDs
- * @param {string} adminId - ID of the admin performing the deletion
- * @returns {Promise<void>}
- */
 export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
   if (!appointmentIds || appointmentIds.length === 0) {
     return;
   }
 
-  // 1. Delete all appointments
   const { error: deleteError } = await supabase
     .from("appointments")
     .delete()
@@ -245,19 +232,14 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
 
   if (deleteError) throw deleteError;
 
-  // 2. Log the bulk action (single log entry)
   if (adminId) {
-    const { error: logError } = await supabase.from("appointment_logs").insert({
-      appointment_id: null, // not linked to a single appointment
+    await supabase.from("appointment_logs").insert({
+      appointment_id: null,
       action: "bulk_deleted",
       description: `Bulk deleted ${appointmentIds.length} appointment(s)`,
       performed_by: "admin",
       admin_id: adminId,
+      status: null, // not a status change
     });
-
-    if (logError) {
-      console.error("Failed to log bulk deletion:", logError);
-      // Do not throw; the deletion succeeded, logging failure shouldn't break the flow
-    }
   }
 }

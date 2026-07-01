@@ -4,14 +4,6 @@ import { Modal, Form } from "antd";
 import AppointmentForm from "./AppointmentForm";
 import * as S from "./AppointmentModal.styled";
 
-/**
- * AddAppointmentModal
- *
- * @param {boolean}  open      - Controls visibility
- * @param {boolean}  loading   - Submit in progress
- * @param {function} onClose   - Close handler
- * @param {function} onSubmit  - (values, form) => void
- */
 const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const [form] = Form.useForm();
 
@@ -37,7 +29,7 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
       title={<S.ModalTitle>Add Appointment</S.ModalTitle>}
       width={680}
       centered
-      destroyOnClose
+      destroyOnHidden   // changed from destroyOnClose
       aria-label="Add new appointment"
     >
       <AppointmentForm form={form} showStatus={false} />

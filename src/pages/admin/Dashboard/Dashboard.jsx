@@ -1,7 +1,10 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spin, Alert, Tooltip } from 'antd';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import updateLocale from 'dayjs/plugin/updateLocale';
 import {
   MdCalendarToday,
   MdUpcoming,
@@ -9,8 +12,9 @@ import {
   MdPendingActions,
   MdBookOnline,
   MdAssessment,
+  MdSchedule,
 } from 'react-icons/md';
-import { BsCalendar2Check, BsClipboardCheck } from 'react-icons/bs';
+import { BsCalendar2Check } from 'react-icons/bs';
 import { FiXCircle } from 'react-icons/fi';
 
 import AdminLayout from '../../../components/admin/AdminLayout';
@@ -18,24 +22,58 @@ import useDashboard from './useDashboard';
 import { useDashboardData } from '../../../hooks/useDashboardData';
 import { useRealtimeAppointments } from '../../../hooks/useRealtimeAppointments';
 import { quickActions } from '../../../data/admin/dashboard';
+import {
+  AddAppointmentModal,
+  useAppointmentModal,
+} from '../../../components/admin/Modal/AppointmentModal';
+import { STATUS_CONFIG } from '../../../data/admin/appointment';
 import * as S from './Dashboard.styled';
+
+// ── Extend dayjs with relative time plugins ──────────────────
+dayjs.extend(relativeTime);
+dayjs.extend(updateLocale);
+dayjs.updateLocale('en', {
+  relativeTime: {
+    future: 'in %s',
+    past: '%s ago',
+    s: 'Just now',
+    m: '1 minute',
+    mm: '%d minutes',
+    h: '1 hour',
+    hh: '%d hours',
+    d: '1 day',
+    dd: '%d days',
+    M: '1 month',
+    MM: '%d months',
+    y: '1 year',
+    yy: '%d years',
+  },
+});
 
 // ── Constants ────────────────────────────────────────────
 const ACTIVITY_ICONS = {
   created: BsCalendar2Check,
-  status_changed: BsClipboardCheck,
+  status_changed: MdCheckCircle,
   cancelled: FiXCircle,
-  rescheduled: MdCalendarToday,
+  rescheduled: MdSchedule,
+  default: BsCalendar2Check,
 };
 
-const STATUS_LABEL = {
-  completed: 'Completed',
-  upcoming: 'Upcoming',
-  cancelled: 'Cancelled',
-  pending: 'Pending',
-};
-
-
+// ── Status Badge Component ──────────────────────────────
+const StatusBadge = memo(({ status }) => {
+  const cfg = STATUS_CONFIG[status] ?? {
+    label: status,
+    color: '#686868',
+    bg: 'rgba(104,104,104,0.2)',
+  };
+  return (
+    <S.StatusBadge $color={cfg.color} $bg={cfg.bg}>
+      <S.StatusDot $color={cfg.color} aria-hidden="true" />
+      <span>{cfg.label}</span>
+    </S.StatusBadge>
+  );
+});
+StatusBadge.displayName = 'StatusBadge';
 
 // ── Stats Card Component ─────────────────────────────────
 const StatCard = memo(({ stat, value }) => {
@@ -65,8 +103,30 @@ const Dashboard = () => {
 
   // ── Realtime updates ────────────────────────────────────
   useRealtimeAppointments(() => {
-    refetch(); // Refetch dashboard data when appointments change
+    refetch();
   });
+
+  // ── Modal hook ──────────────────────────────────────────
+  const {
+    addOpen, addLoading, openAdd, closeAdd, handleAdd,
+  } = useAppointmentModal({
+    onAddSuccess: () => refetch(),
+  });
+
+  // ── Navigation helpers ──────────────────────────────────
+  const goTo = useCallback((path) => navigate(path), [navigate]);
+
+  // ── Handle quick action clicks ──────────────────────────
+  const handleQuickAction = useCallback((action) => {
+    if (action.id === 'qa1') {
+      openAdd(); // Book Appointment
+    } else if (action.id === 'qa4') {
+      goTo('/admin/appointments'); // Appointment List
+    } else {
+      // Other actions are placeholders
+      goTo('/admin/dashboard');
+    }
+  }, [openAdd, goTo]);
 
   // ── Stats mapping ───────────────────────────────────────
   const statsConfig = useMemo(
@@ -111,16 +171,13 @@ const Dashboard = () => {
     [data]
   );
 
-  // ── Navigation helpers ──────────────────────────────────
-  const goTo = useCallback((path) => navigate(path), [navigate]);
-
   // ── Loading / Error states ─────────────────────────────
   if (loading) {
     return (
       <AdminLayout>
         <S.Page>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <Spin size="large" tip="Loading dashboard..." />
+            <Spin size="large" description="Loading dashboard..." />
           </div>
         </S.Page>
       </AdminLayout>
@@ -248,8 +305,8 @@ const Dashboard = () => {
                       <S.ScheduleTd>{row.time}</S.ScheduleTd>
                       <S.ScheduleTd>{row.patient}</S.ScheduleTd>
                       <S.ScheduleTd>{row.service}</S.ScheduleTd>
-                      <S.ScheduleTd $status={row.status}>
-                        {STATUS_LABEL[row.status] ?? row.status}
+                      <S.ScheduleTd>
+                        <StatusBadge status={row.status} />
                       </S.ScheduleTd>
                     </tr>
                   ))
@@ -272,30 +329,31 @@ const Dashboard = () => {
                 View All
               </S.ViewAllLink>
             </S.PanelHeader>
-
-            {upcoming.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
-                No upcoming appointments
-              </div>
-            ) : (
-              upcoming.map((appt) => (
-                <S.ApptRow key={appt.id} role="listitem">
-                  <S.ApptLeft>
-                    <S.ApptAvatar $color={appt.avatar_color} aria-hidden="true">
-                      {appt.patient_name?.[0] ?? '?'}
-                    </S.ApptAvatar>
-                    <S.ApptDetails>
-                      <S.ApptName>{appt.patient_name}</S.ApptName>
-                      <S.ApptService>{appt.service}</S.ApptService>
-                    </S.ApptDetails>
-                  </S.ApptLeft>
-                  <S.ApptRight>
-                    <S.ApptDate>{appt.appointment_date}</S.ApptDate>
-                    <S.ApptTime>{appt.appointment_time}</S.ApptTime>
-                  </S.ApptRight>
-                </S.ApptRow>
-              ))
-            )}
+            <S.PanelContent>
+              {upcoming.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                  No upcoming appointments
+                </div>
+              ) : (
+                upcoming.map((appt) => (
+                  <S.ApptRow key={appt.id} role="listitem">
+                    <S.ApptLeft>
+                      <S.ApptAvatar $color={appt.avatar_color} aria-hidden="true">
+                        {appt.patient_name?.[0] ?? '?'}
+                      </S.ApptAvatar>
+                      <S.ApptDetails>
+                        <S.ApptName>{appt.patient_name}</S.ApptName>
+                        <S.ApptService>{appt.service}</S.ApptService>
+                      </S.ApptDetails>
+                    </S.ApptLeft>
+                    <S.ApptRight>
+                      <S.ApptDate>{appt.appointment_date}</S.ApptDate>
+                      <S.ApptTime>{appt.appointment_time}</S.ApptTime>
+                    </S.ApptRight>
+                  </S.ApptRow>
+                ))
+              )}
+            </S.PanelContent>
           </S.Panel>
 
           {/* Recent activity */}
@@ -306,33 +364,43 @@ const Dashboard = () => {
                 Recent Activity
               </S.PanelTitle>
             </S.PanelHeader>
+            <S.PanelContent>
+              {activity.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                  No recent activity
+                </div>
+              ) : (
+                activity.map((item) => {
+                  const Icon = ACTIVITY_ICONS[item.type] ?? ACTIVITY_ICONS.default;
+                  const relativeTime = item.raw_timestamp
+                    ? dayjs(item.raw_timestamp).fromNow()
+                    : item.activity_time;
+                  const exactTime = item.raw_timestamp
+                    ? dayjs(item.raw_timestamp).format('MMM D, YYYY h:mm A')
+                    : '';
 
-            {activity.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
-                No recent activity
-              </div>
-            ) : (
-              activity.map((item) => {
-                const Icon = ACTIVITY_ICONS[item.type] ?? BsCalendar2Check;
-                return (
-                  <S.ActivityRow key={item.id} role="listitem">
-                    <S.ActivityLeft>
-                      <S.ActivityIconWrap $color={item.color} aria-hidden="true">
-                        <Icon />
-                      </S.ActivityIconWrap>
-                      <S.ActivityMeta>
-                        <S.ActivityTitle>{item.title}</S.ActivityTitle>
-                        <S.ActivityDetail>{item.detail}</S.ActivityDetail>
-                      </S.ActivityMeta>
-                    </S.ActivityLeft>
-                    <S.ActivityTime>{item.activity_time}</S.ActivityTime>
-                  </S.ActivityRow>
-                );
-              })
-            )}
+                  return (
+                    <S.ActivityRow key={item.id} role="listitem">
+                      <S.ActivityLeft>
+                        <S.ActivityIconWrap $color={item.color} aria-hidden="true">
+                          <Icon />
+                        </S.ActivityIconWrap>
+                        <S.ActivityMeta>
+                          <S.ActivityTitle>{item.title}</S.ActivityTitle>
+                          <S.ActivityDetail>{item.detail}</S.ActivityDetail>
+                        </S.ActivityMeta>
+                      </S.ActivityLeft>
+                      <Tooltip title={exactTime || item.activity_time} placement="top">
+                        <S.ActivityTime>{relativeTime}</S.ActivityTime>
+                      </Tooltip>
+                    </S.ActivityRow>
+                  );
+                })
+              )}
+            </S.PanelContent>
           </S.Panel>
 
-          {/* Quick actions — placeholder behavior with tooltips */}
+          {/* Quick actions */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -340,42 +408,58 @@ const Dashboard = () => {
                 Quick Actions
               </S.PanelTitle>
             </S.PanelHeader>
+            <S.PanelContent>
+              <S.QuickGrid role="list">
+                {quickActions.map((action) => {
+                  const ActionIcon = action.icon;
+                  const isBookAppointment = action.id === 'qa1';
+                  const isAppointmentList = action.id === 'qa4';
+                  const hasFunctionality = isBookAppointment || isAppointmentList;
+                  const handleClick = hasFunctionality
+                    ? () => handleQuickAction(action)
+                    : () => goTo('/admin/dashboard');
 
-            <S.QuickGrid role="list">
-              {quickActions.map((action) => {
-                const ActionIcon = action.icon;
-                // TODO: Replace placeholder behavior with actual navigation/functionality
-                // Currently, all actions redirect to Dashboard with a tooltip "This feature is coming soon."
-                const handlePlaceholderClick = () => goTo('/admin/dashboard');
-                return (
-                  <Tooltip
-                    key={action.id}
-                    title="This feature is coming soon."
-                    placement="top"
-                    color="#886217" // primary color to match theme
-                  >
+                  const showTooltip = !hasFunctionality;
+
+                  const button = (
                     <S.QuickBtn
                       $color={action.color}
                       $bg={action.bg}
-                      onClick={handlePlaceholderClick}
+                      onClick={handleClick}
                       aria-label={action.label}
                       role="listitem"
                     >
                       <ActionIcon aria-hidden="true" />
                       <span>{action.label}</span>
                     </S.QuickBtn>
-                  </Tooltip>
-                );
-              })}
-            </S.QuickGrid>
+                  );
 
-            <S.GenerateReportBtn aria-label="Generate reports">
-              <MdAssessment aria-hidden="true" />
-              Generate Reports
-            </S.GenerateReportBtn>
+                  return showTooltip ? (
+                    <Tooltip
+                      key={action.id}
+                      title="This feature is coming soon."
+                      placement="top"
+                      color="#886217"
+                    >
+                      {button}
+                    </Tooltip>
+                  ) : (
+                    <React.Fragment key={action.id}>{button}</React.Fragment>
+                  );
+                })}
+              </S.QuickGrid>
+            </S.PanelContent>
           </S.Panel>
         </S.ThreeColGrid>
       </S.Page>
+
+      {/* ── Add Appointment Modal ────────────────────────────── */}
+      <AddAppointmentModal
+        open={addOpen}
+        loading={addLoading}
+        onClose={closeAdd}
+        onSubmit={handleAdd}
+      />
     </AdminLayout>
   );
 };

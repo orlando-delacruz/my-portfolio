@@ -115,9 +115,9 @@ export const StatsGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 480px) {
+  /* Only stack to 1 column on very narrow screens */
+  @media (max-width: 400px) {
     grid-template-columns: 1fr;
-    gap: 10px;
   }
 `;
 
@@ -130,13 +130,15 @@ export const StatCard = styled.div`
   border: 1px solid ${champagne};
   border-radius: 16px;
   box-shadow: 1px 1px 4px ${champagne};
-  min-width: 0; /* prevent overflow */
+  min-width: 0;
   overflow: hidden;
+  height: 100px; /* Fixed height for equal card sizing */
 
   @media (max-width: 480px) {
     padding: 14px 12px;
     gap: 12px;
     border-radius: 12px;
+    height: 90px;
   }
 `;
 
@@ -415,18 +417,12 @@ export const ScheduleTh = styled.th`
 export const ScheduleTd = styled.td`
   padding: 10px 14px;
   font-size: 14px;
-  color: ${({ $status }) =>
-    $status === "completed"
-      ? "#11D896"
-      : $status === "upcoming"
-        ? "#1976D2"
-        : adminTheme.colors.black};
-  font-weight: ${({ $status }) => ($status ? 600 : 400)};
   border-bottom: 1px solid ${champagne};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+  color: ${adminTheme.colors.black};
 
   tr:last-child & {
     border-bottom: none;
@@ -443,7 +439,7 @@ export const ScheduleTd = styled.td`
   }
 `;
 
-// ── Three-column grid: Upcoming / Activity / Quick Actions ────────────────────
+// ── Three-column grid ─────────────────────────────────────────────────────────
 export const ThreeColGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -463,14 +459,16 @@ export const Panel = styled.div`
   box-shadow: 1px 1px 4px 1px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  height: 400px;
   overflow: hidden;
+  gap: 10px;
 `;
 
 export const PanelHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 `;
 
 export const PanelTitle = styled.div`
@@ -496,6 +494,22 @@ export const ViewAllLink = styled.button`
 
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+export const PanelContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 4px 6px;
+
+  scrollbar-width: thin;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${adminTheme.colors.champagne};
+    border-radius: 4px;
   }
 `;
 
@@ -646,6 +660,29 @@ export const ActivityTime = styled.span`
   flex-shrink: 0;
   padding-top: 2px;
   white-space: nowrap;
+  cursor: default;
+`;
+
+// ── Status Badge ──────────────────────────────────────────────────────────────
+export const StatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $color }) => $color};
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+`;
+
+export const StatusDot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  flex-shrink: 0;
 `;
 
 // ── Quick actions ─────────────────────────────────────────────────────────────
@@ -692,37 +729,6 @@ export const QuickBtn = styled.button`
 
   &:focus-visible {
     outline: 2px solid ${({ $color }) => $color};
-    outline-offset: 2px;
-  }
-`;
-
-export const GenerateReportBtn = styled.button`
-  width: 100%;
-  padding: 18px;
-  border: 1px solid ${adminTheme.colors.primary};
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: ${adminTheme.colors.primary};
-  font-family: inherit;
-  transition: background 0.2s;
-
-  svg {
-    font-size: 18px;
-  }
-
-  &:hover {
-    background: rgba(136, 98, 23, 0.06);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${adminTheme.colors.primary};
     outline-offset: 2px;
   }
 `;

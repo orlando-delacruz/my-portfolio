@@ -1,5 +1,5 @@
 // src/components/admin/Modal/AppointmentModal/AppointmentForm.jsx
-import { memo, useEffect, useCallback, useRef } from "react"; // ← added useRef
+import { memo, useEffect, useCallback, useRef } from "react";
 import { Form, Input, Select, DatePicker, TimePicker } from "antd";
 import dayjs from "dayjs";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
@@ -70,10 +70,8 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
   const selectedDate = Form.useWatch("date", form);
   const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
 
-  // Keep track of the previous branch to skip initial mount
   const prevBranchRef = useRef(selectedBranch);
 
-  // Clear reason only when the user manually changes the branch
   useEffect(() => {
     if (
       prevBranchRef.current !== undefined &&
@@ -176,7 +174,7 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           />
         </Form.Item>
 
-        {/* Preferred Time */}
+        {/* Preferred Time - NOW WITH ANY MINUTE AND NO SCROLLBAR */}
         <Form.Item
           name="time"
           label="Preferred Time"
@@ -192,9 +190,16 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
             format="h:mm A"
             use12Hours
             placeholder="Select time"
-            minuteStep={30}
+            // Removed minuteStep to allow any minute
             disabledTime={disabledTime}
             hideDisabledOptions
+            // Hide scrollbar via popupStyle
+            popupStyle={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+            // Also add a class for webkit
+            popupClassName="time-picker-no-scrollbar"
           />
         </Form.Item>
 

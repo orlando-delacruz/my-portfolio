@@ -13,6 +13,7 @@ import {
   RescheduleModal,
   useAppointmentModal,
 } from "../../../components/admin/Modal/AppointmentModal";
+import AppointmentDetailsModal from "../../../components/admin/Modal/AppointmentDetailsModal";
 
 import { useAppointments } from "../../../hooks/useAppointments";
 import { mapAppointmentRow } from "../../../utils/mapAppointmentRow";
@@ -25,14 +26,36 @@ import * as S from "./Appointment.styled";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+const STATUS_RANK = {
+  pending: 1,
+  confirmed: 2,
+  completed: 3,
+  cancelled: 4,
+};
+
+const getStatusRank = (status) => STATUS_RANK[status] ?? 99;
+
 const Appointment = () => {
   const { appointments: rawAppointments, loading, refetch } = useAppointments();
-  const appointments = useMemo(
+  const profile = useAuthStore((s) => s.profile);
+
+  const mappedAppointments = useMemo(
     () => rawAppointments.map(mapAppointmentRow),
     [rawAppointments]
   );
 
-  const profile = useAuthStore((s) => s.profile);
+  const sortedAppointments = useMemo(() => {
+    return [...mappedAppointments].sort((a, b) => {
+      const rankA = getStatusRank(a.status);
+      const rankB = getStatusRank(b.status);
+      if (rankA !== rankB) return rankA - rankB;
+      if (a.rawDate < b.rawDate) return -1;
+      if (a.rawDate > b.rawDate) return 1;
+      if (a.rawTime < b.rawTime) return -1;
+      if (a.rawTime > b.rawTime) return 1;
+      return (a.createdAt || '').localeCompare(b.createdAt || '');
+    });
+  }, [mappedAppointments]);
 
   const [filters, setFilters] = useState({
     dateRange: null,
@@ -46,17 +69,24 @@ const Appointment = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // ── Details Modal state ──
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
     rescheduleOpen, rescheduleLoading, rescheduleTarget,
     openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
     onAddSuccess: () => refetch(),
-    onRescheduleSuccess: () => refetch(),
+    onRescheduleSuccess: () => {
+      refetch();
+      // Close details modal if open (since we close it when reschedule opens)
+    },
   });
 
   const filtered = useMemo(() => {
-    let result = [...appointments];
+    let result = [...sortedAppointments];
 
     if (filters.branch !== "all") {
       result = result.filter((apt) => apt.branch === filters.branch);
@@ -90,7 +120,7 @@ const Appointment = () => {
     }
 
     return result;
-  }, [appointments, filters]);
+  }, [sortedAppointments, filters]);
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -120,6 +150,7 @@ const Appointment = () => {
     });
   }, []);
 
+  // ── Status update with optional details modal close ──
   const handleSetStatus = useCallback(
     async (id, newStatus) => {
       try {
@@ -129,21 +160,33 @@ const Appointment = () => {
           adminId: profile?.id,
         });
         message.success(`Status updated to ${newStatus}.`);
-        refetch();
+        await refetch();
+        // Close details modal if it's open and the updated appointment is the one being viewed
+        if (detailsModalOpen && selectedAppointment?.id === id) {
+          setDetailsModalOpen(false);
+          setSelectedAppointment(null);
+        }
       } catch (err) {
         console.error(err);
         message.error("Failed to update status. Please try again.");
       }
     },
-    [profile, refetch]
+    [profile, refetch, detailsModalOpen, selectedAppointment]
   );
 
   const handleRescheduleById = useCallback(
     (id) => {
-      const apt = appointments.find((a) => a.id === id);
-      if (apt) openReschedule(apt);
+      const apt = sortedAppointments.find((a) => a.id === id);
+      if (apt) {
+        // Close details modal if open
+        if (detailsModalOpen) {
+          setDetailsModalOpen(false);
+          setSelectedAppointment(null);
+        }
+        openReschedule(apt);
+      }
     },
-    [appointments, openReschedule]
+    [sortedAppointments, openReschedule, detailsModalOpen]
   );
 
   const handlePageSizeChange = useCallback((size) => {
@@ -151,7 +194,19 @@ const Appointment = () => {
     setCurrentPage(1);
   }, []);
 
-  // ── Bulk Delete ───────────────────────────────────────────────────────────
+  // ── Reset filters ──
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      dateRange: null,
+      branch: "all",
+      status: "all",
+      search: "",
+    });
+    setSelected(new Set());
+    setCurrentPage(1);
+  }, []);
+
+  // ── Bulk Delete ──
   const handleDeleteSelected = useCallback(() => {
     const count = selected.size;
     if (count === 0) return;
@@ -186,18 +241,26 @@ const Appointment = () => {
           message.error(
             err.message || "Failed to delete appointments. Please try again."
           );
-          // Keep selection on error
         } finally {
           setIsDeleting(false);
         }
       },
-      onCancel() {
-        // Just close modal, keep selection
-      },
+      onCancel() { },
     });
   }, [selected, profile, refetch]);
 
-  // ── Render selection toolbar ──────────────────────────────────────────────
+  // ── Row click handler ──
+  const handleRowClick = useCallback((appointment) => {
+    setSelectedAppointment(appointment);
+    setDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedAppointment(null);
+  }, []);
+
+  // ── Render selection toolbar ──
   const renderSelectionToolbar = () => {
     if (selected.size === 0) return null;
 
@@ -226,7 +289,11 @@ const Appointment = () => {
     <AdminLayout>
       <S.PageContainer>
         <PageTitle onAdd={openAdd} />
-        <Filter filters={filters} onChange={handleFilterChange} />
+        <Filter
+          filters={filters}
+          onChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
         {renderSelectionToolbar()}
         <AppointmentTable
           appointments={paginated}
@@ -242,6 +309,7 @@ const Appointment = () => {
           onPageChange={setCurrentPage}
           onSizeChange={handlePageSizeChange}
           loading={loading}
+          onRowClick={handleRowClick}
         />
       </S.PageContainer>
 
@@ -258,6 +326,14 @@ const Appointment = () => {
         appointment={rescheduleTarget}
         onClose={closeReschedule}
         onSubmit={handleReschedule}
+      />
+
+      <AppointmentDetailsModal
+        open={detailsModalOpen}
+        appointment={selectedAppointment}
+        onClose={handleCloseDetails}
+        onSetStatus={handleSetStatus}
+        onReschedule={handleRescheduleById}
       />
     </AdminLayout>
   );

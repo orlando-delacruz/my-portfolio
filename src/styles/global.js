@@ -67,5 +67,15 @@ const GlobalStyle = createGlobalStyle`
         font-size: ${theme.typography.size.lg};
     }
 
+    /* Hide scrollbar for time picker dropdown */
+.time-picker-no-scrollbar .ant-picker-time-panel-column {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.time-picker-no-scrollbar .ant-picker-time-panel-column::-webkit-scrollbar {
+  display: none;
+}
+
 `;
-export default GlobalStyle
+
+export default GlobalStyle;
