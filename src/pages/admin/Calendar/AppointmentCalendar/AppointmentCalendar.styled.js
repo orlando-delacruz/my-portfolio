@@ -12,6 +12,5 @@ export const CalendarArea = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 5px 24px;
   align-self: stretch;
 `;

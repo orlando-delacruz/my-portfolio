@@ -6,7 +6,6 @@ export const TitleBar = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 0 24px;
   gap: 16px;
   flex-wrap: wrap;
 `;

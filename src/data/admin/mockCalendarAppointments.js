@@ -10,7 +10,7 @@
 const mockCalendarAppointments = [
   {
     id: "1",
-    date: "2025-07-01",
+    date: "2026-07-01",
     time: "9:00 AM",
     patientName: "Mea France Lacdao",
     branchId: "sanjuan",
@@ -18,7 +18,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "2",
-    date: "2025-07-01",
+    date: "2026-07-01",
     time: "9:30 AM",
     patientName: "Rose Ann Lacdao",
     branchId: "sanjuan",
@@ -26,7 +26,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "3",
-    date: "2025-07-02",
+    date: "2026-07-02",
     time: "9:00 AM",
     patientName: "Darcy Tabafunda",
     branchId: "sanjuan",
@@ -34,7 +34,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "4",
-    date: "2025-07-03",
+    date: "2026-07-03",
     time: "2:20 PM",
     patientName: "Orlando Dela Cruz",
     branchId: "sanjuan",
@@ -42,7 +42,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "5",
-    date: "2025-07-05",
+    date: "2026-07-05",
     time: "10:00 AM",
     patientName: "John Smith",
     branchId: "rosario",
@@ -50,7 +50,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "6",
-    date: "2025-07-05",
+    date: "2026-07-05",
     time: "3:00 PM",
     patientName: "Sara Geronimo",
     branchId: "rosario",
@@ -58,7 +58,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "7",
-    date: "2025-07-06",
+    date: "2026-07-06",
     time: "10:30 AM",
     patientName: "Bailey Celine Sinuhin",
     branchId: "rosario",
@@ -66,7 +66,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "8",
-    date: "2025-07-06",
+    date: "2026-07-06",
     time: "11:30 AM",
     patientName: "Kwajalene Kent Sinuhin",
     branchId: "rosario",
@@ -74,7 +74,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "9",
-    date: "2025-07-08",
+    date: "2026-07-08",
     time: "2:00 PM",
     patientName: "Bea Alonzo",
     branchId: "rosario",
@@ -82,7 +82,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "10",
-    date: "2025-07-08",
+    date: "2026-07-08",
     time: "3:00 PM",
     patientName: "Anne Curtis",
     branchId: "rosario",
@@ -90,7 +90,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "11",
-    date: "2025-07-09",
+    date: "2026-07-09",
     time: "9:30 AM",
     patientName: "Liza Soberano",
     branchId: "rosario",
@@ -98,7 +98,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "12",
-    date: "2025-07-09",
+    date: "2026-07-09",
     time: "1:30 PM",
     patientName: "Kathryn Bernardo",
     branchId: "rosario",
@@ -106,7 +106,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "13",
-    date: "2025-07-10",
+    date: "2026-07-10",
     time: "11:00 AM",
     patientName: "Nica Galabit",
     branchId: "rosario",
@@ -114,7 +114,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "14",
-    date: "2025-07-10",
+    date: "2026-07-10",
     time: "2:00 AM",
     patientName: "Marian Rivera",
     branchId: "rosario",
@@ -122,7 +122,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "15",
-    date: "2025-07-12",
+    date: "2026-07-12",
     time: "2:30 PM",
     patientName: "Sofia Smith",
     branchId: "sanjuan",
@@ -130,7 +130,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "16",
-    date: "2025-07-12",
+    date: "2026-07-12",
     time: "3:00 PM",
     patientName: "Peter Pan",
     branchId: "sanjuan",
@@ -138,7 +138,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "17",
-    date: "2025-07-13",
+    date: "2026-07-13",
     time: "1:00 PM",
     patientName: "Jelly Bean",
     branchId: "sanjuan",
@@ -146,7 +146,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "18",
-    date: "2025-07-15",
+    date: "2026-07-15",
     time: "3:30 PM",
     patientName: "Caprice Cayetano",
     branchId: "sanjuan",
@@ -154,7 +154,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "19",
-    date: "2025-07-16",
+    date: "2026-07-16",
     time: "8:30 AM",
     patientName: "Jessie J",
     branchId: "sanjuan",
@@ -162,7 +162,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "20",
-    date: "2025-07-16",
+    date: "2026-07-16",
     time: "9:30 AM",
     patientName: "Ariana Grande",
     branchId: "sanjuan",
@@ -170,7 +170,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "21",
-    date: "2025-07-17",
+    date: "2026-07-17",
     time: "2:00 PM",
     patientName: "Taylor Swift",
     branchId: "sanjuan",
@@ -178,7 +178,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "22",
-    date: "2025-07-17",
+    date: "2026-07-17",
     time: "10:00 AM",
     patientName: "Ariane Conopio",
     branchId: "sanjuan",
@@ -186,7 +186,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "23",
-    date: "2025-07-19",
+    date: "2026-07-19",
     time: "9:30 AM",
     patientName: "Joehn Wilhelm Galabit",
     branchId: "rosario",
@@ -194,7 +194,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "24",
-    date: "2025-07-19",
+    date: "2026-07-19",
     time: "10:00 AM",
     patientName: "Nino Anonuevo",
     branchId: "rosario",
@@ -202,7 +202,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "25",
-    date: "2025-07-20",
+    date: "2026-07-20",
     time: "10:00 AM",
     patientName: "KZ Tandingan",
     branchId: "rosario",
@@ -210,7 +210,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "26",
-    date: "2025-07-20",
+    date: "2026-07-20",
     time: "11:30 AM",
     patientName: "TJ Monterde",
     branchId: "rosario",
@@ -218,7 +218,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "27",
-    date: "2025-07-22",
+    date: "2026-07-22",
     time: "11:00 AM",
     patientName: "Justin Bieber",
     branchId: "rosario",
@@ -226,7 +226,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "28",
-    date: "2025-07-22",
+    date: "2026-07-22",
     time: "1:00 PM",
     patientName: "Selena Gomez",
     branchId: "rosario",
@@ -234,7 +234,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "29",
-    date: "2025-07-23",
+    date: "2026-07-23",
     time: "10:30 AM",
     patientName: "Meghan Trainor",
     branchId: "rosario",
@@ -242,7 +242,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "30",
-    date: "2025-07-24",
+    date: "2026-07-24",
     time: "2:00 PM",
     patientName: "Harthlaine Ilustre",
     branchId: "rosario",
@@ -250,7 +250,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "31",
-    date: "2025-07-24",
+    date: "2026-07-24",
     time: "1:00 PM",
     patientName: "Lea Banog",
     branchId: "rosario",
@@ -258,7 +258,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "32",
-    date: "2025-07-26",
+    date: "2026-07-26",
     time: "3:00 PM",
     patientName: "Catriona Gray",
     branchId: "sanjuan",
@@ -266,7 +266,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "33",
-    date: "2025-07-26",
+    date: "2026-07-26",
     time: "9:00 AM",
     patientName: "Megan Young",
     branchId: "sanjuan",
@@ -274,7 +274,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "34",
-    date: "2025-07-27",
+    date: "2026-07-27",
     time: "2:00 PM",
     patientName: "Josh Cullen Santos",
     branchId: "sanjuan",
@@ -282,7 +282,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "35",
-    date: "2025-07-27",
+    date: "2026-07-27",
     time: "10:00 AM",
     patientName: "Athisa Manalo",
     branchId: "sanjuan",
@@ -290,7 +290,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "36",
-    date: "2025-07-29",
+    date: "2026-07-29",
     time: "10:00 AM",
     patientName: "Justin De Dios",
     branchId: "sanjuan",
@@ -298,7 +298,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "37",
-    date: "2025-07-29",
+    date: "2026-07-29",
     time: "9:00 AM",
     patientName: "John Paulo Bagnas",
     branchId: "sanjuan",
@@ -306,7 +306,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "38",
-    date: "2025-07-30",
+    date: "2026-07-30",
     time: "7:00 AM",
     patientName: "Felip Jhon Suson",
     branchId: "sanjuan",
@@ -314,7 +314,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "39",
-    date: "2025-07-30",
+    date: "2026-07-30",
     time: "1:00 PM",
     patientName: "Stellvester Ajero",
     branchId: "sanjuan",
@@ -322,7 +322,7 @@ const mockCalendarAppointments = [
   },
   {
     id: "40",
-    date: "2025-07-31",
+    date: "2026-07-31",
     time: "8:30 AM",
     patientName: "Rodrigo Duterte",
     branchId: "sanjuan",

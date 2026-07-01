@@ -11,8 +11,8 @@ export const GridWrapper = styled.div`
   overflow: hidden;
 
   @media (max-width: 900px) {
-    /* Fallback to plain block skeleton padding on very small screens */
     padding: 10px;
+    overflow-x: auto;
   }
 `;
 
