@@ -5,28 +5,17 @@ import dayjs from "dayjs";
 import AppointmentForm from "./AppointmentForm";
 import * as S from "./AppointmentModal.styled";
 
-/**
- * RescheduleModal
- *
- * @param {boolean}  open        - Controls visibility
- * @param {boolean}  loading     - Submit in progress
- * @param {object}   appointment - Appointment to edit (or null)
- * @param {function} onClose     - Close handler
- * @param {function} onSubmit    - (values, form) => void
- */
 const RescheduleModal = memo(({ open, loading, appointment, onClose, onSubmit }) => {
   const [form] = Form.useForm();
 
-  // Pre-fill form whenever the target appointment changes
   useEffect(() => {
     if (open && appointment) {
       form.setFieldsValue({
         patientName: appointment.patientName,
         contactNumber: appointment.contactNumber,
-        branch: appointment.branch,
-        reason: appointment.reason,
+        branch: appointment.branch,           // UUID — matches Branch dropdown
+        reason: appointment.serviceBranchId,  // UUID — matches Reason dropdown
         status: appointment.status,
-        // Parse stored string dates back to dayjs objects
         date: appointment.date ? dayjs(appointment.date, "MMM D, YYYY") : null,
         time: appointment.time ? dayjs(appointment.time, "h:mm A") : null,
       });
@@ -59,7 +48,7 @@ const RescheduleModal = memo(({ open, loading, appointment, onClose, onSubmit })
       }
       width={680}
       centered
-      destroyOnClose
+      destroyOnHidden
       aria-label="Reschedule appointment"
     >
       <AppointmentForm form={form} showStatus={true} />
