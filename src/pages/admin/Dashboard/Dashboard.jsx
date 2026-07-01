@@ -1,57 +1,164 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import { memo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { memo, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Spin, Alert, Tooltip } from 'antd';
 import {
   MdCalendarToday,
-  MdEventNote,
-  MdBookmarkAdd,
+  MdUpcoming,
+  MdCheckCircle,
+  MdPendingActions,
+  MdBookOnline,
   MdAssessment,
-} from "react-icons/md";
-import {
-  BsCalendar2Check,
-  BsClipboardCheck,
-  BsPersonPlus,
-} from "react-icons/bs";
-import { FiXCircle } from "react-icons/fi";
+} from 'react-icons/md';
+import { BsCalendar2Check, BsClipboardCheck } from 'react-icons/bs';
+import { FiXCircle } from 'react-icons/fi';
 
-import AdminLayout from "../../../components/admin/AdminLayout";
-import {
-  dashboardStats,
-  todaySchedule,
-  nextAppointment,
-  upcomingAppointments,
-  recentActivity,
-  quickActions,
-} from "../../../data/admin/dashboard";
-import useDashboard from "./useDashboard";
-import * as S from "./Dashboard.styled";
+import AdminLayout from '../../../components/admin/AdminLayout';
+import useDashboard from './useDashboard';
+import { useDashboardData } from '../../../hooks/useDashboardData';
+import { useRealtimeAppointments } from '../../../hooks/useRealtimeAppointments';
+import { quickActions } from '../../../data/admin/dashboard';
+import * as S from './Dashboard.styled';
 
-// Maps activity type → react-icon component
+// ── Constants ────────────────────────────────────────────
 const ACTIVITY_ICONS = {
-  booked: BsCalendar2Check,
-  completed: BsClipboardCheck,
+  created: BsCalendar2Check,
+  status_changed: BsClipboardCheck,
   cancelled: FiXCircle,
-  closure: MdEventNote,
-  user: BsPersonPlus,
+  rescheduled: MdCalendarToday,
 };
 
 const STATUS_LABEL = {
-  completed: "Completed",
-  upcoming: "Upcoming",
-  cancelled: "Cancelled",
+  completed: 'Completed',
+  upcoming: 'Upcoming',
+  cancelled: 'Cancelled',
+  pending: 'Pending',
 };
 
-const Dashboard = () => {
-  const { greeting, formattedDate, dayName } = useDashboard("DOCTOR YENYEN");
-  const navigate = useNavigate();
 
+
+// ── Stats Card Component ─────────────────────────────────
+const StatCard = memo(({ stat, value }) => {
+  const Icon = stat.icon;
+  return (
+    <S.StatCard role="listitem">
+      <S.StatIconWrap $color={stat.iconColor} aria-hidden="true">
+        <Icon />
+      </S.StatIconWrap>
+      <S.StatBody>
+        <S.StatLabel>{stat.label}</S.StatLabel>
+        <S.StatValue>{value ?? 0}</S.StatValue>
+        <S.StatNote $color={stat.noteColor}>{stat.note}</S.StatNote>
+      </S.StatBody>
+    </S.StatCard>
+  );
+});
+StatCard.displayName = 'StatCard';
+
+// ── Main Dashboard ────────────────────────────────────────
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const { greeting, formattedDate, dayName } = useDashboard('DOCTOR YENYEN');
+
+  // ── Fetch real dashboard data ──────────────────────────
+  const { data, loading, error, refetch } = useDashboardData();
+
+  // ── Realtime updates ────────────────────────────────────
+  useRealtimeAppointments(() => {
+    refetch(); // Refetch dashboard data when appointments change
+  });
+
+  // ── Stats mapping ───────────────────────────────────────
+  const statsConfig = useMemo(
+    () => [
+      {
+        id: 'today',
+        label: "Today's Appointment",
+        icon: MdCalendarToday,
+        iconColor: '#E963C8',
+        note: 'Today',
+        noteColor: '#E963C8',
+        value: data?.stats?.today ?? 0,
+      },
+      {
+        id: 'upcoming',
+        label: 'Upcoming',
+        icon: MdUpcoming,
+        iconColor: '#1976D2',
+        note: 'next 7 days',
+        noteColor: '#1976D2',
+        value: data?.stats?.upcoming ?? 0,
+      },
+      {
+        id: 'completed',
+        label: 'Completed',
+        icon: MdCheckCircle,
+        iconColor: '#11D896',
+        note: 'today',
+        noteColor: '#11D896',
+        value: data?.stats?.completed ?? 0,
+      },
+      {
+        id: 'pending',
+        label: 'Pending',
+        icon: MdPendingActions,
+        iconColor: '#FFA000',
+        note: 'today',
+        noteColor: '#FFA000',
+        value: data?.stats?.pending ?? 0,
+      },
+    ],
+    [data]
+  );
+
+  // ── Navigation helpers ──────────────────────────────────
   const goTo = useCallback((path) => navigate(path), [navigate]);
 
+  // ── Loading / Error states ─────────────────────────────
+  if (loading) {
+    return (
+      <AdminLayout>
+        <S.Page>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" tip="Loading dashboard..." />
+          </div>
+        </S.Page>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <S.Page>
+          <Alert
+            type="error"
+            message="Failed to load dashboard"
+            description={error}
+            showIcon
+          />
+        </S.Page>
+      </AdminLayout>
+    );
+  }
+
+  // ── Extract data with fallbacks ────────────────────────
+  const schedule = data?.schedule ?? [];
+  const upcoming = data?.upcoming ?? [];
+  const activity = data?.activity ?? [];
+  const nextAppointment = data?.nextAppointment ?? {
+    patient: 'No upcoming appointments',
+    time: '-',
+    date: '-',
+    service: '-',
+    avatarColor: '#888888',
+  };
+
+  // ── Render ──────────────────────────────────────────────
   return (
     <AdminLayout>
       <S.Page>
-
-        {/* ── Welcome bar ─────────────────────────────────────────── */}
+        {/* ── Welcome bar ─────────────────────────────────── */}
         <S.WelcomeBar>
           <S.WelcomeText>
             <S.WelcomeHeading>{greeting}</S.WelcomeHeading>
@@ -69,26 +176,14 @@ const Dashboard = () => {
           </S.DateBadge>
         </S.WelcomeBar>
 
-        {/* ── Stat cards — now shows Pending instead of Cancelled ──── */}
+        {/* ── Stat cards ───────────────────────────────────── */}
         <S.StatsGrid role="list" aria-label="Clinic statistics">
-          {dashboardStats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <S.StatCard key={stat.id} role="listitem">
-                <S.StatIconWrap $color={stat.iconColor} aria-hidden="true">
-                  <Icon />
-                </S.StatIconWrap>
-                <S.StatBody>
-                  <S.StatLabel>{stat.label}</S.StatLabel>
-                  <S.StatValue>{stat.value}</S.StatValue>
-                  <S.StatNote $color={stat.noteColor}>{stat.note}</S.StatNote>
-                </S.StatBody>
-              </S.StatCard>
-            );
-          })}
+          {statsConfig.map((stat) => (
+            <StatCard key={stat.id} stat={stat} value={stat.value} />
+          ))}
         </S.StatsGrid>
 
-        {/* ── Next Appt + Schedule — 2 cols desktop / 1 col mobile ── */}
+        {/* ── Next Appt + Schedule ────────────────────────── */}
         <S.TwoColGrid>
           {/* Next appointment */}
           <S.NextApptCard aria-label="Next appointment details">
@@ -99,7 +194,7 @@ const Dashboard = () => {
 
             <S.NextApptBody>
               <S.AvatarCircle $color={nextAppointment.avatarColor} aria-hidden="true">
-                {nextAppointment.patient[0]}
+                {nextAppointment.patient?.[0] ?? '?'}
               </S.AvatarCircle>
               <S.NextApptInfo>
                 <S.NextApptName>{nextAppointment.patient}</S.NextApptName>
@@ -113,7 +208,7 @@ const Dashboard = () => {
 
             <div>
               <S.Divider />
-              <S.ViewApptBtn onClick={() => goTo("/admin/appointments")}>
+              <S.ViewApptBtn onClick={() => goTo('/admin/appointments')}>
                 View Appointment
               </S.ViewApptBtn>
             </div>
@@ -126,7 +221,7 @@ const Dashboard = () => {
                 <MdCalendarToday aria-hidden="true" />
                 Today's Schedule
               </S.ScheduleTitle>
-              <S.ViewCalendarLink onClick={() => goTo("/admin/calendar")}>
+              <S.ViewCalendarLink onClick={() => goTo('/admin/calendar')}>
                 View Calendar
               </S.ViewCalendarLink>
             </S.ScheduleHeader>
@@ -141,24 +236,31 @@ const Dashboard = () => {
                 </tr>
               </S.ScheduleThead>
               <tbody>
-                {todaySchedule.map((row) => (
-                  <tr key={row.id}>
-                    <S.ScheduleTd>{row.time}</S.ScheduleTd>
-                    <S.ScheduleTd>{row.patient}</S.ScheduleTd>
-                    <S.ScheduleTd>{row.service}</S.ScheduleTd>
-                    <S.ScheduleTd $status={row.status}>
-                      {STATUS_LABEL[row.status]}
-                    </S.ScheduleTd>
+                {schedule.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
+                      No appointments scheduled for today
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  schedule.map((row) => (
+                    <tr key={row.id}>
+                      <S.ScheduleTd>{row.time}</S.ScheduleTd>
+                      <S.ScheduleTd>{row.patient}</S.ScheduleTd>
+                      <S.ScheduleTd>{row.service}</S.ScheduleTd>
+                      <S.ScheduleTd $status={row.status}>
+                        {STATUS_LABEL[row.status] ?? row.status}
+                      </S.ScheduleTd>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </S.ScheduleTable>
           </S.ScheduleCard>
         </S.TwoColGrid>
 
-        {/* ── 3-col grid: Upcoming / Activity / Quick Actions ─────── */}
+        {/* ── 3-col grid ────────────────────────────────────── */}
         <S.ThreeColGrid>
-
           {/* Upcoming appointments */}
           <S.Panel>
             <S.PanelHeader>
@@ -166,30 +268,34 @@ const Dashboard = () => {
                 <BsCalendar2Check aria-hidden="true" />
                 Upcoming Appointment
               </S.PanelTitle>
-              <S.ViewAllLink onClick={() => goTo("/admin/appointments")}>
+              <S.ViewAllLink onClick={() => goTo('/admin/appointments')}>
                 View All
               </S.ViewAllLink>
             </S.PanelHeader>
 
-            <div role="list" aria-label="Upcoming appointments">
-              {upcomingAppointments.map((appt) => (
+            {upcoming.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                No upcoming appointments
+              </div>
+            ) : (
+              upcoming.map((appt) => (
                 <S.ApptRow key={appt.id} role="listitem">
                   <S.ApptLeft>
-                    <S.ApptAvatar $color={appt.avatarColor} aria-hidden="true">
-                      {appt.name[0]}
+                    <S.ApptAvatar $color={appt.avatar_color} aria-hidden="true">
+                      {appt.patient_name?.[0] ?? '?'}
                     </S.ApptAvatar>
                     <S.ApptDetails>
-                      <S.ApptName>{appt.name}</S.ApptName>
+                      <S.ApptName>{appt.patient_name}</S.ApptName>
                       <S.ApptService>{appt.service}</S.ApptService>
                     </S.ApptDetails>
                   </S.ApptLeft>
                   <S.ApptRight>
-                    <S.ApptDate>{appt.date}</S.ApptDate>
-                    <S.ApptTime>{appt.time}</S.ApptTime>
+                    <S.ApptDate>{appt.appointment_date}</S.ApptDate>
+                    <S.ApptTime>{appt.appointment_time}</S.ApptTime>
                   </S.ApptRight>
                 </S.ApptRow>
-              ))}
-            </div>
+              ))
+            )}
           </S.Panel>
 
           {/* Recent activity */}
@@ -199,11 +305,14 @@ const Dashboard = () => {
                 <MdAssessment aria-hidden="true" />
                 Recent Activity
               </S.PanelTitle>
-              <S.ViewAllLink>View All</S.ViewAllLink>
             </S.PanelHeader>
 
-            <div role="list" aria-label="Recent activity">
-              {recentActivity.map((item) => {
+            {activity.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                No recent activity
+              </div>
+            ) : (
+              activity.map((item) => {
                 const Icon = ACTIVITY_ICONS[item.type] ?? BsCalendar2Check;
                 return (
                   <S.ActivityRow key={item.id} role="listitem">
@@ -216,38 +325,46 @@ const Dashboard = () => {
                         <S.ActivityDetail>{item.detail}</S.ActivityDetail>
                       </S.ActivityMeta>
                     </S.ActivityLeft>
-                    <S.ActivityTime>{item.time}</S.ActivityTime>
+                    <S.ActivityTime>{item.activity_time}</S.ActivityTime>
                   </S.ActivityRow>
                 );
-              })}
-            </div>
+              })
+            )}
           </S.Panel>
 
-          {/* Quick actions — now with icons */}
+          {/* Quick actions — placeholder behavior with tooltips */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
-                <MdBookmarkAdd aria-hidden="true" />
+                <MdBookOnline aria-hidden="true" />
                 Quick Actions
               </S.PanelTitle>
-              <S.ViewAllLink>View All</S.ViewAllLink>
             </S.PanelHeader>
 
             <S.QuickGrid role="list">
               {quickActions.map((action) => {
                 const ActionIcon = action.icon;
+                // TODO: Replace placeholder behavior with actual navigation/functionality
+                // Currently, all actions redirect to Dashboard with a tooltip "This feature is coming soon."
+                const handlePlaceholderClick = () => goTo('/admin/dashboard');
                 return (
-                  <S.QuickBtn
+                  <Tooltip
                     key={action.id}
-                    $color={action.color}
-                    $bg={action.bg}
-                    onClick={() => goTo(action.path)}
-                    aria-label={action.label}
-                    role="listitem"
+                    title="This feature is coming soon."
+                    placement="top"
+                    color="#886217" // primary color to match theme
                   >
-                    <ActionIcon aria-hidden="true" />
-                    <span>{action.label}</span>
-                  </S.QuickBtn>
+                    <S.QuickBtn
+                      $color={action.color}
+                      $bg={action.bg}
+                      onClick={handlePlaceholderClick}
+                      aria-label={action.label}
+                      role="listitem"
+                    >
+                      <ActionIcon aria-hidden="true" />
+                      <span>{action.label}</span>
+                    </S.QuickBtn>
+                  </Tooltip>
                 );
               })}
             </S.QuickGrid>
@@ -257,9 +374,7 @@ const Dashboard = () => {
               Generate Reports
             </S.GenerateReportBtn>
           </S.Panel>
-
         </S.ThreeColGrid>
-
       </S.Page>
     </AdminLayout>
   );

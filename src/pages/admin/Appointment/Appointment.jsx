@@ -1,7 +1,8 @@
 // src/pages/admin/Appointment/Appointment.jsx
 import { memo, useState, useMemo, useCallback } from "react";
 import dayjs from "dayjs";
-import { message } from "antd";
+import { Modal, message } from "antd";
+import { IoTrashBinOutline } from "react-icons/io5";
 
 import AdminLayout from "../../../components/admin/AdminLayout";
 import PageTitle from "./sections/PageTitle/PageTitle";
@@ -15,7 +16,10 @@ import {
 
 import { useAppointments } from "../../../hooks/useAppointments";
 import { mapAppointmentRow } from "../../../utils/mapAppointmentRow";
-import { adminUpdateAppointmentStatus } from "../../../services/appointments";
+import {
+  adminUpdateAppointmentStatus,
+  adminBulkDeleteAppointments,
+} from "../../../services/appointments";
 import { useAuthStore } from "../../../store/authStore";
 import * as S from "./Appointment.styled";
 
@@ -40,6 +44,7 @@ const Appointment = () => {
   const [selected, setSelected] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
@@ -146,6 +151,74 @@ const Appointment = () => {
     setCurrentPage(1);
   }, []);
 
+  // ── Bulk Delete ───────────────────────────────────────────────────────────
+  const handleDeleteSelected = useCallback(() => {
+    const count = selected.size;
+    if (count === 0) return;
+
+    Modal.confirm({
+      title: "Delete Selected Appointments",
+      content: (
+        <div>
+          <p>
+            You are about to delete <strong>{count}</strong> appointment
+            {count > 1 ? "s" : ""}.
+          </p>
+          <p style={{ color: "#dc2626", marginTop: 8 }}>
+            This action cannot be undone.
+          </p>
+        </div>
+      ),
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        setIsDeleting(true);
+        try {
+          await adminBulkDeleteAppointments(Array.from(selected), profile?.id);
+          message.success(
+            `Successfully deleted ${count} appointment${count > 1 ? "s" : ""}.`
+          );
+          await refetch();
+          setSelected(new Set());
+        } catch (err) {
+          console.error("Bulk delete error:", err);
+          message.error(
+            err.message || "Failed to delete appointments. Please try again."
+          );
+          // Keep selection on error
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+      onCancel() {
+        // Just close modal, keep selection
+      },
+    });
+  }, [selected, profile, refetch]);
+
+  // ── Render selection toolbar ──────────────────────────────────────────────
+  const renderSelectionToolbar = () => {
+    if (selected.size === 0) return null;
+
+    return (
+      <S.SelectionToolbar>
+        <S.SelectionInfo>
+          <span>{selected.size}</span> appointment{selected.size > 1 ? "s" : ""} selected
+        </S.SelectionInfo>
+        <S.DeleteButton
+          onClick={handleDeleteSelected}
+          disabled={isDeleting}
+          $loading={isDeleting}
+          aria-label="Delete selected appointments"
+        >
+          <IoTrashBinOutline aria-hidden="true" />
+          {isDeleting ? "Deleting..." : "Delete Selected"}
+        </S.DeleteButton>
+      </S.SelectionToolbar>
+    );
+  };
+
   const allSelected =
     paginated.length > 0 && selected.size === paginated.length;
 
@@ -154,6 +227,7 @@ const Appointment = () => {
       <S.PageContainer>
         <PageTitle onAdd={openAdd} />
         <Filter filters={filters} onChange={handleFilterChange} />
+        {renderSelectionToolbar()}
         <AppointmentTable
           appointments={paginated}
           selected={selected}

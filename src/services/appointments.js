@@ -1,3 +1,4 @@
+// src/services/appointments.js
 import { supabase } from "./supabase/supabase";
 
 // Maps the simplified form status to the schema's split status columns
@@ -221,4 +222,42 @@ export async function adminUpdateAppointmentStatus({
   });
 
   return data;
+}
+
+/**
+ * Bulk delete multiple appointments by their IDs.
+ * Logs a single audit entry for the entire batch.
+ *
+ * @param {string[]} appointmentIds - Array of appointment UUIDs
+ * @param {string} adminId - ID of the admin performing the deletion
+ * @returns {Promise<void>}
+ */
+export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
+  if (!appointmentIds || appointmentIds.length === 0) {
+    return;
+  }
+
+  // 1. Delete all appointments
+  const { error: deleteError } = await supabase
+    .from("appointments")
+    .delete()
+    .in("id", appointmentIds);
+
+  if (deleteError) throw deleteError;
+
+  // 2. Log the bulk action (single log entry)
+  if (adminId) {
+    const { error: logError } = await supabase.from("appointment_logs").insert({
+      appointment_id: null, // not linked to a single appointment
+      action: "bulk_deleted",
+      description: `Bulk deleted ${appointmentIds.length} appointment(s)`,
+      performed_by: "admin",
+      admin_id: adminId,
+    });
+
+    if (logError) {
+      console.error("Failed to log bulk deletion:", logError);
+      // Do not throw; the deletion succeeded, logging failure shouldn't break the flow
+    }
+  }
 }
