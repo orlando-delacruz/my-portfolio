@@ -58,4 +58,8 @@ export const StyledSelect = styled(Select)`
     border-color: rgba(0, 0, 0, 0.2) !important;
     box-shadow: none !important;
   }
+
+  .ant-select-content {
+    margin-left: 24px !important;
+  }
 `;

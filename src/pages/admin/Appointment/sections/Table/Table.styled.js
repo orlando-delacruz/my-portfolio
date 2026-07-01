@@ -94,6 +94,7 @@ export const BranchBadge = styled.span`
   border-radius: 20px;
   background: ${({ $bg }) => $bg};
   color: ${({ $color }) => $color};
+  border: 1px solid ${({ $border }) => $border};
   font-size: 12px;
   font-weight: 500;
 `;

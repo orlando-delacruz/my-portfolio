@@ -1,19 +1,20 @@
+// src/hooks/useBranches.js
 import { useEffect, useState } from "react";
-import { supabase } from "../services/supabase/supabase";
+import { fetchActiveBranches } from "../services/branches";
 
 export function useBranches() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("branches")
-      .select("*")
-      .eq("status", "active") // is_active (bool) → status = 'active' (text)
-      .then(({ data }) => {
-        setBranches(data ?? []);
-        setLoading(false);
-      });
+    let mounted = true;
+    fetchActiveBranches()
+      .then((data) => mounted && setBranches(data))
+      .catch(() => mounted && setBranches([]))
+      .finally(() => mounted && setLoading(false));
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return { branches, loading };

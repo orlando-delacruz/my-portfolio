@@ -1,3 +1,4 @@
+// src/store/authStore.js
 import { create } from "zustand";
 import { supabase } from "../services/supabase/supabase";
 
