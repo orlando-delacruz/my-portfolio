@@ -1,6 +1,8 @@
+// src/pages/admin/Appointment/Appointment.jsx
 import { memo, useState, useMemo, useCallback } from "react";
 import dayjs from "dayjs";
-import { message } from "antd";
+import { Modal, message } from "antd";
+import { IoTrashBinOutline } from "react-icons/io5";
 
 import AdminLayout from "../../../components/admin/AdminLayout";
 import PageTitle from "./sections/PageTitle/PageTitle";
@@ -12,13 +14,25 @@ import {
   useAppointmentModal,
 } from "../../../components/admin/Modal/AppointmentModal";
 
-import appointmentsData from "../../../data/admin/appointment";
+import { useAppointments } from "../../../hooks/useAppointments";
+import { mapAppointmentRow } from "../../../utils/mapAppointmentRow";
+import {
+  adminUpdateAppointmentStatus,
+  adminBulkDeleteAppointments,
+} from "../../../services/appointments";
+import { useAuthStore } from "../../../store/authStore";
 import * as S from "./Appointment.styled";
 
 const DEFAULT_PAGE_SIZE = 10;
 
 const Appointment = () => {
-  const [appointments, setAppointments] = useState(appointmentsData);
+  const { appointments: rawAppointments, loading, refetch } = useAppointments();
+  const appointments = useMemo(
+    () => rawAppointments.map(mapAppointmentRow),
+    [rawAppointments]
+  );
+
+  const profile = useAuthStore((s) => s.profile);
 
   const [filters, setFilters] = useState({
     dateRange: null,
@@ -30,39 +44,15 @@ const Appointment = () => {
   const [selected, setSelected] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
-  const handleResetFilters = useCallback(() => {
-    setFilters({
-      dateRange: null,
-      branch: "all",
-      status: "all",
-      search: "",
-    });
-    setSelected(new Set());
-    setCurrentPage(1);
-  }, [setSelected, setCurrentPage]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
-    addOpen,
-    addLoading,
-    openAdd,
-    closeAdd,
-    handleAdd,
-    rescheduleOpen,
-    rescheduleLoading,
-    rescheduleTarget,
-    openReschedule,
-    closeReschedule,
-    handleReschedule,
+    addOpen, addLoading, openAdd, closeAdd, handleAdd,
+    rescheduleOpen, rescheduleLoading, rescheduleTarget,
+    openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
-    onAddSuccess: (newRecord) => {
-      setAppointments((prev) => [newRecord, ...prev]);
-    },
-    onRescheduleSuccess: (updated) => {
-      setAppointments((prev) =>
-        prev.map((apt) => (apt.id === updated.id ? updated : apt))
-      );
-    },
+    onAddSuccess: () => refetch(),
+    onRescheduleSuccess: () => refetch(),
   });
 
   const filtered = useMemo(() => {
@@ -83,7 +73,7 @@ const Appointment = () => {
           apt.patientName.toLowerCase().includes(q) ||
           apt.contactNumber.includes(q) ||
           apt.referenceNo.toLowerCase().includes(q) ||
-          apt.reason.toLowerCase().includes(q)
+          apt.reason?.toLowerCase().includes(q)
       );
     }
 
@@ -111,7 +101,7 @@ const Appointment = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setSelected(new Set());
     setCurrentPage(1);
-  }, [setFilters, setSelected, setCurrentPage]);
+  }, []);
 
   const handleSelectAll = useCallback(
     (checked) => {
@@ -119,7 +109,7 @@ const Appointment = () => {
         checked ? new Set(paginated.map((a) => a.id)) : new Set()
       );
     },
-    [paginated, setSelected]
+    [paginated]
   );
 
   const handleSelectRow = useCallback((id) => {
@@ -128,14 +118,25 @@ const Appointment = () => {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  }, [setSelected]);
+  }, []);
 
-  const handleSetStatus = useCallback((id, newStatus) => {
-    setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus } : apt))
-    );
-    message.success(`Status updated to ${newStatus}.`);
-  }, [setAppointments]);
+  const handleSetStatus = useCallback(
+    async (id, newStatus) => {
+      try {
+        await adminUpdateAppointmentStatus({
+          appointmentId: id,
+          status: newStatus,
+          adminId: profile?.id,
+        });
+        message.success(`Status updated to ${newStatus}.`);
+        refetch();
+      } catch (err) {
+        console.error(err);
+        message.error("Failed to update status. Please try again.");
+      }
+    },
+    [profile, refetch]
+  );
 
   const handleRescheduleById = useCallback(
     (id) => {
@@ -148,7 +149,87 @@ const Appointment = () => {
   const handlePageSizeChange = useCallback((size) => {
     setPageSize(size);
     setCurrentPage(1);
-  }, [setPageSize, setCurrentPage]);
+  }, []);
+
+  // ── Reset filters ──────────────────────────────────────────────────────────
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      dateRange: null,
+      branch: "all",
+      status: "all",
+      search: "",
+    });
+    setSelected(new Set());
+    setCurrentPage(1);
+  }, []);
+
+  // ── Bulk Delete ───────────────────────────────────────────────────────────
+  const handleDeleteSelected = useCallback(() => {
+    const count = selected.size;
+    if (count === 0) return;
+
+    Modal.confirm({
+      title: "Delete Selected Appointments",
+      content: (
+        <div>
+          <p>
+            You are about to delete <strong>{count}</strong> appointment
+            {count > 1 ? "s" : ""}.
+          </p>
+          <p style={{ color: "#dc2626", marginTop: 8 }}>
+            This action cannot be undone.
+          </p>
+        </div>
+      ),
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        setIsDeleting(true);
+        try {
+          await adminBulkDeleteAppointments(Array.from(selected), profile?.id);
+          message.success(
+            `Successfully deleted ${count} appointment${count > 1 ? "s" : ""}.`
+          );
+          await refetch();
+          setSelected(new Set());
+        } catch (err) {
+          console.error("Bulk delete error:", err);
+          message.error(
+            err.message || "Failed to delete appointments. Please try again."
+          );
+          // Keep selection on error
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+      onCancel() {
+        // Just close modal, keep selection
+      },
+    });
+  }, [selected, profile, refetch]);
+
+  // ── Render selection toolbar ──────────────────────────────────────────────
+  const renderSelectionToolbar = () => {
+    if (selected.size === 0) return null;
+
+    return (
+      <S.SelectionToolbar>
+        <S.SelectionInfo>
+          <span>{selected.size}</span> appointment{selected.size > 1 ? "s" : ""} selected
+        </S.SelectionInfo>
+        <S.DeleteButton
+          onClick={handleDeleteSelected}
+          disabled={isDeleting}
+          $loading={isDeleting}
+          aria-label="Delete selected appointments"
+        >
+          <IoTrashBinOutline aria-hidden="true" />
+          {isDeleting ? "Deleting..." : "Delete Selected"}
+        </S.DeleteButton>
+      </S.SelectionToolbar>
+    );
+  };
 
   const allSelected =
     paginated.length > 0 && selected.size === paginated.length;
@@ -162,6 +243,7 @@ const Appointment = () => {
           onChange={handleFilterChange}
           onReset={handleResetFilters}
         />
+        {renderSelectionToolbar()}
         <AppointmentTable
           appointments={paginated}
           selected={selected}
@@ -175,7 +257,7 @@ const Appointment = () => {
           pageSize={pageSize}
           onPageChange={setCurrentPage}
           onSizeChange={handlePageSizeChange}
-          loading={false}
+          loading={loading}
         />
       </S.PageContainer>
 
