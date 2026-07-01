@@ -31,10 +31,29 @@ const Appointment = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      dateRange: null,
+      branch: "all",
+      status: "all",
+      search: "",
+    });
+    setSelected(new Set());
+    setCurrentPage(1);
+  }, [setSelected, setCurrentPage]);
+
   const {
-    addOpen, addLoading, openAdd, closeAdd, handleAdd,
-    rescheduleOpen, rescheduleLoading, rescheduleTarget,
-    openReschedule, closeReschedule, handleReschedule,
+    addOpen,
+    addLoading,
+    openAdd,
+    closeAdd,
+    handleAdd,
+    rescheduleOpen,
+    rescheduleLoading,
+    rescheduleTarget,
+    openReschedule,
+    closeReschedule,
+    handleReschedule,
   } = useAppointmentModal({
     onAddSuccess: (newRecord) => {
       setAppointments((prev) => [newRecord, ...prev]);
@@ -92,7 +111,7 @@ const Appointment = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setSelected(new Set());
     setCurrentPage(1);
-  }, []);
+  }, [setFilters, setSelected, setCurrentPage]);
 
   const handleSelectAll = useCallback(
     (checked) => {
@@ -100,7 +119,7 @@ const Appointment = () => {
         checked ? new Set(paginated.map((a) => a.id)) : new Set()
       );
     },
-    [paginated]
+    [paginated, setSelected]
   );
 
   const handleSelectRow = useCallback((id) => {
@@ -109,14 +128,14 @@ const Appointment = () => {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  }, []);
+  }, [setSelected]);
 
   const handleSetStatus = useCallback((id, newStatus) => {
     setAppointments((prev) =>
       prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus } : apt))
     );
     message.success(`Status updated to ${newStatus}.`);
-  }, []);
+  }, [setAppointments]);
 
   const handleRescheduleById = useCallback(
     (id) => {
@@ -129,7 +148,7 @@ const Appointment = () => {
   const handlePageSizeChange = useCallback((size) => {
     setPageSize(size);
     setCurrentPage(1);
-  }, []);
+  }, [setPageSize, setCurrentPage]);
 
   const allSelected =
     paginated.length > 0 && selected.size === paginated.length;
@@ -138,7 +157,11 @@ const Appointment = () => {
     <AdminLayout>
       <S.PageContainer>
         <PageTitle onAdd={openAdd} />
-        <Filter filters={filters} onChange={handleFilterChange} />
+        <Filter
+          filters={filters}
+          onChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
         <AppointmentTable
           appointments={paginated}
           selected={selected}
