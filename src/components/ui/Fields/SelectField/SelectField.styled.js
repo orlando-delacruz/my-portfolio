@@ -1,5 +1,6 @@
 // src/components/ui/Fields/SelectField/SelectField.styled.js
 import styled from "styled-components";
+import { Select } from "antd";
 import theme from "../../../../styles/theme";
 
 export const FieldWrapper = styled.div`
@@ -7,7 +8,6 @@ export const FieldWrapper = styled.div`
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  margin-bottom: 1rem;
 `;
 
 export const Label = styled.label`
@@ -15,56 +15,71 @@ export const Label = styled.label`
   font-weight: ${theme.typography.weight.medium};
   color: ${theme.colors.black};
   line-height: 1.5;
-  margin-bottom: 4px; /* added to match FieldLabel */
+  margin-bottom: 4px;
 `;
 
 export const Required = styled.span`
   color: ${theme.colors.danger};
 `;
 
-export const SelectWrapper = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-export const Select = styled.select`
-  width: 100%;
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 10px 48px 10px 20px;
-  border-radius: 50px;
-  border: 1.5px solid
-    ${({ $hasError }) =>
-      $hasError ? theme.colors.danger : theme.colors.primary};
-  background: ${theme.colors.white};
-  font-size: ${theme.typography.size.body};
-  font-family: inherit;
-  color: ${({ $empty }) => ($empty ? "#555555" : theme.colors.black)};
-  line-height: 1.5;
-  cursor: pointer;
-  outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-  height: 44px; /* fixed height to match DatePicker */
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: ${theme.colors.primaryDark};
-    box-shadow: 0 0 0 3px ${theme.colors.primary}22;
+export const StyledSelect = styled(Select)`
+  .ant-select-selector {
+    border-radius: 50px !important;
+    border: 1.5px solid
+      ${({ status }) =>
+        status === "error"
+          ? theme.colors.danger
+          : theme.colors.primary} !important;
+    background: ${theme.colors.white} !important;
+    height: 44px !important;
+    padding: 0 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: none !important;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease !important;
   }
-`;
 
-export const ChevronIcon = styled.span`
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: ${theme.colors.black};
-  font-size: 20px;
-  display: flex;
-  align-items: center;
+  .ant-select-selector:hover,
+  &.ant-select-focused .ant-select-selector {
+    border-color: ${theme.colors.primaryDark} !important;
+    box-shadow: 0 0 0 3px ${theme.colors.primary}22 !important;
+  }
+
+  .ant-select-selection-item {
+    font-family: inherit !important;
+    font-size: 16px !important;
+    color: ${theme.colors.black} !important;
+    line-height: 1.5 !important;
+  }
+
+  .ant-select-selection-placeholder {
+    font-family: inherit !important;
+    font-size: 16px !important;
+    color: #555555 !important;
+  }
+
+  &.ant-select-disabled .ant-select-selector {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ant-select-arrow {
+    color: ${theme.colors.primary} !important;
+    font-size: 20px !important;
+    right: 16px !important;
+  }
+
+  &.ant-select-status-error .ant-select-selector {
+    border-color: ${theme.colors.danger} !important;
+  }
+
+  &.ant-select-status-error .ant-select-selector:hover,
+  &.ant-select-status-error.ant-select-focused .ant-select-selector {
+    border-color: ${theme.colors.danger} !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.13) !important;
+  }
 `;
 
 export const ErrorMsg = styled.p`

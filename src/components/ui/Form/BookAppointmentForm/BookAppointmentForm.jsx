@@ -1,14 +1,19 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
-import { memo, useCallback } from "react";
+import { memo, useEffect } from "react";
+import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
-import { TextField, SelectField } from "../../Fields";
 import SuccessView from "../../SuccessView";
 import { useBookAppointmentForm } from "./useBookAppointmentForm";
 import Logo from "../../../../assets/images/logo.webp";
 
+const { TextArea } = Input;
+const { Option } = Select;
+
 const BookAppointmentForm = () => {
+  const [form] = Form.useForm();
+
   const {
     fields,
     errors,
@@ -20,21 +25,86 @@ const BookAppointmentForm = () => {
     servicesLoading,
     disabledTime,
     disabledDate,
-    handleChange,
-    handleBranchChange,
-    handleDateChange,
-    handleTimeChange,
-    handleBirthDateChange,
+    availabilityError,
+    checkingAvailability,
     handleSubmit,
     handleReset,
-    setFields,
-    setErrors,
-  } = useBookAppointmentForm();
+    updateFields,
+    setAvailabilityError,
+  } = useBookAppointmentForm(form);
 
-  // Format phone number as "0912 345 6789"
-  const formatPhoneDisplay = (digits) => {
-    if (!digits) return '';
-    const raw = digits.replace(/\D/g, '');
+  // Sync form values with fields state
+  useEffect(() => {
+    form.setFieldsValue({
+      firstName: fields.firstName,
+      middleName: fields.middleName,
+      lastName: fields.lastName,
+      birthDate: fields.birthDate ? dayjs(fields.birthDate) : null,
+      gender: fields.gender || undefined,
+      email: fields.email,
+      phoneNumber: fields.phoneNumber,
+      address: fields.address,
+      branchId: fields.branchId || undefined,
+      serviceBranchId: fields.serviceBranchId || undefined,
+      date: fields.date ? dayjs(fields.date) : null,
+      time: fields.time ? dayjs(fields.time, "HH:mm:ss") : null,
+      notes: fields.notes,
+    });
+  }, [fields, form]);
+
+  // Handle form value changes
+  const handleValuesChange = (changedValues) => {
+    const newFields = { ...fields };
+
+    if (changedValues.branchId !== undefined) {
+      newFields.branchId = changedValues.branchId;
+      newFields.serviceBranchId = "";
+      newFields.date = "";
+      newFields.time = "";
+      setAvailabilityError(null);
+    }
+    if (changedValues.date !== undefined) {
+      newFields.date = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
+      newFields.time = "";
+      setAvailabilityError(null);
+    }
+    if (changedValues.time !== undefined) {
+      newFields.time = changedValues.time ? changedValues.time.format("HH:mm:ss") : "";
+      setAvailabilityError(null);
+    }
+    if (changedValues.serviceBranchId !== undefined) {
+      newFields.serviceBranchId = changedValues.serviceBranchId;
+    }
+    Object.keys(changedValues).forEach(key => {
+      if (key !== 'branchId' && key !== 'date' && key !== 'time' && key !== 'serviceBranchId') {
+        newFields[key] = changedValues[key];
+      }
+    });
+
+    updateFields(newFields);
+  };
+
+  // Handle form submission
+  const onFinish = async (values) => {
+    const submitData = {
+      ...values,
+      birthDate: values.birthDate ? dayjs(values.birthDate).format("YYYY-MM-DD") : undefined,
+      date: values.date ? dayjs(values.date).format("YYYY-MM-DD") : undefined,
+      time: values.time ? values.time.format("HH:mm:ss") : undefined,
+    };
+    await handleSubmit(submitData);
+  };
+
+  const onFinishFailed = (errorInfo) => {
+    console.log("Form validation failed:", errorInfo);
+    // Ant Design's scrollToFirstError will handle scrolling.
+    // If you need additional custom logic, you can implement it here.
+  };
+
+  // Format phone number for display
+  const formatPhoneDisplay = (value) => {
+    if (!value) return '';
+    const raw = value.replace(/\D/g, '');
     if (raw.length > 7) {
       return raw.slice(0, 4) + ' ' + raw.slice(4, 7) + ' ' + raw.slice(7);
     }
@@ -44,14 +114,44 @@ const BookAppointmentForm = () => {
     return raw;
   };
 
-  const handlePhoneChange = useCallback((e) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    if (raw.length > 11) return;
-    setFields((prev) => ({ ...prev, phoneNumber: raw }));
-    if (errors.phoneNumber) {
-      setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+  // Validators
+  const validatePhone = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please enter your mobile number."));
     }
-  }, [setFields, setErrors, errors.phoneNumber]);
+    const stripped = value.replace(/\s/g, '');
+    if (!/^(\+63|0)\d{10}$/.test(stripped)) {
+      return Promise.reject(new Error("Please enter a valid Philippine mobile number."));
+    }
+    return Promise.resolve();
+  };
+
+  const validateBirthDate = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please select your birthdate."));
+    }
+    if (dayjs(value).isAfter(dayjs(), "day")) {
+      return Promise.reject(new Error("Birthdate cannot be in the future."));
+    }
+    return Promise.resolve();
+  };
+
+  const validatePreferredDate = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please select your preferred appointment date."));
+    }
+    if (dayjs(value).isBefore(dayjs(), "day")) {
+      return Promise.reject(new Error("Date cannot be in the past."));
+    }
+    return Promise.resolve();
+  };
+
+  const validatePreferredTime = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please select your preferred appointment time."));
+    }
+    return Promise.resolve();
+  };
 
   if (submitted) {
     return (
@@ -63,220 +163,235 @@ const BookAppointmentForm = () => {
 
   return (
     <S.FormCard>
-      {/* Clinic brand */}
       <S.BrandBlock>
         <S.BrandLogo src={Logo} alt="Leidi Bud Dentals logo" loading="eager" width={100} height={100} />
         <S.BrandName>Leidi Bud Dentals</S.BrandName>
         <S.BrandTagline>Trusted Dental Care</S.BrandTagline>
       </S.BrandBlock>
 
-      <form onSubmit={handleSubmit} noValidate aria-label="Book an appointment">
-        <div style={{ display: "flex", flexDirection: "column", gap: "35px" }}>
+      <S.BookingFormWrapper>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
+          onValuesChange={handleValuesChange}
+          requiredMark={false}
+          scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
+        >
           {/* ── Personal information ── */}
-          <S.FormSection aria-labelledby="personal-section-title">
-            <S.FormSectionTitle id="personal-section-title">
-              Personal Information
-            </S.FormSectionTitle>
+          <S.FormSection>
+            <S.FormSectionTitle>Personal Information</S.FormSectionTitle>
 
             <S.FieldRow>
-              <TextField
-                id="firstName"
+              <Form.Item
                 name="firstName"
                 label="First Name"
-                placeholder="Juan"
-                value={fields.firstName}
-                onChange={handleChange}
-                error={errors.firstName}
-                required
-              />
-              <TextField
-                id="middleName"
+                rules={[{ required: true, message: "Please enter your first name." }]}
+              >
+                <Input placeholder="Enter your first name" size="large" />
+              </Form.Item>
+
+              <Form.Item
                 name="middleName"
                 label="Middle Name"
-                placeholder="(Optional)"
-                value={fields.middleName}
-                onChange={handleChange}
-                error={errors.middleName}
-              />
-              <TextField
-                id="lastName"
+                rules={[{ required: false }]}
+              >
+                <Input placeholder="Enter your middle name (optional)" size="large" />
+              </Form.Item>
+
+              <Form.Item
                 name="lastName"
                 label="Last Name"
-                placeholder="Dela Cruz"
-                value={fields.lastName}
-                onChange={handleChange}
-                error={errors.lastName}
-                required
-              />
+                rules={[{ required: true, message: "Please enter your last name." }]}
+              >
+                <Input placeholder="Enter your last name" size="large" />
+              </Form.Item>
             </S.FieldRow>
 
             <S.FieldRow>
-              <S.FieldGroup>
-                <S.FieldLabel htmlFor="birthDate">Birthdate</S.FieldLabel>
-                <S.StyledDatePicker
-                  id="birthDate"
+              <Form.Item
+                name="birthDate"
+                label="Birthdate"
+                rules={[{ validator: validateBirthDate }]}
+              >
+                <DatePicker
                   style={{ width: "100%" }}
                   format="MMM D, YYYY"
-                  placeholder="Select birthdate"
-                  value={fields.birthDate ? dayjs(fields.birthDate) : null}
-                  onChange={handleBirthDateChange}
+                  placeholder="Select your birthdate"
                   disabledDate={(current) => current && current > dayjs().endOf('day')}
-                  aria-required="true"
-                  aria-invalid={!!errors.birthDate}
                 />
-                {errors.birthDate && <S.ErrorText>{errors.birthDate}</S.ErrorText>}
-              </S.FieldGroup>
-              <SelectField
-                id="gender"
+              </Form.Item>
+
+              <Form.Item
                 name="gender"
                 label="Gender"
-                options={[
-                  { value: "male", label: "Male" },
-                  { value: "female", label: "Female" },
-                  { value: "other", label: "Other" },
-                  { value: "prefer-not-to-say", label: "Prefer not to say" },
-                ]}
-                value={fields.gender}
-                onChange={handleChange}
-                placeholder="Select"
-                error={errors.gender}
-              />
+                rules={[{ required: true, message: "Please select your gender." }]}
+              >
+                <Select placeholder="Select your gender" size="large">
+                  <Option value="male">Male</Option>
+                  <Option value="female">Female</Option>
+                  <Option value="other">Other</Option>
+                  <Option value="prefer-not-to-say">Prefer not to say</Option>
+                </Select>
+              </Form.Item>
             </S.FieldRow>
 
             <S.FieldGroup>
-              <TextField
-                id="email"
+              <Form.Item
                 name="email"
                 label="Email"
-                type="email"
-                placeholder="example@gmail.com"
-                value={fields.email}
-                onChange={handleChange}
-                error={errors.email}
-              />
-              <TextField
-                id="phoneNumber"
+                rules={[
+                  { type: "email", message: "Please enter a valid email address." },
+                  { required: false },
+                ]}
+              >
+                <Input placeholder="Enter your email address" size="large" />
+              </Form.Item>
+
+              <Form.Item
                 name="phoneNumber"
                 label="Contact Number"
-                type="tel"
-                placeholder="0912 345 6789"
-                value={formatPhoneDisplay(fields.phoneNumber)}
-                onChange={handlePhoneChange}
-                error={errors.phoneNumber}
-                required
-              />
-              <TextField
-                id="address"
+                rules={[{ validator: validatePhone }]}
+                normalize={(value) => value.replace(/\D/g, '')}
+              >
+                <Input
+                  placeholder="0912 345 6789"
+                  size="large"
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    if (raw.length > 11) {
+                      e.preventDefault();
+                      return;
+                    }
+                    e.target.value = formatPhoneDisplay(raw);
+                  }}
+                />
+              </Form.Item>
+
+              <Form.Item
                 name="address"
                 label="Complete Address"
-                placeholder="123 Street, City, Province"
-                value={fields.address}
-                onChange={handleChange}
-                error={errors.address}
-              />
+                rules={[{ required: true, message: "Please enter your complete address." }]}
+              >
+                <Input placeholder="Enter your complete address" size="large" />
+              </Form.Item>
             </S.FieldGroup>
           </S.FormSection>
 
           {/* ── Appointment information ── */}
-          <S.FormSection aria-labelledby="appointment-section-title">
-            <S.FormSectionTitle id="appointment-section-title">
-              Appointment Information
-            </S.FormSectionTitle>
+          <S.FormSection>
+            <S.FormSectionTitle>Appointment Information</S.FormSectionTitle>
 
             <S.FieldGroup>
-              <SelectField
-                id="branchId"
+              <Form.Item
                 name="branchId"
                 label="Choose Branch"
-                options={branches.map((b) => ({ value: b.id, label: b.name }))}
-                value={fields.branchId}
-                onChange={handleBranchChange}
-                placeholder="Select a branch"
-                error={errors.branchId}
-                loading={branchesLoading}
-                required
-              />
+                rules={[{ required: true, message: "Please select a branch." }]}
+              >
+                <Select
+                  placeholder="Select a branch first"
+                  loading={branchesLoading}
+                  size="large"
+                >
+                  {branches.map((b) => (
+                    <Option key={b.id} value={b.id}>
+                      {b.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
               <S.FieldRow>
-                <S.FieldGroup>
-                  <S.FieldLabel htmlFor="date">Preferred Date</S.FieldLabel>
-                  <S.StyledDatePicker
-                    id="date"
+                <Form.Item
+                  name="date"
+                  label="Preferred Date"
+                  rules={[{ validator: validatePreferredDate }]}
+                >
+                  <DatePicker
                     style={{ width: "100%" }}
                     format="MMM D, YYYY"
-                    placeholder="Select date"
-                    value={fields.date ? dayjs(fields.date) : null}
-                    onChange={handleDateChange}
+                    placeholder="Select your preferred date"
                     disabledDate={disabledDate}
                     disabled={!fields.branchId}
                   />
-                  {errors.date && <S.ErrorText>{errors.date}</S.ErrorText>}
-                </S.FieldGroup>
-                <S.FieldGroup>
-                  <S.FieldLabel htmlFor="time">Preferred Time</S.FieldLabel>
-                  <S.StyledTimePicker
-                    id="time"
+                </Form.Item>
+
+                <Form.Item
+                  name="time"
+                  label="Preferred Time"
+                  rules={[{ validator: validatePreferredTime }]}
+                >
+                  <TimePicker
                     style={{ width: "100%" }}
                     format="h:mm A"
                     use12Hours
-                    placeholder="Select time"
-                    value={fields.time ? dayjs(fields.time, "HH:mm:ss") : null}
-                    onChange={handleTimeChange}
+                    placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
                     disabledTime={disabledTime}
                     hideDisabledOptions
                     disabled={!fields.branchId || !fields.date}
-                    popupStyle={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
-                    }}
-                    popupClassName="time-picker-no-scrollbar"
                   />
-                  {errors.time && <S.ErrorText>{errors.time}</S.ErrorText>}
-                </S.FieldGroup>
+                </Form.Item>
               </S.FieldRow>
 
-              <SelectField
-                id="serviceBranchId"
+              {checkingAvailability && <S.InfoText>Checking availability...</S.InfoText>}
+              {availabilityError && <S.WarningText>{availabilityError}</S.WarningText>}
+
+              <Form.Item
                 name="serviceBranchId"
                 label="Service"
-                options={services.map((s) => ({ value: s.service_branch_id, label: s.name }))}
-                value={fields.serviceBranchId}
-                onChange={handleChange}
-                placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
-                error={errors.serviceBranchId}
-                loading={servicesLoading}
-                disabled={!fields.branchId || services.length === 0}
-                required
-              />
+                rules={[{ required: true, message: "Please select a service." }]}
+              >
+                <Select
+                  placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
+                  loading={servicesLoading}
+                  disabled={!fields.branchId || services.length === 0}
+                  size="large"
+                >
+                  {services.map((s) => (
+                    <Option key={s.service_branch_id} value={s.service_branch_id}>
+                      {s.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
-              <TextField
-                id="notes"
+              <Form.Item
                 name="notes"
                 label="Notes / Remarks"
-                placeholder="Any special requests or additional information"
-                value={fields.notes}
-                onChange={handleChange}
-                error={errors.notes}
-                multiline
-                rows={3}
-              />
+                rules={[{ required: false }]}
+              >
+                <TextArea
+                  placeholder="Additional notes (optional)"
+                  rows={3}
+                />
+              </Form.Item>
             </S.FieldGroup>
           </S.FormSection>
 
-          {/* Form-level error */}
           {errors.form && <S.FormError role="alert">{errors.form}</S.FormError>}
 
-          {/* Submit */}
-          <S.SubmitButton
-            type="submit"
-            disabled={loading}
-            aria-label="Submit appointment request"
-          >
-            {loading ? "Submitting…" : "Book Appointment"}
-            {!loading && <AiOutlineSend aria-hidden="true" />}
-          </S.SubmitButton>
-        </div>
-      </form>
+          <S.ButtonWrapper>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              disabled={loading || !!availabilityError}
+              icon={!loading && <AiOutlineSend />}
+              size="large"
+              style={{
+                background: "#886217",
+                borderColor: "#886217",
+                borderRadius: "50px",
+                height: "44px",
+                padding: "0 32px",
+              }}
+            >
+              {loading ? "Submitting…" : "Send Appointment"}
+            </Button>
+          </S.ButtonWrapper>
+        </Form>
+      </S.BookingFormWrapper>
     </S.FormCard>
   );
 };

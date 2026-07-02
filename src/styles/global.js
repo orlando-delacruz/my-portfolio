@@ -76,6 +76,66 @@ const GlobalStyle = createGlobalStyle`
   display: none;
 }
 
-`;
+/* ─── Custom SelectField styles (matches DatePicker & TimePicker) ── */
+.select-field-custom .ant-select-selector {
+  border-radius: 50px !important;
+  border: 1.5px solid #886217 !important;
+  background: #ffffff !important;
+  height: 44px !important;
+  padding: 0 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
 
+.select-field-custom .ant-select-selector:hover,
+.select-field-custom.ant-select-focused .ant-select-selector {
+  border-color: #654405 !important;
+  box-shadow: 0 0 0 3px rgba(136, 98, 23, 0.13) !important;
+}
+
+.select-field-custom .ant-select-selection-item {
+  font-family: inherit !important;
+  font-size: 16px !important;
+  color: #222222 !important;
+  line-height: 1.5 !important;
+}
+
+.select-field-custom .ant-select-selection-placeholder {
+  font-family: inherit !important;
+  font-size: 16px !important;
+  color: #555555 !important;
+}
+
+.select-field-custom.ant-select-disabled .ant-select-selector {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select-field-custom .ant-select-arrow {
+  color: #886217 !important;
+  font-size: 20px !important;
+  right: 16px !important;
+}
+
+.select-field-custom.ant-select-status-error .ant-select-selector {
+  border-color: #dc2626 !important;
+}
+
+.select-field-custom.ant-select-status-error .ant-select-selector:hover,
+.select-field-custom.ant-select-status-error .ant-select-selector:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.13) !important;
+  
+  /* Hide scrollbar for time picker dropdown */
+.time-picker-no-scrollbar .ant-picker-time-panel-column {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.time-picker-no-scrollbar .ant-picker-time-panel-column::-webkit-scrollbar {
+  display: none;
+}
+}
+`;
 export default GlobalStyle;

@@ -12,7 +12,7 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
       const values = await form.validateFields();
       await onSubmit(values, form);
     } catch {
-      // Ant Design handles field-level error display; no extra action needed
+      // Ant Design handles field-level errors
     }
   };
 
@@ -27,13 +27,12 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
       onCancel={handleCancel}
       footer={null}
       title={<S.ModalTitle>Add Appointment</S.ModalTitle>}
-      width={680}
+      width={720}
       centered
-      destroyOnHidden   // changed from destroyOnClose
+      destroyOnHidden
       aria-label="Add new appointment"
     >
       <AppointmentForm form={form} showStatus={false} />
-
       <S.FooterRow>
         <S.CancelBtn onClick={handleCancel} type="button">
           Cancel

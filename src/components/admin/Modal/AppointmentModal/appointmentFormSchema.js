@@ -7,11 +7,18 @@ export const STATUS_OPTIONS_FORM = [
 ];
 
 export const EMPTY_FORM = {
-  patientName: "",
-  contactNumber: "",
-  branch: undefined,
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  birthDate: null,
+  gender: "",
+  email: "",
+  phoneNumber: "",
+  address: "",
+  branchId: undefined,
+  serviceBranchId: undefined,
   date: null,
   time: null,
-  reason: undefined,
   status: "pending",
+  notes: "",
 };

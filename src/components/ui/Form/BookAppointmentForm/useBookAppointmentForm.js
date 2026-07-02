@@ -1,12 +1,15 @@
 // src/components/ui/Form/BookAppointmentForm/useBookAppointmentForm.js
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { message } from "antd";
 import dayjs from "dayjs";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
 import { useScheduling } from "../../../../hooks/useScheduling";
 import { bookPublicAppointment } from "../../../../services/publicBooking";
+import { checkBookingConflictWithDetails } from "../../../../services/appointments";
 import { supabase } from "../../../../services/supabase/supabase";
+import { getRawPhoneDigits } from "../../../../utils/phoneFormatter";
+import { generateConflictMessage } from "../../../../utils/conflictMessage";
 
 const INITIAL_STATE = {
   firstName: "",
@@ -24,77 +27,55 @@ const INITIAL_STATE = {
   notes: "",
 };
 
-const validateForm = (fields) => {
-  const errors = {};
-  if (!fields.firstName?.trim()) errors.firstName = "First name is required.";
-  if (!fields.lastName?.trim()) errors.lastName = "Last name is required.";
-  if (!fields.phoneNumber?.trim())
-    errors.phoneNumber = "Contact number is required.";
-  else if (!/^(\+63|0)\d{10}$/.test(fields.phoneNumber.replace(/\s/g, ""))) {
-    errors.phoneNumber =
-      "Enter a valid Philippine number (e.g., 09123456789 or +639123456789).";
-  }
-  if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
-    errors.email = "Enter a valid email address.";
-  }
-  if (fields.birthDate && dayjs(fields.birthDate).isAfter(dayjs(), "day")) {
-    errors.birthDate = "Birthdate cannot be in the future.";
-  }
-  if (!fields.birthDate) errors.birthDate = "Birthdate is required.";
-  if (!fields.branchId) errors.branchId = "Please select a branch.";
-  if (!fields.serviceBranchId)
-    errors.serviceBranchId = "Please select a service.";
-  if (!fields.date) errors.date = "Please select a date.";
-  else if (dayjs(fields.date).isBefore(dayjs(), "day")) {
-    errors.date = "Date cannot be in the past.";
-  }
-  if (!fields.time) errors.time = "Please select a time.";
-  return errors;
-};
-
-export function useBookAppointmentForm() {
+export function useBookAppointmentForm(form) {
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [closures, setClosures] = useState([]);
+  const [availabilityError, setAvailabilityError] = useState(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const isMounted = useRef(true);
 
   const { branches, loading: branchesLoading } = useBranches();
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
-  // Scheduling hook for disabled times
   const selectedDate = fields.date ? dayjs(fields.date) : null;
   const { disabledTime } = useScheduling(fields.branchId, selectedDate);
 
-  // Fetch closures for the selected branch
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     async function loadClosures() {
       if (!fields.branchId) {
-        setClosures([]);
+        if (isMounted.current) setClosures([]);
         return;
       }
       try {
         const start = dayjs().subtract(1, "month").format("YYYY-MM-DD");
         const end = dayjs().add(2, "months").format("YYYY-MM-DD");
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("clinic_closures")
           .select("start_date, end_date")
           .eq("branch_id", fields.branchId)
           .eq("is_cancelled", false)
           .eq("affects_booking", true)
           .or(`start_date.lte.${end},end_date.gte.${start}`);
-        if (error) throw error;
-        setClosures(data || []);
+        if (isMounted.current) setClosures(data || []);
       } catch (err) {
         console.error("Failed to load closures:", err);
-        setClosures([]);
+        if (isMounted.current) setClosures([]);
       }
     }
     loadClosures();
   }, [fields.branchId]);
 
-  // Synchronous disabledDate
   const disabledDate = useCallback(
     (current) => {
       if (!fields.branchId) return true;
@@ -109,127 +90,105 @@ export function useBookAppointmentForm() {
     [fields.branchId, closures],
   );
 
-  const handleBranchChange = useCallback((e) => {
-    const value = e.target.value;
-    setFields((prev) => ({
-      ...prev,
-      branchId: value,
-      serviceBranchId: "",
-      date: "",
-      time: "",
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      branchId: undefined,
-      serviceBranchId: undefined,
-      date: undefined,
-      time: undefined,
-    }));
-  }, []);
+  // ── Availability check with detailed message ──
+  const { branchId, date, time } = fields;
 
-  const handleChange = useCallback(
-    (e) => {
-      const { name, value, type, checked } = e.target;
-      setFields((prev) => ({
-        ...prev,
-        [name]: type === "checkbox" ? checked : value,
-      }));
-      if (errors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: undefined }));
-      }
-    },
-    [errors],
-  );
+  useEffect(() => {
+    let cancelled = false;
 
-  const handleDateChange = useCallback((date) => {
-    setFields((prev) => ({
-      ...prev,
-      date: date ? dayjs(date).format("YYYY-MM-DD") : "",
-      time: "",
-    }));
-    setErrors((prev) => ({ ...prev, date: undefined, time: undefined }));
-  }, []);
-
-  const handleTimeChange = useCallback((time) => {
-    if (time && dayjs.isDayjs(time) && time.isValid()) {
-      setFields((prev) => ({
-        ...prev,
-        time: time.format("HH:mm:ss"),
-      }));
-    } else {
-      setFields((prev) => ({
-        ...prev,
-        time: "",
-      }));
-    }
-    setErrors((prev) => ({ ...prev, time: undefined }));
-  }, []);
-
-  const handleBirthDateChange = useCallback((date) => {
-    setFields((prev) => ({
-      ...prev,
-      birthDate: date ? dayjs(date).format("YYYY-MM-DD") : "",
-    }));
-    setErrors((prev) => ({ ...prev, birthDate: undefined }));
-  }, []);
-
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const validationErrors = validateForm(fields);
-      if (Object.keys(validationErrors).length > 0) {
-        setErrors(validationErrors);
+    const checkAvailability = async () => {
+      if (!branchId || !date || !time) {
+        if (!cancelled && isMounted.current) {
+          setAvailabilityError(null);
+          setCheckingAvailability(false);
+        }
         return;
       }
 
-      if (!fields.time || !dayjs(fields.time, "HH:mm:ss").isValid()) {
-        setErrors({ ...errors, time: "Please select a valid time." });
-        return;
+      if (!cancelled && isMounted.current) {
+        setCheckingAvailability(true);
       }
-
-      setLoading(true);
-      setErrors({});
 
       try {
-        await bookPublicAppointment({
-          firstName: fields.firstName.trim(),
-          middleName: fields.middleName.trim() || undefined,
-          lastName: fields.lastName.trim(),
-          birthDate: fields.birthDate || undefined,
-          gender: fields.gender || undefined,
-          email: fields.email.trim() || undefined,
-          phoneNumber: fields.phoneNumber.trim(),
-          address: fields.address.trim() || undefined,
-          branchId: fields.branchId,
-          serviceBranchId: fields.serviceBranchId,
-          date: fields.date,
-          time: fields.time,
-          notes: fields.notes.trim() || undefined,
+        const result = await checkBookingConflictWithDetails({
+          branchId,
+          date: dayjs(date),
+          time: dayjs(time),
         });
 
-        message.success(
-          "Appointment booked successfully! You will receive a confirmation email shortly.",
-        );
-        setSubmitted(true);
+        if (result.hasConflict) {
+          const msg = generateConflictMessage(result);
+          if (!cancelled && isMounted.current) setAvailabilityError(msg);
+        } else {
+          if (!cancelled && isMounted.current) setAvailabilityError(null);
+        }
       } catch (err) {
-        console.error("Booking error:", err);
-        setErrors({
-          form:
-            err.message ||
-            "Failed to book appointment. Please try again later.",
-        });
+        console.error("Availability check error:", err);
+        if (!cancelled && isMounted.current) setAvailabilityError(null);
       } finally {
-        setLoading(false);
+        if (!cancelled && isMounted.current) setCheckingAvailability(false);
       }
-    },
-    [fields],
-  );
+    };
+
+    checkAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId, date, time]);
+
+  // ── Handlers ──
+  const updateFields = useCallback((newFields) => {
+    setFields((prev) => ({ ...prev, ...newFields }));
+  }, []);
+
+  const handleSubmit = useCallback(async (values) => {
+    const phoneDigits = getRawPhoneDigits(values.phoneNumber);
+    if (!phoneDigits) {
+      setErrors({ phoneNumber: "Contact number is required." });
+      return;
+    }
+    if (!/^(\+63|0)\d{10}$/.test(phoneDigits)) {
+      setErrors({ phoneNumber: "Enter a valid Philippine number." });
+      return;
+    }
+
+    setLoading(true);
+    setErrors({});
+    try {
+      await bookPublicAppointment({
+        firstName: values.firstName.trim(),
+        middleName: values.middleName?.trim() || undefined,
+        lastName: values.lastName.trim(),
+        birthDate: values.birthDate || undefined,
+        gender: values.gender || undefined,
+        email: values.email?.trim() || undefined,
+        phoneNumber: phoneDigits,
+        address: values.address?.trim() || undefined,
+        branchId: values.branchId,
+        serviceBranchId: values.serviceBranchId,
+        date: values.date,
+        time: values.time,
+        notes: values.notes?.trim() || undefined,
+      });
+
+      message.success("Appointment booked successfully!");
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Booking error:", err);
+      setErrors({ form: err.message || "Failed to book." });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleReset = useCallback(() => {
     setFields(INITIAL_STATE);
     setErrors({});
     setSubmitted(false);
-  }, []);
+    setAvailabilityError(null);
+    form?.resetFields();
+  }, [form]);
 
   return {
     fields,
@@ -242,14 +201,11 @@ export function useBookAppointmentForm() {
     servicesLoading,
     disabledTime,
     disabledDate,
-    handleChange,
-    handleBranchChange,
-    handleDateChange,
-    handleTimeChange,
-    handleBirthDateChange,
+    availabilityError,
+    checkingAvailability,
     handleSubmit,
     handleReset,
-    setFields,
-    setErrors,
+    updateFields,
+    setAvailabilityError,
   };
 }

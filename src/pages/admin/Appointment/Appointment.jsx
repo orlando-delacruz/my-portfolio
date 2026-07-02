@@ -75,13 +75,11 @@ const Appointment = () => {
 
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
-    rescheduleOpen, rescheduleLoading, rescheduleTarget,
+    rescheduleOpen, rescheduleLoading, rescheduleTargetId,
     openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
     onAddSuccess: () => refetch(),
-    onRescheduleSuccess: () => {
-      refetch();
-    },
+    onRescheduleSuccess: () => refetch(),
   });
 
   const filtered = useMemo(() => {
@@ -159,7 +157,6 @@ const Appointment = () => {
         });
         message.success(`Status updated to ${newStatus}.`);
         await refetch();
-        // If details modal is open for this appointment, close it
         if (detailsModalOpen && selectedAppointmentId === id) {
           setDetailsModalOpen(false);
           setSelectedAppointmentId(null);
@@ -174,17 +171,13 @@ const Appointment = () => {
 
   const handleRescheduleById = useCallback(
     (id) => {
-      const apt = sortedAppointments.find((a) => a.id === id);
-      if (apt) {
-        // Close details modal if open
-        if (detailsModalOpen) {
-          setDetailsModalOpen(false);
-          setSelectedAppointmentId(null);
-        }
-        openReschedule(apt);
+      if (detailsModalOpen) {
+        setDetailsModalOpen(false);
+        setSelectedAppointmentId(null);
       }
+      openReschedule(id);
     },
-    [sortedAppointments, openReschedule, detailsModalOpen]
+    [openReschedule, detailsModalOpen]
   );
 
   const handlePageSizeChange = useCallback((size) => {
@@ -316,8 +309,8 @@ const Appointment = () => {
 
       <RescheduleModal
         open={rescheduleOpen}
+        appointmentId={rescheduleTargetId}
         loading={rescheduleLoading}
-        appointment={rescheduleTarget}
         onClose={closeReschedule}
         onSubmit={handleReschedule}
       />

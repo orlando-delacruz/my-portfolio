@@ -1,6 +1,12 @@
 // src/services/appointments.js
 import { supabase } from "./supabase/supabase";
+import dayjs from "dayjs";
+import { getOperatingHoursForDay } from "../utils/scheduling";
 
+// ── Constants ──
+const MIN_INTERVAL_MINUTES = 60;
+
+// ── Status Mapping ──
 export const STATUS_TO_DB = {
   pending: { approval_status: "waiting", appointment_status: "scheduled" },
   confirmed: { approval_status: "approved", appointment_status: "scheduled" },
@@ -15,13 +21,18 @@ export function dbStatusToForm(approval_status, appointment_status) {
   return "pending";
 }
 
-const MIN_INTERVAL_MINUTES = 60;
-
+// ── Helpers ──
 function timeToMinutes(timeStr) {
-  const [h, m] = timeStr.split(":").map(Number);
+  if (!timeStr) return NaN;
+  const parts = timeStr.split(":");
+  if (parts.length !== 3) return NaN;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return NaN;
   return h * 60 + m;
 }
 
+// ── Original Conflict Check ──
 export async function hasBookingConflict({
   branchId,
   date,
@@ -45,6 +56,8 @@ export async function hasBookingConflict({
     )
     .eq("service_branch.branch_id", branchId)
     .or(`preferred_date.eq.${dateStr},confirmed_date.eq.${dateStr}`)
+    .eq("approval_status", "approved")
+    .eq("appointment_status", "scheduled")
     .neq("appointment_status", "cancelled");
 
   if (excludeAppointmentId) {
@@ -58,10 +71,12 @@ export async function hasBookingConflict({
     const existingTimeStr = apt.confirmed_time ?? apt.preferred_time;
     if (!existingTimeStr) return false;
     const existingMinutes = timeToMinutes(existingTimeStr);
+    if (isNaN(existingMinutes)) return false;
     return Math.abs(existingMinutes - requestedMinutes) < MIN_INTERVAL_MINUTES;
   });
 }
 
+// ── Appointment Creation ──
 async function generateReferenceNumber(dateStr) {
   const { count, error } = await supabase
     .from("appointments")
@@ -126,7 +141,7 @@ export async function adminCreateAppointment({
     description: "Appointment created by admin",
     performed_by: "admin",
     admin_id: adminId ?? null,
-    status: logStatus, // ✅ stored
+    status: logStatus,
   });
 
   return data;
@@ -178,7 +193,7 @@ export async function adminRescheduleAppointment({
     description: "Appointment rescheduled by admin",
     performed_by: "admin",
     admin_id: adminId ?? null,
-    status: logStatus, // ✅ stored
+    status: logStatus,
   });
 
   return data;
@@ -207,14 +222,13 @@ export async function adminUpdateAppointmentStatus({
 
   if (error) throw error;
 
-  // status parameter is already the form status (e.g., 'pending', 'confirmed', etc.)
   await supabase.from("appointment_logs").insert({
     appointment_id: appointmentId,
     action: "status_changed",
     description: `Status set to ${status}`,
     performed_by: "admin",
     admin_id: adminId ?? null,
-    status, // ✅ stored (already correct)
+    status,
   });
 
   return data;
@@ -233,69 +247,157 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
   if (deleteError) throw deleteError;
 
   if (adminId) {
-    await supabase.from("appointment_logs").insert({
+    const { error: logError } = await supabase.from("appointment_logs").insert({
       appointment_id: null,
       action: "bulk_deleted",
       description: `Bulk deleted ${appointmentIds.length} appointment(s)`,
       performed_by: "admin",
       admin_id: adminId,
-      status: null, // not a status change
+      status: null,
     });
+
+    if (logError) {
+      console.error("Failed to log bulk deletion:", logError);
+    }
   }
 }
 
-// src/services/appointments.js (add at the end)
-
-/**
- * Fetch a single appointment by ID with all relations (patient, branch, service)
- */
-
-export async function findOrCreatePatient({
-  firstName,
-  middleName,
-  lastName,
-  birthDate,
-  gender,
-  email,
-  phoneNumber,
-  address,
+// ── Conflict Details Functions ──
+export async function getConflictingAppointments({
+  branchId,
+  date,
+  time,
+  excludeAppointmentId,
 }) {
-  // Try to find existing patient by matching first_name, last_name, and phone
-  let query = supabase
-    .from("patients")
-    .select("*")
-    .eq("first_name", firstName)
-    .eq("last_name", lastName);
+  const dateStr = dayjs(date).format("YYYY-MM-DD");
+  const requestedMinutes = time.hour() * 60 + time.minute();
 
-  if (phoneNumber) {
-    query = query.eq("phone_number", phoneNumber);
+  let query = supabase
+    .from("appointments")
+    .select(
+      `
+      id,
+      preferred_time,
+      confirmed_time,
+      appointment_status,
+      approval_status,
+      service_branch:service_branches!inner(branch_id)
+    `,
+    )
+    .eq("service_branch.branch_id", branchId)
+    .or(`preferred_date.eq.${dateStr},confirmed_date.eq.${dateStr}`)
+    .eq("approval_status", "approved")
+    .eq("appointment_status", "scheduled")
+    .neq("appointment_status", "cancelled");
+
+  if (excludeAppointmentId) {
+    query = query.neq("id", excludeAppointmentId);
   }
 
-  const { data: existing, error: findErr } = await query.maybeSingle();
+  const { data, error } = await query;
+  if (error) throw error;
 
-  if (findErr) throw findErr;
-  if (existing) return existing;
+  const conflicts = (data ?? []).filter((apt) => {
+    const existingTimeStr = apt.confirmed_time ?? apt.preferred_time;
+    if (!existingTimeStr) return false;
+    const existingMinutes = timeToMinutes(existingTimeStr);
+    if (isNaN(existingMinutes)) return false;
+    return Math.abs(existingMinutes - requestedMinutes) < MIN_INTERVAL_MINUTES;
+  });
 
-  // Create new patient
-  const { data: created, error: createErr } = await supabase
-    .from("patients")
-    .insert({
-      first_name: firstName,
-      middle_name: middleName || null,
-      last_name: lastName,
-      birth_date: birthDate || null,
-      gender: gender || null,
-      email: email || null,
-      phone_number: phoneNumber || null,
-      address: address || null,
-    })
-    .select()
-    .single();
-
-  if (createErr) throw createErr;
-  return created;
+  return conflicts.map((apt) => ({
+    id: apt.id,
+    time: apt.confirmed_time ?? apt.preferred_time,
+  }));
 }
 
+export async function checkBookingConflictWithDetails({
+  branchId,
+  date,
+  time,
+  excludeAppointmentId,
+}) {
+  const conflicts = await getConflictingAppointments({
+    branchId,
+    date,
+    time,
+    excludeAppointmentId,
+  });
+  const hasConflict = conflicts.length > 0;
+
+  if (!hasConflict) {
+    return {
+      hasConflict: false,
+      conflicts: [],
+      conflictTime: null,
+      previousAvailableTime: null,
+      nextAvailableTime: null,
+    };
+  }
+
+  const sorted = conflicts.sort((a, b) => a.time.localeCompare(b.time));
+  const conflictTime = sorted[0].time;
+  const conflictMinutes = timeToMinutes(conflictTime);
+  const requestedMinutes = time.hour() * 60 + time.minute();
+  const interval = MIN_INTERVAL_MINUTES;
+
+  // Fetch operating hours (if available)
+  let openMinutes = null;
+  let closeMinutes = null;
+  try {
+    const hours = await getOperatingHoursForDay(branchId, date);
+    if (!hours.isClosed && hours.openTime && hours.closeTime) {
+      openMinutes = timeToMinutes(hours.openTime);
+      closeMinutes = timeToMinutes(hours.closeTime);
+    }
+  } catch (e) {
+    console.warn("Could not fetch operating hours for suggestions:", e);
+  }
+
+  let previousAvailableTime = null;
+  let nextAvailableTime = null;
+
+  // Ensure conflictMinutes is valid
+  if (!isNaN(conflictMinutes)) {
+    if (requestedMinutes > conflictMinutes) {
+      // Requested after conflict → next = conflict + interval
+      const afterMinutes = conflictMinutes + interval;
+      const withinHours =
+        (openMinutes === null || afterMinutes > openMinutes) &&
+        (closeMinutes === null || afterMinutes < closeMinutes);
+      if (withinHours) {
+        const afterHour = Math.floor(afterMinutes / 60);
+        const afterMin = afterMinutes % 60;
+        const afterTime = `${String(afterHour).padStart(2, "0")}:${String(afterMin).padStart(2, "0")}:00`;
+        nextAvailableTime = dayjs(`2000-01-01T${afterTime}`).format("h:mm A");
+      }
+    } else {
+      // Requested before conflict → previous = conflict - interval
+      const beforeMinutes = conflictMinutes - interval;
+      const withinHours =
+        (openMinutes === null || beforeMinutes >= openMinutes) &&
+        (closeMinutes === null || beforeMinutes <= closeMinutes);
+      if (withinHours) {
+        const beforeHour = Math.floor(beforeMinutes / 60);
+        const beforeMin = beforeMinutes % 60;
+        const beforeTime = `${String(beforeHour).padStart(2, "0")}:${String(beforeMin).padStart(2, "0")}:00`;
+        previousAvailableTime = dayjs(`2000-01-01T${beforeTime}`).format(
+          "h:mm A",
+        );
+      }
+    }
+  }
+
+  return {
+    hasConflict: true,
+    conflicts: sorted,
+    conflictTime: dayjs(`2000-01-01T${conflictTime}`).format("h:mm A"),
+    previousAvailableTime,
+    nextAvailableTime,
+  };
+}
+
+// ── Get single appointment by ID (full details) ──
 export async function getAppointmentById(appointmentId) {
   const { data, error } = await supabase
     .from("appointments")

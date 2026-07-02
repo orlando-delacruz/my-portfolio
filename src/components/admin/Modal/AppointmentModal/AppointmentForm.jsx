@@ -6,69 +6,69 @@ import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
 import { useScheduling } from "../../../../hooks/useScheduling";
+import { formatPhoneDisplay, getRawPhoneDigits, isValidPhilippinePhone } from "../../../../utils/phoneFormatter";
 import * as S from "./AppointmentModal.styled";
 
 const { Option } = Select;
 
-// ── Phone formatting ──────────────────────────────────────────────────────────
-function formatPhoneNumber(value) {
-  const cleaned = value.replace(/[^\d+]/g, "");
-
-  if (cleaned.startsWith("+63")) {
-    const digits = cleaned.slice(3).slice(0, 10);
-    if (digits.length <= 3) return `+63 ${digits}`;
-    if (digits.length <= 6) return `+63 ${digits.slice(0, 3)} ${digits.slice(3)}`;
-    return `+63 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+// ── Validators ──
+const validatePhone = (_, value) => {
+  if (!value) {
+    return Promise.reject(new Error("Contact number is required."));
   }
-
-  if (cleaned.startsWith("0")) {
-    const digits = cleaned.slice(0, 11);
-    const rest = digits.slice(1);
-    if (rest.length <= 3) return `0${rest}`;
-    if (rest.length <= 6) return `0${rest.slice(0, 3)} ${rest.slice(3)}`;
-    return `0${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6)}`;
-  }
-
-  return value;
-}
-
-function validatePhone(value) {
-  if (!value) return Promise.reject("Contact number is required.");
-  const stripped = value.replace(/\s/g, "");
-  if (!/^(\+63|0)\d{10}$/.test(stripped)) {
+  const stripped = getRawPhoneDigits(value);
+  if (!isValidPhilippinePhone(stripped)) {
     return Promise.reject(
-      "Enter a valid PH number (e.g. 0909 598 4478 or +63 912 345 6789)."
+      new Error("Enter a valid PH number (e.g., 0909 598 4478 or +63 912 345 6789).")
     );
   }
   return Promise.resolve();
-}
+};
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const validateBirthDate = (_, value) => {
+  if (!value) {
+    return Promise.reject(new Error("Please select birthdate."));
+  }
+  if (dayjs(value).isAfter(dayjs(), "day")) {
+    return Promise.reject(new Error("Birthdate cannot be in the future."));
+  }
+  return Promise.resolve();
+};
+
+const validateEmail = (_, value) => {
+  if (!value) return Promise.resolve(); // optional
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    return Promise.reject(new Error("Please enter a valid email address."));
+  }
+  return Promise.resolve();
+};
+
+// ── Component ──
 const AppointmentForm = memo(({ form, showStatus = false }) => {
   const { branches, loading: branchesLoading } = useBranches();
-  const selectedBranch = Form.useWatch("branch", form);
+  const selectedBranch = Form.useWatch("branchId", form);
   const selectedDate = Form.useWatch("date", form);
   const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
-
-  // Use shared scheduling hook
   const { disabledTime } = useScheduling(selectedBranch, selectedDate);
 
   const prevBranchRef = useRef(selectedBranch);
 
   useEffect(() => {
-    if (
-      prevBranchRef.current !== undefined &&
-      prevBranchRef.current !== selectedBranch
-    ) {
-      form.setFieldValue("reason", undefined);
+    if (prevBranchRef.current !== undefined && prevBranchRef.current !== selectedBranch) {
+      form.setFieldValue("serviceBranchId", undefined);
     }
     prevBranchRef.current = selectedBranch;
   }, [selectedBranch, form]);
 
   const handlePhoneChange = useCallback(
     (e) => {
-      const formatted = formatPhoneNumber(e.target.value);
-      form.setFieldValue("contactNumber", formatted);
+      const raw = getRawPhoneDigits(e.target.value);
+      if (raw.length > 11) {
+        e.preventDefault();
+        return;
+      }
+      const formatted = formatPhoneDisplay(raw);
+      form.setFieldValue("phoneNumber", formatted);
     },
     [form]
   );
@@ -76,38 +76,88 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
   return (
     <Form form={form} layout="vertical" requiredMark={false}>
       <S.FormGrid>
-        {/* Patient Name */}
+        {/* ── Patient Information ── */}
         <Form.Item
-          name="patientName"
-          label="Patient Name"
-          rules={[
-            { required: true, message: "Patient name is required." },
-            { min: 2, message: "Name must be at least 2 characters." },
-            {
-              pattern: /^[a-zA-Z\s.'-]+$/,
-              message: "Name contains invalid characters.",
-            },
-          ]}
+          name="firstName"
+          label="First Name"
+          rules={[{ required: true, message: "First name is required." }]}
         >
-          <Input placeholder="e.g. Juan Dela Cruz" maxLength={80} />
+          <Input placeholder="Enter first name" maxLength={80} />
         </Form.Item>
 
-        {/* Contact Number */}
         <Form.Item
-          name="contactNumber"
+          name="middleName"
+          label="Middle Name"
+          rules={[{ required: false }]}
+        >
+          <Input placeholder="(Optional)" maxLength={80} />
+        </Form.Item>
+
+        <Form.Item
+          name="lastName"
+          label="Last Name"
+          rules={[{ required: true, message: "Last name is required." }]}
+        >
+          <Input placeholder="Enter last name" maxLength={80} />
+        </Form.Item>
+
+        <Form.Item
+          name="phoneNumber"
           label="Contact Number"
-          rules={[{ validator: (_, value) => validatePhone(value) }]}
+          rules={[{ validator: validatePhone }]}
         >
           <Input
-            placeholder="0909 598 4478"
+            placeholder="0912 345 6789"
             maxLength={16}
             onChange={handlePhoneChange}
           />
         </Form.Item>
 
-        {/* Branch */}
         <Form.Item
-          name="branch"
+          name="email"
+          label="Email"
+          rules={[{ validator: validateEmail }]}
+        >
+          <Input placeholder="Enter email (optional)" maxLength={256} />
+        </Form.Item>
+
+        <Form.Item
+          name="birthDate"
+          label="Birthdate"
+          rules={[{ validator: validateBirthDate }]}
+        >
+          <DatePicker
+            style={{ width: "100%" }}
+            format="MMM D, YYYY"
+            placeholder="Select birthdate"
+            disabledDate={(current) => current && current > dayjs().endOf('day')}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="gender"
+          label="Gender"
+          rules={[{ required: true, message: "Please select gender." }]}
+        >
+          <Select placeholder="Select gender">
+            <Option value="male">Male</Option>
+            <Option value="female">Female</Option>
+            <Option value="other">Other</Option>
+            <Option value="prefer-not-to-say">Prefer not to say</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="address"
+          label="Complete Address"
+          rules={[{ required: true, message: "Address is required." }]}
+        >
+          <Input placeholder="Enter complete address" />
+        </Form.Item>
+
+        {/* ── Appointment Information ── */}
+        <Form.Item
+          name="branchId"
           label="Branch"
           rules={[{ required: true, message: "Please select a branch." }]}
         >
@@ -120,14 +170,13 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           </Select>
         </Form.Item>
 
-        {/* Reason */}
         <Form.Item
-          name="reason"
-          label="Reason for Visit"
-          rules={[{ required: true, message: "Please select a reason." }]}
+          name="serviceBranchId"
+          label="Service"
+          rules={[{ required: true, message: "Please select a service." }]}
         >
           <Select
-            placeholder={selectedBranch ? "Select reason" : "Select a branch first"}
+            placeholder={selectedBranch ? "Select service" : "Select a branch first"}
             loading={servicesLoading}
             disabled={!selectedBranch}
           >
@@ -139,7 +188,6 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           </Select>
         </Form.Item>
 
-        {/* Preferred Date */}
         <Form.Item
           name="date"
           label="Preferred Date"
@@ -152,7 +200,6 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           />
         </Form.Item>
 
-        {/* Preferred Time */}
         <Form.Item
           name="time"
           label="Preferred Time"
@@ -178,7 +225,14 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           />
         </Form.Item>
 
-        {/* Status — only shown in Reschedule */}
+        <Form.Item
+          name="notes"
+          label="Notes / Remarks"
+          rules={[{ required: false }]}
+        >
+          <Input.TextArea placeholder="Additional notes (optional)" rows={3} />
+        </Form.Item>
+
         {showStatus && (
           <S.FullWidth>
             <Form.Item

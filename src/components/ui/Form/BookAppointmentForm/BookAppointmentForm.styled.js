@@ -1,6 +1,5 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.styled.js
 import styled, { keyframes } from "styled-components";
-import { DatePicker, TimePicker } from "antd";
 import theme from "../../../../styles/theme";
 
 const fadeIn = keyframes`
@@ -8,7 +7,6 @@ const fadeIn = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-/* ─── Form card ───────────────────────────────────────── */
 export const FormCard = styled.div`
   width: 100%;
   max-width: 900px;
@@ -28,7 +26,6 @@ export const FormCard = styled.div`
   }
 `;
 
-/* ─── Clinic brand block at the top ──────────────────── */
 export const BrandBlock = styled.div`
   display: flex;
   flex-direction: column;
@@ -58,7 +55,6 @@ export const BrandTagline = styled.p`
   margin: 0;
 `;
 
-/* ─── Section divider within form ────────────────────── */
 export const FormSection = styled.fieldset`
   border: none;
   padding: 0;
@@ -69,17 +65,17 @@ export const FormSection = styled.fieldset`
 `;
 
 export const FormSectionTitle = styled.legend`
-  font-size: ${theme.typography.heading.h3};
-  font-weight: ${theme.typography.weight.medium};
-  color: ${theme.colors.black};
-  line-height: 1.5;
-  margin-bottom: 14px;
-  padding: 0;
-  float: left;
-  width: 100%;
+  font-size: ${theme.typography.heading.h3} !important;
+  font-weight: ${theme.typography.weight.medium} !important;
+  color: ${theme.colors.black} !important;
+  line-height: 1.5 !important;
+  margin-bottom: 14px !important;
+  padding: 0 !important;
+  float: left !important;
+  width: 100% !important;
+  padding-bottom: 1rem !important;
 `;
 
-/* ─── Two-column row for paired fields ───────────────── */
 export const FieldRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -91,14 +87,12 @@ export const FieldRow = styled.div`
   }
 `;
 
-/* ─── Field group (full width, single col) ───────────── */
 export const FieldGroup = styled.div`
   display: flex;
   flex-direction: column;
   padding: 10px 0;
 `;
 
-/* ─── Form-level error ────────────────────────────────── */
 export const FormError = styled.p`
   font-size: ${theme.typography.size.sm};
   color: ${theme.colors.danger};
@@ -106,177 +100,75 @@ export const FormError = styled.p`
   margin: 0;
 `;
 
-/* ─── Submit button ───────────────────────────────────── */
-export const SubmitButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-  gap: 10px;
-  padding: 14px 32px;
-  border-radius: 50px;
-  background: ${theme.colors.primary};
-  color: ${theme.colors.white};
-  font-size: 20px;
-  font-weight: ${theme.typography.weight.medium};
-  font-family: inherit;
-  line-height: 1.5;
-  border: none;
-  cursor: pointer;
-  align-self: flex-start;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
-
-  svg {
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-
-  &:hover:not(:disabled) {
-    background: ${theme.colors.primaryDark};
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${theme.colors.primary};
-    outline-offset: 4px;
-  }
-
-  @media ${theme.media.mobile} {
-    width: 100%;
-    justify-content: center;
-  }
-`;
-
-/* ─── Text area (for multiline) ───────────────────────── */
-export const TextArea = styled.textarea`
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.2s;
-  &:focus {
-    outline: none;
-    border-color: ${theme.colors.primary};
-  }
-`;
-
-/* ─── Shared label and error text ────────────────────── */
-export const FieldLabel = styled.label`
-  display: block;
-  font-size: ${theme.typography.size.lg};
-  font-weight: ${theme.typography.weight.medium};
-  color: ${theme.colors.black};
-  margin-bottom: 4px;
-`;
-
-export const ErrorText = styled.span`
-  color: ${theme.colors.danger};
-  font-size: 12px;
+export const InfoText = styled.span`
+  font-size: 13px;
+  color: ${theme.colors.primary};
   margin-top: 4px;
+  display: block;
 `;
 
-export const StyledDatePicker = styled(DatePicker)`
-  && {
-    width: 100%;
-    height: 44px; /* fixed height to match Select */
-    border-radius: 50px !important;
-    border: 1.5px solid ${theme.colors.primary} !important;
-    background: ${theme.colors.white} !important;
-    font-size: ${theme.typography.size.body} !important;
-    font-family: inherit !important;
-    color: ${theme.colors.black} !important;
-    padding: 0 !important; /* remove extra padding from container */
-    box-sizing: border-box !important;
+export const WarningText = styled.span`
+  color: #e67e22;
+  font-size: 13px;
+  margin-top: 4px;
+  display: block;
+  background: #fef9e7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #e67e22;
+  line-height: 1.5;
+`;
 
-    .ant-picker-input {
-      height: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      padding: 0 20px !important;
+export const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+`;
 
-      input {
-        font-size: ${theme.typography.size.body} !important;
-        color: ${theme.colors.black} !important;
-        height: 100% !important;
-        padding: 0 !important;
-        &::placeholder {
-          color: #555555 !important;
-        }
-      }
-
-      .ant-picker-suffix {
-        color: ${theme.colors.primary} !important;
-      }
-    }
-
-    &:hover,
-    &.ant-picker-focused {
-      border-color: ${theme.colors.primaryDark} !important;
-      box-shadow: 0 0 0 3px ${theme.colors.primary}22 !important;
-    }
-
-    &.ant-picker-disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+export const BookingFormWrapper = styled.div`
+  /* Placeholder color - darker for readability */
+  .ant-input::placeholder,
+  .ant-select-selection-placeholder,
+  .ant-picker-input input::placeholder,
+  .ant-input-affix-wrapper .ant-input::placeholder,
+  .ant-input-textarea textarea::placeholder {
+    color: #8c8c8c !important;
   }
-`;
 
-/* ─── Custom TimePicker to match form styling ────────── */
-export const StyledTimePicker = styled(TimePicker)`
-  && {
-    width: 100%;
-    height: 44px; /* fixed height to match Select */
-    border-radius: 50px !important;
-    border: 1.5px solid ${theme.colors.primary} !important;
-    background: ${theme.colors.white} !important;
-    font-size: ${theme.typography.size.body} !important;
-    font-family: inherit !important;
-    color: ${theme.colors.black} !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
+  .ant-select-selection-placeholder {
+    color: #8c8c8c !important;
+    font-size: inherit !important;
+  }
 
-    .ant-picker-input {
-      height: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      padding: 0 20px !important;
+  /* Border color - slightly darker for visibility */
+  .ant-input,
+  .ant-select-selector,
+  .ant-picker,
+  .ant-input-affix-wrapper,
+  .ant-input-textarea textarea {
+    border-color: #b3b3b3 !important;
+  }
 
-      input {
-        font-size: ${theme.typography.size.body} !important;
-        color: ${theme.colors.black} !important;
-        height: 100% !important;
-        padding: 0 !important;
-        &::placeholder {
-          color: #555555 !important;
-        }
-      }
+  /* Hover state */
+  .ant-input:hover,
+  .ant-select-selector:hover,
+  .ant-picker:hover {
+    border-color: #40a9ff !important;
+  }
 
-      .ant-picker-suffix {
-        color: ${theme.colors.primary} !important;
-      }
-    }
+  /* Focus state - keep default Ant Design focus */
+  .ant-input:focus,
+  .ant-select-focused .ant-select-selector,
+  .ant-picker-focused {
+    border-color: #40a9ff !important;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+  }
 
-    &:hover,
-    &.ant-picker-focused {
-      border-color: ${theme.colors.primaryDark} !important;
-      box-shadow: 0 0 0 3px ${theme.colors.primary}22 !important;
-    }
-
-    &.ant-picker-disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+  /* Disabled state - keep default */
+  .ant-input-disabled,
+  .ant-select-disabled .ant-select-selector,
+  .ant-picker-disabled {
+    background-color: #f5f5f5 !important;
+    border-color: #d9d9d9 !important;
   }
 `;
