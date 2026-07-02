@@ -8,13 +8,11 @@ import * as S from "./AppointmentModal.styled";
 const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const [form] = Form.useForm();
 
-  // ── Orthodontic patients state ──
   const [patientType, setPatientType] = useState('new');
   const [selectedOrthodonticPatient, setSelectedOrthodonticPatient] = useState(null);
   const [orthodonticPatients, setOrthodonticPatients] = useState([]);
   const [loadingOrtho, setLoadingOrtho] = useState(false);
 
-  // Fetch orthodontic patients when modal opens and ortho tab is selected
   useEffect(() => {
     if (open && patientType === 'ortho') {
       setLoadingOrtho(true);
@@ -25,7 +23,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
     }
   }, [open, patientType]);
 
-  // Reset form and state when modal closes
   useEffect(() => {
     if (!open) {
       form.resetFields();
@@ -37,7 +34,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      // If ortho patient selected, include the patient object
       if (patientType === 'ortho' && selectedOrthodonticPatient) {
         await onSubmit({ ...values, patientType, selectedOrthodonticPatient }, form);
       } else {

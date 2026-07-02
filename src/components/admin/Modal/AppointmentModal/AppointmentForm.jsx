@@ -1,6 +1,6 @@
 // src/components/admin/Modal/AppointmentModal/AppointmentForm.jsx
 import { memo, useEffect, useCallback, useRef } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Radio } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Switch, Radio } from "antd";
 import dayjs from "dayjs";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
@@ -25,7 +25,6 @@ const validatePhone = (_, value) => {
   return Promise.resolve();
 };
 
-// ── Birthdate is now optional ──
 const validateBirthDate = (_, value) => {
   if (!value) return Promise.resolve();
   if (dayjs(value).isAfter(dayjs(), "day")) {
@@ -94,33 +93,23 @@ const AppointmentForm = memo(({
     [selectedBranch, isDateDisabled]
   );
 
-  // ── Patient type change handler ──
+  // ── Patient type change handler (tabs) ──
   const handlePatientTypeChange = (e) => {
     const value = e.target.value;
     onPatientTypeChange?.(value);
-    if (value === 'new') {
-      form.setFieldsValue({
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        phoneNumber: '',
-        email: '',
-        birthDate: null,
-        gender: '',
-        address: '',
-      });
-    } else {
-      form.setFieldsValue({
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        phoneNumber: '',
-        email: '',
-        birthDate: null,
-        gender: '',
-        address: '',
-      });
-    }
+    form.setFieldsValue({
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      phoneNumber: '',
+      email: '',
+      birthDate: null,
+      gender: '',
+      address: '',
+      isOrthodontic: false,
+    });
+    onOrthodonticPatientSelect?.(null);
+    form.setFieldValue('serviceBranchId', undefined);
   };
 
   // ── Orthodontic patient selection handler ──
@@ -147,11 +136,12 @@ const AppointmentForm = memo(({
   };
 
   const isOrthoSelected = patientType === 'ortho' && selectedOrthodonticPatient !== null;
+  const isNewPatient = patientType === 'new';
 
   return (
     <Form form={form} layout="vertical" requiredMark={false}>
       <S.FormGrid>
-        {/* ── Patient Type Selector (only in Add mode) ── */}
+        {/* ── Patient Type Tabs ── */}
         {showPatientSelector && (
           <S.FullWidth>
             <Form.Item label="Patient Type" required>
@@ -250,7 +240,7 @@ const AppointmentForm = memo(({
         <Form.Item
           name="birthDate"
           label="Birthdate"
-          rules={[{ validator: validateBirthDate }]}  // ✅ optional
+          rules={[{ validator: validateBirthDate }]}
         >
           <DatePicker
             style={{ width: "100%" }}
@@ -275,13 +265,22 @@ const AppointmentForm = memo(({
         <Form.Item
           name="address"
           label="Complete Address"
-          rules={[{ required: false }]}  // ✅ optional
+          rules={[{ required: false }]}
         >
           <Input
             placeholder="Enter complete address (optional)"
             disabled={isOrthoSelected}
           />
         </Form.Item>
+
+        {/* ── Mark as Orthodontic (only for new patients) ── */}
+        {showPatientSelector && isNewPatient && (
+          <S.FullWidth>
+            <Form.Item label="Mark as Orthodontic Patient" valuePropName="checked">
+              <Switch name="isOrthodontic" />
+            </Form.Item>
+          </S.FullWidth>
+        )}
 
         {/* ── Appointment Information ── */}
         <Form.Item

@@ -41,13 +41,7 @@ function formatMinutesToTime(minutes) {
 }
 
 // ── Global Conflict Check (ignores branch) ──
-export async function hasBookingConflict({
-  // eslint-disable-next-line no-unused-vars
-  branchId: _branchId, // kept for API compatibility but ignored
-  date,
-  time,
-  excludeAppointmentId,
-}) {
+export async function hasBookingConflict({ date, time, excludeAppointmentId }) {
   const dateStr = date.format("YYYY-MM-DD");
   const requestedMinutes = time.hour() * 60 + time.minute();
 
@@ -105,7 +99,6 @@ export async function adminCreateAppointment({
   adminId,
 }) {
   const conflict = await hasBookingConflict({
-    branchId: serviceBranch.branch_id,
     date,
     time,
   });
@@ -118,7 +111,9 @@ export async function adminCreateAppointment({
 
   const dateStr = date.format("YYYYMMDD");
   const reference_number = await generateReferenceNumber(dateStr);
-  const { approval_status, appointment_status } = STATUS_TO_DB.pending;
+
+  // ✅ Admin-created appointments default to Confirmed
+  const { approval_status, appointment_status } = STATUS_TO_DB.confirmed;
 
   const { data, error } = await supabase
     .from("appointments")
@@ -156,14 +151,12 @@ export async function adminCreateAppointment({
 
 export async function adminRescheduleAppointment({
   appointmentId,
-  branchId,
   date,
   time,
   status,
   adminId,
 }) {
   const conflict = await hasBookingConflict({
-    branchId,
     date,
     time,
     excludeAppointmentId: appointmentId,
@@ -271,8 +264,6 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
 
 // ── Global Conflict Details (ignores branch) ──
 export async function getConflictingAppointments({
-  // eslint-disable-next-line no-unused-vars
-  branchId: _branchId, // kept for API compatibility but ignored
   date,
   time,
   excludeAppointmentId,
@@ -324,7 +315,6 @@ export async function checkBookingConflictWithDetails({
   excludeAppointmentId,
 }) {
   const conflicts = await getConflictingAppointments({
-    branchId,
     date,
     time,
     excludeAppointmentId,
@@ -347,17 +337,14 @@ export async function checkBookingConflictWithDetails({
   const requestedMinutes = time.hour() * 60 + time.minute();
   const interval = MIN_INTERVAL_MINUTES;
 
-  // Always compute suggestions based on conflict and interval first
   let previousAvailableTime = null;
   let nextAvailableTime = null;
 
   if (!isNaN(conflictMinutes)) {
     if (requestedMinutes > conflictMinutes) {
-      // Requested after conflict → next = conflict + interval
       const afterMinutes = conflictMinutes + interval;
       nextAvailableTime = formatMinutesToTime(afterMinutes);
     } else {
-      // Requested before conflict → previous = conflict - interval
       const beforeMinutes = conflictMinutes - interval;
       if (beforeMinutes >= 0) {
         previousAvailableTime = formatMinutesToTime(beforeMinutes);
@@ -365,7 +352,6 @@ export async function checkBookingConflictWithDetails({
     }
   }
 
-  // Now fetch operating hours to filter out suggestions that fall outside hours
   try {
     const hours = await getOperatingHoursForDay(branchId, date);
     if (!hours.isClosed && hours.openTime && hours.closeTime) {
@@ -373,7 +359,6 @@ export async function checkBookingConflictWithDetails({
       const closeMinutes = timeToMinutes(hours.closeTime);
 
       if (!isNaN(openMinutes) && !isNaN(closeMinutes)) {
-        // Filter previousAvailableTime (must be >= openMinutes and <= closeMinutes)
         if (previousAvailableTime) {
           const prevMinutes = timeToMinutes(
             dayjs(previousAvailableTime, "h:mm A").format("HH:mm:ss"),
@@ -382,7 +367,6 @@ export async function checkBookingConflictWithDetails({
             previousAvailableTime = null;
           }
         }
-        // Filter nextAvailableTime (must be >= openMinutes and <= closeMinutes)
         if (nextAvailableTime) {
           const nextMinutes = timeToMinutes(
             dayjs(nextAvailableTime, "h:mm A").format("HH:mm:ss"),
@@ -394,7 +378,6 @@ export async function checkBookingConflictWithDetails({
       }
     }
   } catch (e) {
-    // If we can't fetch hours, keep the suggestions (they might be outside hours, but it's better than nothing)
     console.warn(
       "Could not fetch operating hours for filtering suggestions:",
       e,

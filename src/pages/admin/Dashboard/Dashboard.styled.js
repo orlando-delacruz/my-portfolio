@@ -137,7 +137,7 @@ export const StatCard = styled.div`
     border-radius: 12px;
     height: 85px;
     flex-direction: column;
-    height: 100%;
+    height: 140px;
     align-items: start;
   }
 

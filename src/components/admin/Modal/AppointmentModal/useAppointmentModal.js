@@ -48,7 +48,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
             email: values.email || undefined,
             phoneNumber: getRawPhoneDigits(values.phoneNumber),
             address: values.address,
-            isOrthodontic: false, // New patient can be marked ortho later; we don't have a checkbox yet but can add one.
+            isOrthodontic: values.isOrthodontic || false, // ✅ New toggle
           });
         }
 
@@ -122,8 +122,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       if (!rescheduleTargetId) return;
       setRescheduleLoading(true);
       try {
-        // We'll keep the patient info as-is; but we might want to update if changed.
-        // For simplicity, we don't change patient data in reschedule.
         const updated = await adminRescheduleAppointment({
           appointmentId: rescheduleTargetId,
           branchId: values.branchId,
