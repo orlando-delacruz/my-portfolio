@@ -24,6 +24,7 @@ import { useRealtimeAppointments } from '../../../hooks/useRealtimeAppointments'
 import { quickActions } from '../../../data/admin/dashboard';
 import {
   AddAppointmentModal,
+  RescheduleModal,
   useAppointmentModal,
 } from '../../../components/admin/Modal/AppointmentModal';
 import AppointmentDetailsModal from '../../../components/admin/Modal/AppointmentDetailsModal';
@@ -113,7 +114,8 @@ const Dashboard = () => {
   // ── Modal hook ──────────────────────────────────────────
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
-    openReschedule,
+    rescheduleOpen, rescheduleLoading, rescheduleTargetId,
+    openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
     onAddSuccess: () => refetch(),
     onRescheduleSuccess: () => refetch(),
@@ -204,7 +206,6 @@ const Dashboard = () => {
         });
         message.success(`Status updated to ${newStatus}.`);
         await refetch();
-        // Close details modal after successful update
         handleCloseDetails();
       } catch (err) {
         console.error(err);
@@ -215,11 +216,9 @@ const Dashboard = () => {
   );
 
   const handleRescheduleFromDetails = useCallback(
-    (appointment) => {
-      // Close details modal
+    (appointmentId) => {
       handleCloseDetails();
-      // Open reschedule modal with the appointment object
-      openReschedule(appointment);
+      openReschedule(appointmentId);
     },
     [handleCloseDetails, openReschedule]
   );
@@ -327,6 +326,7 @@ const Dashboard = () => {
               </S.ViewApptBtn>
             </div>
           </S.NextApptCard>
+
           {/* Today's schedule table */}
           <S.ScheduleCard>
             <S.ScheduleHeader>
@@ -338,38 +338,37 @@ const Dashboard = () => {
                 View Calendar
               </S.ViewCalendarLink>
             </S.ScheduleHeader>
-            <S.ScheduleScrollWrapper>
-              <S.ScheduleTable>
-                <S.ScheduleThead>
+
+            <S.ScheduleTable>
+              <S.ScheduleThead>
+                <tr>
+                  <S.ScheduleTh scope="col">Time</S.ScheduleTh>
+                  <S.ScheduleTh scope="col">Patient</S.ScheduleTh>
+                  <S.ScheduleTh scope="col">Services</S.ScheduleTh>
+                  <S.ScheduleTh scope="col">Status</S.ScheduleTh>
+                </tr>
+              </S.ScheduleThead>
+              <tbody>
+                {schedule.length === 0 ? (
                   <tr>
-                    <S.ScheduleTh scope="col">Time</S.ScheduleTh>
-                    <S.ScheduleTh scope="col">Patient</S.ScheduleTh>
-                    <S.ScheduleTh scope="col">Services</S.ScheduleTh>
-                    <S.ScheduleTh scope="col">Status</S.ScheduleTh>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
+                      No appointments scheduled for today
+                    </td>
                   </tr>
-                </S.ScheduleThead>
-                <tbody>
-                  {schedule.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
-                        No appointments scheduled for today
-                      </td>
+                ) : (
+                  schedule.map((row) => (
+                    <tr key={row.id}>
+                      <S.ScheduleTd>{row.time}</S.ScheduleTd>
+                      <S.ScheduleTd>{row.patient}</S.ScheduleTd>
+                      <S.ScheduleTd>{row.service}</S.ScheduleTd>
+                      <S.ScheduleTd>
+                        <StatusBadge status={row.status} />
+                      </S.ScheduleTd>
                     </tr>
-                  ) : (
-                    schedule.map((row) => (
-                      <tr key={row.id}>
-                        <S.ScheduleTd>{row.time}</S.ScheduleTd>
-                        <S.ScheduleTd>{row.patient}</S.ScheduleTd>
-                        <S.ScheduleTd>{row.service}</S.ScheduleTd>
-                        <S.ScheduleTd>
-                          <StatusBadge status={row.status} />
-                        </S.ScheduleTd>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </S.ScheduleTable>
-            </S.ScheduleScrollWrapper>
+                  ))
+                )}
+              </tbody>
+            </S.ScheduleTable>
           </S.ScheduleCard>
         </S.TwoColGrid>
 
@@ -516,6 +515,15 @@ const Dashboard = () => {
         loading={addLoading}
         onClose={closeAdd}
         onSubmit={handleAdd}
+      />
+
+      {/* ── Reschedule Modal ─────────────────────────────────── */}
+      <RescheduleModal
+        open={rescheduleOpen}
+        appointmentId={rescheduleTargetId}
+        loading={rescheduleLoading}
+        onClose={closeReschedule}
+        onSubmit={handleReschedule}
       />
 
       {/* ── Appointment Details Modal ───────────────────────── */}

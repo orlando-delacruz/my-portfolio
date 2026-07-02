@@ -2,43 +2,60 @@
 import { supabase } from "./supabase/supabase";
 
 export async function fetchActiveBranches() {
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name, status")
-    .eq("status", "active")
-    .order("name");
+  // Log environment variables
+  console.log(
+    "[fetchActiveBranches] Supabase URL:",
+    import.meta.env.VITE_SUPABASE_URL,
+  );
+  console.log(
+    "[fetchActiveBranches] Supabase Anon Key exists:",
+    !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  );
 
-  if (error) throw error;
-  return data;
-}
+  // First try using the Supabase client
+  try {
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, name, status")
+      .eq("status", "active")
+      .order("name");
 
-export async function getOperatingHours(branchId) {
-  const { data, error } = await supabase
-    .from("operating_hours")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("day_of_week");
-
-  if (error) throw error;
-  return data;
-}
-
-export async function getClinicClosures(branchId, startDate, endDate) {
-  let query = supabase
-    .from("clinic_closures")
-    .select("*")
-    .eq("branch_id", branchId)
-    .eq("is_cancelled", false)
-    .eq("affects_booking", true);
-
-  if (startDate) {
-    query = query.gte("start_date", startDate);
-  }
-  if (endDate) {
-    query = query.lte("end_date", endDate);
+    if (!error) {
+      console.log("[fetchActiveBranches] Supabase client success:", data);
+      return data || [];
+    }
+    console.warn("[fetchActiveBranches] Supabase client error:", error);
+  } catch (err) {
+    console.warn("[fetchActiveBranches] Supabase client exception:", err);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
+  // Fallback: direct REST call (no cache buster)
+  console.log("[fetchActiveBranches] Falling back to direct REST fetch...");
+
+  // ✅ Fixed URL: removed the `_=${cacheBuster}` parameter which was causing errors
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/branches?status=eq.active&select=id,name,status&order=name`;
+  console.log("[fetchActiveBranches] Fetching URL:", url);
+
+  const response = await fetch(url, {
+    headers: {
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ""}`,
+      "Content-Type": "application/json",
+      // Optional: prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
+
+  console.log("[fetchActiveBranches] Response status:", response.status);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[fetchActiveBranches] Error response:", errorText);
+    throw new Error(
+      `Failed to fetch branches: ${response.status} ${response.statusText} – ${errorText}`,
+    );
+  }
+  const data = await response.json();
+  console.log("[fetchActiveBranches] Direct fetch success:", data);
   return data;
 }

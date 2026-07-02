@@ -2,11 +2,15 @@
 import { useEffect, useState, useRef } from "react";
 import { fetchActiveBranches } from "../services/branches";
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1500;
+
 export function useBranches() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const isMounted = useRef(true);
+  const retryCount = useRef(0);
 
   useEffect(() => {
     isMounted.current = true;
@@ -18,20 +22,26 @@ export function useBranches() {
           setError(null);
         }
 
-        console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
-        console.log(
-          "Supabase Anon Key:",
-          import.meta.env.VITE_SUPABASE_ANON_KEY?.slice(0, 10) + "...",
-        );
-
+        console.log("[useBranches] Attempting to load branches...");
         const data = await fetchActiveBranches();
 
         if (isMounted.current) {
           setBranches(data);
           setLoading(false);
+          console.log("[useBranches] Branches loaded successfully:", data);
         }
       } catch (err) {
-        console.error("useBranches error:", err);
+        console.error("[useBranches] Error:", err);
+        if (retryCount.current < MAX_RETRIES) {
+          retryCount.current += 1;
+          console.log(
+            `[useBranches] Retrying (${retryCount.current}/${MAX_RETRIES})...`,
+          );
+          setTimeout(() => {
+            if (isMounted.current) loadBranches();
+          }, RETRY_DELAY);
+          return;
+        }
         if (isMounted.current) {
           setError(err.message || "Failed to load branches");
           setBranches([]);
@@ -49,3 +59,5 @@ export function useBranches() {
 
   return { branches, loading, error };
 }
+
+export default useBranches;

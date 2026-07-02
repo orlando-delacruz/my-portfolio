@@ -481,6 +481,7 @@ export const Panel = styled.div`
   flex-direction: column;
   height: 400px;
   overflow: hidden;
+  gap: 10px;
 `;
 
 export const PanelHeader = styled.div`
@@ -520,7 +521,7 @@ export const PanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
   margin: 0 -6px;
-  padding: 0 6px;
+  padding: 4px 6px;
 
   scrollbar-width: thin;
   &::-webkit-scrollbar {
@@ -589,7 +590,7 @@ export const ApptName = styled.span`
 
   @media (max-width: 480px) {
     font-size: 13px;
-    max-width: 100px;
+    max-width: 150px;
   }
 `;
 

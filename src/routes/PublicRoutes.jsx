@@ -52,7 +52,7 @@ export default function PublicRoutes() {
 
         {/* Admin (protected) */}
         <Route path="/admin" element={<ProtectedRoute />}>
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<Dashboard />} />
           <Route path="appointments" element={<Appointment />} />
           {/* <Route path="calendar" element={<AppointmentCalendar />} /> */}
           <Route path="calendar" element={<PageDevelopment />} />

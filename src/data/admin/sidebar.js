@@ -14,7 +14,7 @@ export const sidebarNavItems = [
     key: "dashboard",
     label: "Dashboard",
     icon: MdDashboard,
-    path: "/admin/dashboard",
+    path: "/admin",
   },
   {
     key: "appointment",
