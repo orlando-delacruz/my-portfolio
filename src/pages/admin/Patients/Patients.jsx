@@ -6,6 +6,7 @@ import { usePatients } from '../../../hooks/usePatients';
 import EditPatientModal from '../../../components/admin/Modal/EditPatientModal';
 import { updatePatient } from '../../../services/patients';
 import Pagination from '../../../components/admin/Pagination';
+import { formatPhoneDisplay } from '../../../utils/phoneFormatter';
 import * as S from './Patients.styled';
 
 const Patients = () => {
@@ -150,7 +151,7 @@ const Patients = () => {
                     <S.Td>
                       {patient.first_name} {patient.middle_name ? patient.middle_name + ' ' : ''}{patient.last_name}
                     </S.Td>
-                    <S.Td>{patient.phone_number || '—'}</S.Td>
+                    <S.Td>{patient.phone_number ? formatPhoneDisplay(patient.phone_number) : '—'}</S.Td>  {/* ✅ Format phone */}
                     <S.Td>{patient.email || '—'}</S.Td>
                     <S.Td>{patient.branch?.name || '—'}</S.Td>
                     <S.Td>

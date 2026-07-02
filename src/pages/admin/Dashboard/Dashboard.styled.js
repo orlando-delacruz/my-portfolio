@@ -114,8 +114,6 @@ export const StatsGrid = styled.div`
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  /* ✅ 2 columns on mobile for 2×2 grid */
 `;
 
 export const StatCard = styled.div`
@@ -139,12 +137,6 @@ export const StatCard = styled.div`
     flex-direction: column;
     height: 140px;
     align-items: start;
-  }
-
-  @media (max-width: 360px) {
-    padding: 12px 8px;
-    gap: 8px;
-    height: 75px;
   }
 `;
 

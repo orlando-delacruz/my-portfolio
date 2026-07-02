@@ -10,6 +10,7 @@ import {
   STATUS_CONFIG,
   TABLE_COLUMNS,
 } from "../../../../../data/admin/appointment";
+import { formatPhoneDisplay } from "../../../../../utils/phoneFormatter";
 import * as S from "./Table.styled";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -111,18 +112,16 @@ const AppointmentTable = ({
   onPageChange,
   onSizeChange,
   loading,
-  onRowClick, // new prop
+  onRowClick,
 }) => {
   const handleSelectAll = useCallback(
     (e) => onSelectAll(e.target.checked),
     [onSelectAll]
   );
 
-  // ── Row click handler ──
   const handleRowClick = useCallback(
     (e, appointment) => {
       const target = e.target;
-      // Ignore clicks on interactive elements inside the row
       if (
         target.closest('input[type="checkbox"]') ||
         target.closest('button') ||
@@ -191,7 +190,7 @@ const AppointmentTable = ({
                   </S.TD>
                   <S.TD>{apt.referenceNo}</S.TD>
                   <S.TD>{apt.patientName}</S.TD>
-                  <S.TD>{apt.contactNumber}</S.TD>
+                  <S.TD>{formatPhoneDisplay(apt.contactNumber)}</S.TD>  {/* ✅ Format phone */}
                   <S.TD>
                     <BranchBadge branchName={apt.branchName} />
                   </S.TD>
