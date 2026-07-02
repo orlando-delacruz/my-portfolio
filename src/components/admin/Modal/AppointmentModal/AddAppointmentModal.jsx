@@ -13,6 +13,16 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const [orthodonticPatients, setOrthodonticPatients] = useState([]);
   const [loadingOrtho, setLoadingOrtho] = useState(false);
 
+  // Reset form when modal opens (form is mounted)
+  useEffect(() => {
+    if (open) {
+      form.resetFields();
+      setPatientType('new');
+      setSelectedOrthodonticPatient(null);
+    }
+  }, [open, form]);
+
+  // Fetch orthodontic patients when modal opens and ortho tab is selected
   useEffect(() => {
     if (open && patientType === 'ortho') {
       setLoadingOrtho(true);
@@ -23,14 +33,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
     }
   }, [open, patientType]);
 
-  useEffect(() => {
-    if (!open) {
-      form.resetFields();
-      setPatientType('new');
-      setSelectedOrthodonticPatient(null);
-    }
-  }, [open, form]);
-
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
@@ -39,6 +41,7 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
       } else {
         await onSubmit({ ...values, patientType }, form);
       }
+      // Parent onClose will close the modal
     } catch {
       // Ant Design handles field-level errors
     }

@@ -1,6 +1,6 @@
 // src/pages/admin/Appointment/Appointment.styled.js
 import styled from "styled-components";
-import adminTheme from "../../../styles/adminTheme";
+import { Button } from "antd";
 
 export const PageContainer = styled.div`
   padding: 24px;
@@ -9,66 +9,55 @@ export const PageContainer = styled.div`
     padding: 16px;
   }
 
-  /* Spacing between sections */
   display: flex;
   flex-direction: column;
   gap: 24px;
 `;
 
-export const SelectionToolbar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: #f0f7ff;
-  border-radius: 8px;
-  border-left: 4px solid ${adminTheme.colors.primary};
-  margin-bottom: 8px;
-  gap: 16px;
-  flex-wrap: wrap;
-`;
-
-export const SelectionInfo = styled.div`
+// ── Floating Delete Button (using Ant Design Button) ──
+export const FloatingDeleteButton = styled(Button)`
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  border-radius: 50px;
+  padding: 12px 28px;
+  height: auto;
+  font-size: 16px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${adminTheme.colors.black};
+  animation: fadeUp 0.25s ease-out;
 
-  span {
-    background: ${adminTheme.colors.primary};
-    color: #fff;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 13px;
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
-`;
-
-export const DeleteButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  background: ${({ $loading }) => ($loading ? "#f5f5f5" : "#dc2626")};
-  color: ${({ $loading }) => ($loading ? "#999" : "#fff")};
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: ${({ $loading }) => ($loading ? "not-allowed" : "pointer")};
-  transition: background 0.2s;
 
   &:hover:not(:disabled) {
-    background: #b91c1c;
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
   }
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  @media (max-width: 640px) {
+    bottom: 20px;
+    padding: 10px 20px;
+    font-size: 14px;
+    width: auto;
+    min-width: 120px;
+    justify-content: center;
   }
 
-  svg {
-    font-size: 18px;
+  .anticon {
+    font-size: 20px;
   }
 `;

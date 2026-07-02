@@ -196,33 +196,22 @@ const Appointment = () => {
     setCurrentPage(1);
   }, []);
 
-  const handleDeleteSelected = useCallback(() => {
+  // ── Bulk Delete ──
+  const handleBulkDelete = useCallback(() => {
     const count = selected.size;
     if (count === 0) return;
 
     Modal.confirm({
-      title: "Delete Selected Appointments",
-      content: (
-        <div>
-          <p>
-            You are about to delete <strong>{count}</strong> appointment
-            {count > 1 ? "s" : ""}.
-          </p>
-          <p style={{ color: "#dc2626", marginTop: 8 }}>
-            This action cannot be undone.
-          </p>
-        </div>
-      ),
-      okText: "Yes, Delete",
-      okType: "danger",
-      cancelText: "Cancel",
+      title: `Delete ${count} Appointment${count > 1 ? 's' : ''}`,
+      content: 'Are you sure you want to delete the selected appointments? This action cannot be undone.',
+      okText: `Delete ${count}`,
+      okType: 'danger',
+      cancelText: 'Cancel',
       onOk: async () => {
         setIsDeleting(true);
         try {
           await adminBulkDeleteAppointments(Array.from(selected), profile?.id);
-          message.success(
-            `Successfully deleted ${count} appointment${count > 1 ? "s" : ""}.`
-          );
+          message.success(`Successfully deleted ${count} appointment${count > 1 ? 's' : ''}.`);
           await refetch();
           setSelected(new Set());
         } catch (err) {
@@ -234,10 +223,10 @@ const Appointment = () => {
           setIsDeleting(false);
         }
       },
-      onCancel() { },
     });
   }, [selected, profile, refetch]);
 
+  // ── Row click handler ──
   const handleRowClick = useCallback((appointment) => {
     setSelectedAppointmentId(appointment.id);
     setDetailsModalOpen(true);
@@ -248,29 +237,11 @@ const Appointment = () => {
     setSelectedAppointmentId(null);
   }, []);
 
-  const renderSelectionToolbar = () => {
-    if (selected.size === 0) return null;
-
-    return (
-      <S.SelectionToolbar>
-        <S.SelectionInfo>
-          <span>{selected.size}</span> appointment{selected.size > 1 ? "s" : ""} selected
-        </S.SelectionInfo>
-        <S.DeleteButton
-          onClick={handleDeleteSelected}
-          disabled={isDeleting}
-          $loading={isDeleting}
-          aria-label="Delete selected appointments"
-        >
-          <IoTrashBinOutline aria-hidden="true" />
-          {isDeleting ? "Deleting..." : "Delete Selected"}
-        </S.DeleteButton>
-      </S.SelectionToolbar>
-    );
-  };
-
   const allSelected =
     paginated.length > 0 && selected.size === paginated.length;
+
+  const hasSelected = selected.size > 0;
+  const selectedCount = selected.size;
 
   return (
     <AdminLayout>
@@ -281,7 +252,6 @@ const Appointment = () => {
           onChange={handleFilterChange}
           onReset={handleResetFilters}
         />
-        {renderSelectionToolbar()}
         <AppointmentTable
           appointments={paginated}
           selected={selected}
@@ -299,6 +269,19 @@ const Appointment = () => {
           onRowClick={handleRowClick}
         />
       </S.PageContainer>
+
+      {/* ── Floating Delete Button ── */}
+      {hasSelected && (
+        <S.FloatingDeleteButton
+          onClick={handleBulkDelete}
+          loading={isDeleting}
+          disabled={isDeleting}
+          danger
+          icon={<IoTrashBinOutline />}
+        >
+          Delete {selectedCount}
+        </S.FloatingDeleteButton>
+      )}
 
       <AddAppointmentModal
         open={addOpen}

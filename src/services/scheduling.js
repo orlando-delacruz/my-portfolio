@@ -23,7 +23,6 @@ function timeToMinutes(timeStr) {
 export async function getConfirmedAppointmentsForDate(branchId, date) {
   const dateStr = dayjs(date).format("YYYY-MM-DD");
 
-  // Query all appointments for the date, regardless of branch
   const { data, error } = await supabase
     .from("appointments")
     .select("confirmed_time, preferred_time")
@@ -46,7 +45,6 @@ export async function getConfirmedAppointmentsForDate(branchId, date) {
 
 /**
  * Get operating hours for a branch on a specific date (branch-specific).
- * This still respects branch-specific hours because each branch may have different hours.
  * @param {string} branchId - the branch to get hours for
  * @param {dayjs} date - the date
  * @returns {Object} { isClosed, openMinutes, closeMinutes }
@@ -94,7 +92,6 @@ export async function hasAvailableSlot(branchId, date) {
     return false;
   }
 
-  // Get global appointments
   const appointmentMinutes = await getConfirmedAppointmentsForDate(null, date);
   const sortedMinutes = appointmentMinutes
     .map((t) => timeToMinutes(t))
@@ -112,7 +109,7 @@ export async function hasAvailableSlot(branchId, date) {
 }
 
 /**
- * Get disabled hours and minutes for TimePicker (global conflicts).
+ * Get disabled hours and minutes for TimePicker (global conflicts + past times).
  * @param {string} branchId - ignored for conflicts, used for operating hours
  * @param {dayjs} date - the date
  * @returns {Object} { disabledHours: () => [...], disabledMinutes: (h) => [...] }
@@ -144,42 +141,56 @@ export async function getDisabledTimes(branchId, date) {
     };
   }
 
-  // Global appointments
+  // Get global appointments for the date
   const appointmentMinutes = await getConfirmedAppointmentsForDate(null, date);
   const sortedMinutes = appointmentMinutes
     .map((t) => timeToMinutes(t))
     .filter((m) => !isNaN(m))
     .sort((a, b) => a - b);
 
-  const conflictDisabledSet = new Set();
+  // ── Build a set of disabled minutes (conflicts + operating hours + past times) ──
+  const disabledMinutesSet = new Set();
+
+  // 1. Add minutes outside operating hours
+  for (let m = 0; m < 24 * 60; m++) {
+    if (m < openMin || m >= closeMin) {
+      disabledMinutesSet.add(m);
+    }
+  }
+
+  // 2. Add minutes that conflict with confirmed appointments
   for (let m = openMin; m < closeMin; m++) {
     const isDisabled = sortedMinutes.some(
       (aptMin) => Math.abs(aptMin - m) < MIN_INTERVAL_MINUTES,
     );
     if (isDisabled) {
-      conflictDisabledSet.add(m);
+      disabledMinutesSet.add(m);
     }
   }
 
+  // 3. ✅ Add past times for today (fix: compare date with current date)
+  const now = dayjs();
+  const isToday = date.isSame(now, "day");
+  if (isToday) {
+    const currentTotalMinutes = now.hour() * 60 + now.minute();
+    for (let m = openMin; m < closeMin; m++) {
+      if (m < currentTotalMinutes) {
+        disabledMinutesSet.add(m);
+      }
+    }
+  }
+
+  // ── Build disabledHours and disabledMinutesByHour ──
   const disabledHours = [];
   const disabledMinutesByHour = {};
 
   for (let h = 0; h < 24; h++) {
     const start = h * 60;
     const end = start + 60;
-    const hourStart = start;
-    const hourEnd = end - 1;
     const disabledMinutes = [];
 
-    if (hourEnd < openMin || hourStart >= closeMin) {
-      disabledHours.push(h);
-      continue;
-    }
-
     for (let m = start; m < end; m++) {
-      if (m < openMin || m >= closeMin) {
-        disabledMinutes.push(m - start);
-      } else if (conflictDisabledSet.has(m)) {
+      if (disabledMinutesSet.has(m)) {
         disabledMinutes.push(m - start);
       }
     }
@@ -195,4 +206,20 @@ export async function getDisabledTimes(branchId, date) {
     disabledHours: () => disabledHours,
     disabledMinutes: (h) => disabledMinutesByHour[h] || [],
   };
+}
+
+export async function getFullyBookedDatesInMonth(branchId, monthDate) {
+  const start = dayjs(monthDate).startOf("month");
+  const end = dayjs(monthDate).endOf("month");
+  const dates = [];
+  const current = start.clone();
+
+  while (current.isBefore(end) || current.isSame(end, "day")) {
+    const hasSlot = await hasAvailableSlot(branchId, current);
+    if (!hasSlot) {
+      dates.push(current.format("YYYY-MM-DD"));
+    }
+    current.add(1, "day");
+  }
+  return dates;
 }
