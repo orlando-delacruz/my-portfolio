@@ -4,12 +4,10 @@ import { message } from "antd";
 import dayjs from "dayjs";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
-import { useScheduling } from "../../../../hooks/useScheduling";
+import { useAppointmentAvailability } from "../../../../hooks/useAppointmentAvailability";
 import { bookPublicAppointment } from "../../../../services/publicBooking";
-import { checkBookingConflictWithDetails } from "../../../../services/appointments";
 import { supabase } from "../../../../services/supabase/supabase";
 import { getRawPhoneDigits } from "../../../../utils/phoneFormatter";
-import { generateConflictMessage } from "../../../../utils/conflictMessage";
 
 const INITIAL_STATE = {
   firstName: "",
@@ -33,17 +31,22 @@ export function useBookAppointmentForm(form) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [closures, setClosures] = useState([]);
-  const [availabilityError, setAvailabilityError] = useState(null);
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const isMounted = useRef(true);
 
-  const { branches, loading: branchesLoading } = useBranches();
+  const {
+    branches,
+    loading: branchesLoading,
+    error: branchError,
+  } = useBranches();
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
+  // Use simplified availability hook
   const selectedDate = fields.date ? dayjs(fields.date) : null;
-  const { disabledTime } = useScheduling(fields.branchId, selectedDate);
+  const { disabledTime, isDateFullyBooked, isDateDisabled } =
+    useAppointmentAvailability(fields.branchId, selectedDate);
 
+  // Fetch closures for the selected branch
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -76,68 +79,26 @@ export function useBookAppointmentForm(form) {
     loadClosures();
   }, [fields.branchId]);
 
+  // Combined disabledDate: closures + fully booked
   const disabledDate = useCallback(
     (current) => {
       if (!fields.branchId) return true;
       if (!current) return false;
       const dateStr = dayjs(current).format("YYYY-MM-DD");
-      return closures.some((c) => {
+      // Check closures
+      const isClosure = closures.some((c) => {
         const start = dayjs(c.start_date);
         const end = dayjs(c.end_date);
         return dayjs(dateStr).isBetween(start, end, "day", "[]");
       });
+      if (isClosure) return true;
+      // Check if fully booked via hook
+      return isDateDisabled(current);
     },
-    [fields.branchId, closures],
+    [fields.branchId, closures, isDateDisabled],
   );
 
-  // ── Availability check with detailed message ──
-  const { branchId, date, time } = fields;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkAvailability = async () => {
-      if (!branchId || !date || !time) {
-        if (!cancelled && isMounted.current) {
-          setAvailabilityError(null);
-          setCheckingAvailability(false);
-        }
-        return;
-      }
-
-      if (!cancelled && isMounted.current) {
-        setCheckingAvailability(true);
-      }
-
-      try {
-        const result = await checkBookingConflictWithDetails({
-          branchId,
-          date: dayjs(date),
-          time: dayjs(time),
-        });
-
-        if (result.hasConflict) {
-          const msg = generateConflictMessage(result);
-          if (!cancelled && isMounted.current) setAvailabilityError(msg);
-        } else {
-          if (!cancelled && isMounted.current) setAvailabilityError(null);
-        }
-      } catch (err) {
-        console.error("Availability check error:", err);
-        if (!cancelled && isMounted.current) setAvailabilityError(null);
-      } finally {
-        if (!cancelled && isMounted.current) setCheckingAvailability(false);
-      }
-    };
-
-    checkAvailability();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [branchId, date, time]);
-
-  // ── Handlers ──
+  // Handlers
   const updateFields = useCallback((newFields) => {
     setFields((prev) => ({ ...prev, ...newFields }));
   }, []);
@@ -186,7 +147,6 @@ export function useBookAppointmentForm(form) {
     setFields(INITIAL_STATE);
     setErrors({});
     setSubmitted(false);
-    setAvailabilityError(null);
     form?.resetFields();
   }, [form]);
 
@@ -199,13 +159,13 @@ export function useBookAppointmentForm(form) {
     services,
     branchesLoading,
     servicesLoading,
+    branchError,
     disabledTime,
     disabledDate,
-    availabilityError,
-    checkingAvailability,
+    isDateFullyBooked,
     handleSubmit,
     handleReset,
     updateFields,
-    setAvailabilityError,
+    setErrors,
   };
 }

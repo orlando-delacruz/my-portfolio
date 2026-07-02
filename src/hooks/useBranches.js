@@ -1,21 +1,51 @@
 // src/hooks/useBranches.js
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { fetchActiveBranches } from "../services/branches";
 
 export function useBranches() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let mounted = true;
-    fetchActiveBranches()
-      .then((data) => mounted && setBranches(data))
-      .catch(() => mounted && setBranches([]))
-      .finally(() => mounted && setLoading(false));
+    isMounted.current = true;
+
+    const loadBranches = async () => {
+      try {
+        if (isMounted.current) {
+          setLoading(true);
+          setError(null);
+        }
+
+        console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+        console.log(
+          "Supabase Anon Key:",
+          import.meta.env.VITE_SUPABASE_ANON_KEY?.slice(0, 10) + "...",
+        );
+
+        const data = await fetchActiveBranches();
+
+        if (isMounted.current) {
+          setBranches(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("useBranches error:", err);
+        if (isMounted.current) {
+          setError(err.message || "Failed to load branches");
+          setBranches([]);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBranches();
+
     return () => {
-      mounted = false;
+      isMounted.current = false;
     };
   }, []);
 
-  return { branches, loading };
+  return { branches, loading, error };
 }

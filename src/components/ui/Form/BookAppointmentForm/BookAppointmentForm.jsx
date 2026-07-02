@@ -1,6 +1,6 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Button, Alert } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
@@ -23,17 +23,15 @@ const BookAppointmentForm = () => {
     services,
     branchesLoading,
     servicesLoading,
+    branchError,
     disabledTime,
     disabledDate,
-    availabilityError,
-    checkingAvailability,
+    isDateFullyBooked,
     handleSubmit,
     handleReset,
     updateFields,
-    setAvailabilityError,
   } = useBookAppointmentForm(form);
 
-  // Sync form values with fields state
   useEffect(() => {
     form.setFieldsValue({
       firstName: fields.firstName,
@@ -52,39 +50,32 @@ const BookAppointmentForm = () => {
     });
   }, [fields, form]);
 
-  // Handle form value changes
   const handleValuesChange = (changedValues) => {
     const newFields = { ...fields };
-
     if (changedValues.branchId !== undefined) {
       newFields.branchId = changedValues.branchId;
       newFields.serviceBranchId = "";
       newFields.date = "";
       newFields.time = "";
-      setAvailabilityError(null);
     }
     if (changedValues.date !== undefined) {
       newFields.date = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
       newFields.time = "";
-      setAvailabilityError(null);
     }
     if (changedValues.time !== undefined) {
       newFields.time = changedValues.time ? changedValues.time.format("HH:mm:ss") : "";
-      setAvailabilityError(null);
     }
     if (changedValues.serviceBranchId !== undefined) {
       newFields.serviceBranchId = changedValues.serviceBranchId;
     }
     Object.keys(changedValues).forEach(key => {
-      if (key !== 'branchId' && key !== 'date' && key !== 'time' && key !== 'serviceBranchId') {
+      if (!['branchId', 'date', 'time', 'serviceBranchId'].includes(key)) {
         newFields[key] = changedValues[key];
       }
     });
-
     updateFields(newFields);
   };
 
-  // Handle form submission
   const onFinish = async (values) => {
     const submitData = {
       ...values,
@@ -97,11 +88,8 @@ const BookAppointmentForm = () => {
 
   const onFinishFailed = (errorInfo) => {
     console.log("Form validation failed:", errorInfo);
-    // Ant Design's scrollToFirstError will handle scrolling.
-    // If you need additional custom logic, you can implement it here.
   };
 
-  // Format phone number for display
   const formatPhoneDisplay = (value) => {
     if (!value) return '';
     const raw = value.replace(/\D/g, '');
@@ -114,7 +102,6 @@ const BookAppointmentForm = () => {
     return raw;
   };
 
-  // Validators
   const validatePhone = (_, value) => {
     if (!value) {
       return Promise.reject(new Error("Please enter your mobile number."));
@@ -182,39 +169,20 @@ const BookAppointmentForm = () => {
           {/* ── Personal information ── */}
           <S.FormSection>
             <S.FormSectionTitle>Personal Information</S.FormSectionTitle>
-
             <S.FieldRow>
-              <Form.Item
-                name="firstName"
-                label="First Name"
-                rules={[{ required: true, message: "Please enter your first name." }]}
-              >
+              <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "Please enter your first name." }]}>
                 <Input placeholder="Enter your first name" size="large" />
               </Form.Item>
-
-              <Form.Item
-                name="middleName"
-                label="Middle Name"
-                rules={[{ required: false }]}
-              >
+              <Form.Item name="middleName" label="Middle Name" rules={[{ required: false }]}>
                 <Input placeholder="Enter your middle name (optional)" size="large" />
               </Form.Item>
-
-              <Form.Item
-                name="lastName"
-                label="Last Name"
-                rules={[{ required: true, message: "Please enter your last name." }]}
-              >
+              <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please enter your last name." }]}>
                 <Input placeholder="Enter your last name" size="large" />
               </Form.Item>
             </S.FieldRow>
 
             <S.FieldRow>
-              <Form.Item
-                name="birthDate"
-                label="Birthdate"
-                rules={[{ validator: validateBirthDate }]}
-              >
+              <Form.Item name="birthDate" label="Birthdate" rules={[{ validator: validateBirthDate }]}>
                 <DatePicker
                   style={{ width: "100%" }}
                   format="MMM D, YYYY"
@@ -222,12 +190,7 @@ const BookAppointmentForm = () => {
                   disabledDate={(current) => current && current > dayjs().endOf('day')}
                 />
               </Form.Item>
-
-              <Form.Item
-                name="gender"
-                label="Gender"
-                rules={[{ required: true, message: "Please select your gender." }]}
-              >
+              <Form.Item name="gender" label="Gender" rules={[{ required: true, message: "Please select your gender." }]}>
                 <Select placeholder="Select your gender" size="large">
                   <Option value="male">Male</Option>
                   <Option value="female">Female</Option>
@@ -238,23 +201,10 @@ const BookAppointmentForm = () => {
             </S.FieldRow>
 
             <S.FieldGroup>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { type: "email", message: "Please enter a valid email address." },
-                  { required: false },
-                ]}
-              >
+              <Form.Item name="email" label="Email" rules={[{ type: "email", message: "Please enter a valid email address." }, { required: false }]}>
                 <Input placeholder="Enter your email address" size="large" />
               </Form.Item>
-
-              <Form.Item
-                name="phoneNumber"
-                label="Contact Number"
-                rules={[{ validator: validatePhone }]}
-                normalize={(value) => value.replace(/\D/g, '')}
-              >
+              <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]} normalize={(value) => value.replace(/\D/g, '')}>
                 <Input
                   placeholder="0912 345 6789"
                   size="large"
@@ -268,12 +218,7 @@ const BookAppointmentForm = () => {
                   }}
                 />
               </Form.Item>
-
-              <Form.Item
-                name="address"
-                label="Complete Address"
-                rules={[{ required: true, message: "Please enter your complete address." }]}
-              >
+              <Form.Item name="address" label="Complete Address" rules={[{ required: true, message: "Please enter your complete address." }]}>
                 <Input placeholder="Enter your complete address" size="large" />
               </Form.Item>
             </S.FieldGroup>
@@ -282,32 +227,27 @@ const BookAppointmentForm = () => {
           {/* ── Appointment information ── */}
           <S.FormSection>
             <S.FormSectionTitle>Appointment Information</S.FormSectionTitle>
-
             <S.FieldGroup>
-              <Form.Item
-                name="branchId"
-                label="Choose Branch"
-                rules={[{ required: true, message: "Please select a branch." }]}
-              >
-                <Select
-                  placeholder="Select a branch first"
-                  loading={branchesLoading}
-                  size="large"
-                >
+              {/* Branch Dropdown with error display */}
+              {branchError && (
+                <Alert
+                  message="Error loading branches"
+                  description={branchError}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+              <Form.Item name="branchId" label="Choose Branch" rules={[{ required: true, message: "Please select a branch." }]}>
+                <Select placeholder="Select a branch first" loading={branchesLoading} size="large">
                   {branches.map((b) => (
-                    <Option key={b.id} value={b.id}>
-                      {b.name}
-                    </Option>
+                    <Option key={b.id} value={b.id}>{b.name}</Option>
                   ))}
                 </Select>
               </Form.Item>
 
               <S.FieldRow>
-                <Form.Item
-                  name="date"
-                  label="Preferred Date"
-                  rules={[{ validator: validatePreferredDate }]}
-                >
+                <Form.Item name="date" label="Preferred Date" rules={[{ validator: validatePreferredDate }]}>
                   <DatePicker
                     style={{ width: "100%" }}
                     format="MMM D, YYYY"
@@ -316,7 +256,6 @@ const BookAppointmentForm = () => {
                     disabled={!fields.branchId}
                   />
                 </Form.Item>
-
                 <Form.Item
                   name="time"
                   label="Preferred Time"
@@ -328,20 +267,20 @@ const BookAppointmentForm = () => {
                     use12Hours
                     placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
                     disabledTime={disabledTime}
-                    hideDisabledOptions
+                    hideDisabledOptions={true}
                     disabled={!fields.branchId || !fields.date}
+                    popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    popupClassName="time-picker-no-scrollbar"
                   />
                 </Form.Item>
               </S.FieldRow>
 
-              {checkingAvailability && <S.InfoText>Checking availability...</S.InfoText>}
-              {availabilityError && <S.WarningText>{availabilityError}</S.WarningText>}
+              {fields.date && isDateFullyBooked && (
+                <S.WarningText>This date is fully booked. Please select another date.</S.WarningText>
+              )}
 
-              <Form.Item
-                name="serviceBranchId"
-                label="Service"
-                rules={[{ required: true, message: "Please select a service." }]}
-              >
+              {/* Service Dropdown */}
+              <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
                 <Select
                   placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
                   loading={servicesLoading}
@@ -349,22 +288,13 @@ const BookAppointmentForm = () => {
                   size="large"
                 >
                   {services.map((s) => (
-                    <Option key={s.service_branch_id} value={s.service_branch_id}>
-                      {s.name}
-                    </Option>
+                    <Option key={s.service_branch_id} value={s.service_branch_id}>{s.name}</Option>
                   ))}
                 </Select>
               </Form.Item>
 
-              <Form.Item
-                name="notes"
-                label="Notes / Remarks"
-                rules={[{ required: false }]}
-              >
-                <TextArea
-                  placeholder="Additional notes (optional)"
-                  rows={3}
-                />
+              <Form.Item name="notes" label="Notes / Remarks" rules={[{ required: false }]}>
+                <TextArea placeholder="Additional notes (optional)" rows={3} />
               </Form.Item>
             </S.FieldGroup>
           </S.FormSection>
@@ -376,7 +306,7 @@ const BookAppointmentForm = () => {
               type="primary"
               htmlType="submit"
               loading={loading}
-              disabled={loading || !!availabilityError}
+              disabled={loading || (fields.date && isDateFullyBooked)}
               icon={!loading && <AiOutlineSend />}
               size="large"
               style={{
@@ -387,7 +317,7 @@ const BookAppointmentForm = () => {
                 padding: "0 32px",
               }}
             >
-              {loading ? "Submitting…" : "Send Appointment"}
+              {loading ? "Submitting…" : "Book Appointment"}
             </Button>
           </S.ButtonWrapper>
         </Form>

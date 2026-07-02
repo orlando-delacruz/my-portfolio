@@ -1,3 +1,4 @@
+// src/components/admin/Modal/AppointmentModal/AppointmentModal.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../styles/adminTheme";
 
@@ -83,4 +84,17 @@ export const SubmitBtn = styled.button`
     outline: 2px solid ${adminTheme.colors.primary};
     outline-offset: 2px;
   }
+`;
+
+// ✅ Add this - Warning text for fully booked dates
+export const WarningText = styled.span`
+  color: #e67e22;
+  font-size: 13px;
+  margin-top: 4px;
+  display: block;
+  background: #fef9e7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #e67e22;
+  line-height: 1.5;
 `;

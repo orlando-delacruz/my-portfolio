@@ -6,20 +6,6 @@ import * as S from "./SelectField.styled";
 
 const { Option } = Select;
 
-/**
- * SelectField using Ant Design Select with custom styling
- * @param {string}   id
- * @param {string}   label
- * @param {string}   name
- * @param {Array}    options     - [{ value, label }]
- * @param {string}   value
- * @param {function} onChange
- * @param {string}   placeholder
- * @param {string}   error
- * @param {boolean}  required
- * @param {boolean}  loading
- * @param {boolean}  disabled
- */
 const SelectField = memo(
   ({
     id,
@@ -54,13 +40,11 @@ const SelectField = memo(
         style={{ width: "100%" }}
         className="select-field-custom"
         suffixIcon={<FiChevronDown size={20} color="#886217" />}
-        // ✅ Use new classNames API instead of deprecated dropdownClassName
         classNames={{
           popup: {
             root: "select-field-dropdown",
           },
         }}
-        // ✅ Use styles prop for consistent styling
         styles={{
           selector: {
             borderRadius: "50px",

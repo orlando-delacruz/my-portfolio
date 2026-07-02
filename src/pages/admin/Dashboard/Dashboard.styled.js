@@ -115,7 +115,6 @@ export const StatsGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Only stack to 1 column on very narrow screens */
   @media (max-width: 400px) {
     grid-template-columns: 1fr;
   }
@@ -132,7 +131,7 @@ export const StatCard = styled.div`
   box-shadow: 1px 1px 4px ${champagne};
   min-width: 0;
   overflow: hidden;
-  height: 100px; /* Fixed height for equal card sizing */
+  height: 100px;
 
   @media (max-width: 480px) {
     padding: 14px 12px;
@@ -387,12 +386,33 @@ export const ViewCalendarLink = styled.button`
   }
 `;
 
+// ── Responsive scroll wrapper for table ──────────────────────────────────────
+export const ScheduleScrollWrapper = styled.div`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 2px; /* slight padding to avoid scrollbar clipping */
+
+  /* Hide scrollbar for cleaner look (optional) */
+  scrollbar-width: thin;
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${adminTheme.colors.champagne};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+`;
+
 export const ScheduleTable = styled.table`
   width: 100%;
   border-collapse: collapse;
+  min-width: 640px; /* ensures horizontal scroll on small screens */
 
-  @media (max-width: 600px) {
-    font-size: 13px;
+  @media (max-width: 768px) {
+    min-width: 640px; /* maintain min width to force scroll */
   }
 `;
 
@@ -461,7 +481,6 @@ export const Panel = styled.div`
   flex-direction: column;
   height: 400px;
   overflow: hidden;
-  gap: 10px;
 `;
 
 export const PanelHeader = styled.div`
@@ -501,7 +520,7 @@ export const PanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
   margin: 0 -6px;
-  padding: 4px 6px;
+  padding: 0 6px;
 
   scrollbar-width: thin;
   &::-webkit-scrollbar {

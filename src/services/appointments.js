@@ -24,17 +24,26 @@ export function dbStatusToForm(approval_status, appointment_status) {
 // ── Helpers ──
 function timeToMinutes(timeStr) {
   if (!timeStr) return NaN;
-  const parts = timeStr.split(":");
-  if (parts.length !== 3) return NaN;
-  const h = parseInt(parts[0], 10);
-  const m = parseInt(parts[1], 10);
+  const parts = timeStr.split(":").map(Number);
+  if (parts.length < 2) return NaN;
+  const h = parts[0];
+  const m = parts[1];
   if (isNaN(h) || isNaN(m)) return NaN;
   return h * 60 + m;
 }
 
-// ── Original Conflict Check ──
+function formatMinutesToTime(minutes) {
+  if (minutes < 0) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const timeStr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  return dayjs(`2000-01-01T${timeStr}`).format("h:mm A");
+}
+
+// ── Global Conflict Check (ignores branch) ──
 export async function hasBookingConflict({
-  branchId,
+  // eslint-disable-next-line no-unused-vars
+  branchId: _branchId, // kept for API compatibility but ignored
   date,
   time,
   excludeAppointmentId,
@@ -50,11 +59,9 @@ export async function hasBookingConflict({
       preferred_time,
       confirmed_time,
       appointment_status,
-      approval_status,
-      service_branch:service_branches!inner(branch_id)
+      approval_status
     `,
     )
-    .eq("service_branch.branch_id", branchId)
     .or(`preferred_date.eq.${dateStr},confirmed_date.eq.${dateStr}`)
     .eq("approval_status", "approved")
     .eq("appointment_status", "scheduled")
@@ -262,9 +269,10 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
   }
 }
 
-// ── Conflict Details Functions ──
+// ── Global Conflict Details (ignores branch) ──
 export async function getConflictingAppointments({
-  branchId,
+  // eslint-disable-next-line no-unused-vars
+  branchId: _branchId, // kept for API compatibility but ignored
   date,
   time,
   excludeAppointmentId,
@@ -280,11 +288,9 @@ export async function getConflictingAppointments({
       preferred_time,
       confirmed_time,
       appointment_status,
-      approval_status,
-      service_branch:service_branches!inner(branch_id)
+      approval_status
     `,
     )
-    .eq("service_branch.branch_id", branchId)
     .or(`preferred_date.eq.${dateStr},confirmed_date.eq.${dateStr}`)
     .eq("approval_status", "approved")
     .eq("appointment_status", "scheduled")
@@ -341,51 +347,58 @@ export async function checkBookingConflictWithDetails({
   const requestedMinutes = time.hour() * 60 + time.minute();
   const interval = MIN_INTERVAL_MINUTES;
 
-  // Fetch operating hours (if available)
-  let openMinutes = null;
-  let closeMinutes = null;
-  try {
-    const hours = await getOperatingHoursForDay(branchId, date);
-    if (!hours.isClosed && hours.openTime && hours.closeTime) {
-      openMinutes = timeToMinutes(hours.openTime);
-      closeMinutes = timeToMinutes(hours.closeTime);
-    }
-  } catch (e) {
-    console.warn("Could not fetch operating hours for suggestions:", e);
-  }
-
+  // Always compute suggestions based on conflict and interval first
   let previousAvailableTime = null;
   let nextAvailableTime = null;
 
-  // Ensure conflictMinutes is valid
   if (!isNaN(conflictMinutes)) {
     if (requestedMinutes > conflictMinutes) {
       // Requested after conflict → next = conflict + interval
       const afterMinutes = conflictMinutes + interval;
-      const withinHours =
-        (openMinutes === null || afterMinutes > openMinutes) &&
-        (closeMinutes === null || afterMinutes < closeMinutes);
-      if (withinHours) {
-        const afterHour = Math.floor(afterMinutes / 60);
-        const afterMin = afterMinutes % 60;
-        const afterTime = `${String(afterHour).padStart(2, "0")}:${String(afterMin).padStart(2, "0")}:00`;
-        nextAvailableTime = dayjs(`2000-01-01T${afterTime}`).format("h:mm A");
-      }
+      nextAvailableTime = formatMinutesToTime(afterMinutes);
     } else {
       // Requested before conflict → previous = conflict - interval
       const beforeMinutes = conflictMinutes - interval;
-      const withinHours =
-        (openMinutes === null || beforeMinutes >= openMinutes) &&
-        (closeMinutes === null || beforeMinutes <= closeMinutes);
-      if (withinHours) {
-        const beforeHour = Math.floor(beforeMinutes / 60);
-        const beforeMin = beforeMinutes % 60;
-        const beforeTime = `${String(beforeHour).padStart(2, "0")}:${String(beforeMin).padStart(2, "0")}:00`;
-        previousAvailableTime = dayjs(`2000-01-01T${beforeTime}`).format(
-          "h:mm A",
-        );
+      if (beforeMinutes >= 0) {
+        previousAvailableTime = formatMinutesToTime(beforeMinutes);
       }
     }
+  }
+
+  // Now fetch operating hours to filter out suggestions that fall outside hours
+  try {
+    const hours = await getOperatingHoursForDay(branchId, date);
+    if (!hours.isClosed && hours.openTime && hours.closeTime) {
+      const openMinutes = timeToMinutes(hours.openTime);
+      const closeMinutes = timeToMinutes(hours.closeTime);
+
+      if (!isNaN(openMinutes) && !isNaN(closeMinutes)) {
+        // Filter previousAvailableTime (must be >= openMinutes and <= closeMinutes)
+        if (previousAvailableTime) {
+          const prevMinutes = timeToMinutes(
+            dayjs(previousAvailableTime, "h:mm A").format("HH:mm:ss"),
+          );
+          if (prevMinutes < openMinutes || prevMinutes > closeMinutes) {
+            previousAvailableTime = null;
+          }
+        }
+        // Filter nextAvailableTime (must be >= openMinutes and <= closeMinutes)
+        if (nextAvailableTime) {
+          const nextMinutes = timeToMinutes(
+            dayjs(nextAvailableTime, "h:mm A").format("HH:mm:ss"),
+          );
+          if (nextMinutes < openMinutes || nextMinutes > closeMinutes) {
+            nextAvailableTime = null;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // If we can't fetch hours, keep the suggestions (they might be outside hours, but it's better than nothing)
+    console.warn(
+      "Could not fetch operating hours for filtering suggestions:",
+      e,
+    );
   }
 
   return {

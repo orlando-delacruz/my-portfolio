@@ -26,7 +26,7 @@ export function generateConflictMessage(result) {
   } else if (hasBefore) {
     message += `You may book any available time before ${result.previousAvailableTime}.`;
   } else {
-    message += `Please choose a time at least 60 minutes before or after the conflicting appointment.`;
+    message += `Please choose a time at least 60 minutes after the conflicting appointment.`;
   }
 
   return message;
