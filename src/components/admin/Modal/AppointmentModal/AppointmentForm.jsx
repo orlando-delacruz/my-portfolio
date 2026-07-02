@@ -107,6 +107,7 @@ const AppointmentForm = memo(({
       gender: '',
       address: '',
       isOrthodontic: false,
+      branchId: undefined,
     });
     onOrthodonticPatientSelect?.(null);
     form.setFieldValue('serviceBranchId', undefined);
@@ -131,8 +132,9 @@ const AppointmentForm = memo(({
         birthDate: patient.birth_date ? dayjs(patient.birth_date) : null,
         gender: patient.gender || '',
         address: patient.address || '',
-        branchId: patient.branch_id || undefined, // ✅ Auto-set branch
+        branchId: patient.branch_id || undefined, // ✅ Restored automatic branch selection
       });
+      // Clear any previous service selection
       form.setFieldValue('serviceBranchId', undefined);
     }
   };

@@ -158,3 +158,52 @@ export async function updatePatient(patientId, updates) {
   if (error) throw error;
   return data;
 }
+
+export async function deletePatient(patientId) {
+  // 1. Check if patient has any appointments
+  const { count, error: countError } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("patient_id", patientId);
+
+  if (countError) throw countError;
+
+  if (count && count > 0) {
+    throw new Error(
+      "Cannot delete this patient because they have existing appointments. Please delete the appointments first or reassign them.",
+    );
+  }
+
+  const { error: deleteError } = await supabase
+    .from("patients")
+    .delete()
+    .eq("id", patientId);
+
+  if (deleteError) throw deleteError;
+}
+
+export async function deletePatients(patientIds) {
+  if (!patientIds || patientIds.length === 0) return;
+
+  // 1. Check if any patient has appointments
+  const { count, error: countError } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .in("patient_id", patientIds);
+
+  if (countError) throw countError;
+
+  if (count && count > 0) {
+    throw new Error(
+      "Cannot delete one or more patients because they have existing appointments. Please delete the appointments first or reassign them.",
+    );
+  }
+
+  // 2. No appointments – safe to delete
+  const { error: deleteError } = await supabase
+    .from("patients")
+    .delete()
+    .in("id", patientIds);
+
+  if (deleteError) throw deleteError;
+}

@@ -34,7 +34,6 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
   }, [open, patient, form]);
 
   useEffect(() => {
-    // When orthodontic checkbox changes, show/hide branch field
     if (watchIsOrthodontic !== undefined) {
       setIsOrthodontic(watchIsOrthodontic);
     }
@@ -103,6 +102,7 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <S.FormGrid>
+          {/* Row 1: First Name + Middle Name */}
           <Form.Item
             name="firstName"
             label="First Name"
@@ -119,6 +119,7 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             <Input placeholder="(Optional)" maxLength={80} />
           </Form.Item>
 
+          {/* Row 2: Last Name + Phone Number */}
           <Form.Item
             name="lastName"
             label="Last Name"
@@ -139,17 +140,7 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { type: 'email', message: 'Enter a valid email address.' },
-              { required: false },
-            ]}
-          >
-            <Input placeholder="Enter email (optional)" maxLength={256} />
-          </Form.Item>
-
+          {/* Row 3: Birthdate + Gender (aligned) */}
           <Form.Item
             name="birthDate"
             label="Birthdate"
@@ -176,20 +167,39 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="address"
-            label="Complete Address"
-            rules={[{ required: true, message: 'Address is required.' }]}
-          >
-            <Input placeholder="Enter complete address" />
-          </Form.Item>
+          {/* Row 4: Email (full width) */}
+          <S.FullWidth>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { type: 'email', message: 'Enter a valid email address.' },
+                { required: false },
+              ]}
+            >
+              <Input placeholder="Enter email (optional)" maxLength={256} />
+            </Form.Item>
+          </S.FullWidth>
 
+          {/* Row 5: Address (full width) */}
+          <S.FullWidth>
+            <Form.Item
+              name="address"
+              label="Complete Address"
+              rules={[{ required: true, message: 'Address is required.' }]}
+            >
+              <Input placeholder="Enter complete address" />
+            </Form.Item>
+          </S.FullWidth>
+
+          {/* Row 6: Orthodontic checkbox (full width) */}
           <S.FullWidth>
             <Form.Item name="isOrthodontic" valuePropName="checked">
               <Checkbox>Orthodontic Patient</Checkbox>
             </Form.Item>
           </S.FullWidth>
 
+          {/* Row 7: Branch (full width, conditional) */}
           {isOrthodontic && (
             <S.FullWidth>
               <Form.Item

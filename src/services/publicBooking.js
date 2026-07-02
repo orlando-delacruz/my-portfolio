@@ -1,9 +1,18 @@
 // src/services/publicBooking.js
 import { supabase } from "./supabase/supabase";
+import dayjs from "dayjs";
 import { hasBookingConflict, STATUS_TO_DB } from "./appointments";
 import { findOrCreatePatient } from "./patients";
 import { fetchServiceBranchById } from "./serviceBranches";
-import dayjs from "dayjs";
+
+function isPastAppointment(date, time) {
+  const now = dayjs();
+  const appointmentDateTime = dayjs(date)
+    .hour(time.hour())
+    .minute(time.minute())
+    .second(0);
+  return appointmentDateTime.isBefore(now);
+}
 
 /**
  * Book a new appointment from the public website
@@ -36,7 +45,6 @@ export async function bookPublicAppointment({
     throw new Error("Missing required fields.");
   }
 
-  // 2. Validate date and time strings
   const dateObj = dayjs(date);
   const timeObj = dayjs(time, "HH:mm:ss");
   if (!dateObj.isValid()) {
@@ -46,9 +54,15 @@ export async function bookPublicAppointment({
     throw new Error("Invalid time format. Please select a valid time.");
   }
 
-  // 3. Check conflict (1-hour buffer)
+  // ✅ 2. Ensure the appointment is not in the past
+  if (isPastAppointment(dateObj, timeObj)) {
+    throw new Error(
+      "The selected appointment time has already passed. Please choose a future time.",
+    );
+  }
+
+  // 3. Check conflict
   const conflict = await hasBookingConflict({
-    branchId,
     date: dateObj,
     time: timeObj,
   });
@@ -85,7 +99,7 @@ export async function bookPublicAppointment({
   const seq = String((count ?? 0) + 1).padStart(3, "0");
   const referenceNumber = `REF-${dateStr}-${seq}`;
 
-  // 7. Insert appointment
+  // 7. Insert appointment – Pending
   const { approval_status, appointment_status } = STATUS_TO_DB.pending;
   const { data: appointment, error: insertErr } = await supabase
     .from("appointments")
@@ -115,6 +129,7 @@ export async function bookPublicAppointment({
     description: "Appointment booked via website",
     performed_by: "system",
     admin_id: null,
+    status: "pending",
   });
 
   return appointment;

@@ -175,38 +175,23 @@ const AppointmentTable = ({
               </S.TR>
             ) : (
               appointments.map((apt) => (
+                // ✅ Fix whitespace warning: all TD elements on one line with no whitespace between them
                 <S.TR
                   key={apt.id}
                   $selected={selected.has(apt.id)}
                   onClick={(e) => handleRowClick(e, apt)}
                   style={{ cursor: onRowClick ? "pointer" : "default" }}
                 >
-                  <S.TD $checkbox>
-                    <Checkbox
-                      checked={selected.has(apt.id)}
-                      onChange={() => onSelectRow(apt.id)}
-                      aria-label={`Select appointment ${apt.referenceNo}`}
-                    />
-                  </S.TD>
+                  <S.TD $checkbox><Checkbox checked={selected.has(apt.id)} onChange={() => onSelectRow(apt.id)} aria-label={`Select appointment ${apt.referenceNo}`} /></S.TD>
                   <S.TD>{apt.referenceNo}</S.TD>
                   <S.TD>{apt.patientName}</S.TD>
-                  <S.TD>{formatPhoneDisplay(apt.contactNumber)}</S.TD>  {/* ✅ Format phone */}
-                  <S.TD>
-                    <BranchBadge branchName={apt.branchName} />
-                  </S.TD>
+                  <S.TD>{formatPhoneDisplay(apt.contactNumber)}</S.TD>
+                  <S.TD><BranchBadge branchName={apt.branchName} /></S.TD>
                   <S.TD>{apt.date}</S.TD>
                   <S.TD>{apt.time}</S.TD>
                   <S.TD>{apt.reason}</S.TD>
-                  <S.TD>
-                    <StatusBadge status={apt.status} />
-                  </S.TD>
-                  <S.TD $center>
-                    <ActionButtons
-                      appointment={apt}
-                      onSetStatus={onSetStatus}
-                      onReschedule={onReschedule}
-                    />
-                  </S.TD>
+                  <S.TD><StatusBadge status={apt.status} /></S.TD>
+                  <S.TD $center><ActionButtons appointment={apt} onSetStatus={onSetStatus} onReschedule={onReschedule} /></S.TD>
                 </S.TR>
               ))
             )}

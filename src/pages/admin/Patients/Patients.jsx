@@ -1,18 +1,25 @@
 // src/pages/admin/Patients/Patients.jsx
-import { memo, useState, useCallback } from 'react';
-import { Spin, message } from 'antd';
+import { memo, useState, useCallback, useMemo } from 'react';
+import { Table, Input, Select, Button, Empty, message, Modal } from 'antd';
+import { SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { usePatients } from '../../../hooks/usePatients';
 import EditPatientModal from '../../../components/admin/Modal/EditPatientModal';
-import { updatePatient } from '../../../services/patients';
-import Pagination from '../../../components/admin/Pagination';
+import { updatePatient, deletePatient, deletePatients } from '../../../services/patients';
 import { formatPhoneDisplay } from '../../../utils/phoneFormatter';
 import * as S from './Patients.styled';
+
+const { Search } = Input;
+const { Option } = Select;
+const { confirm } = Modal;
 
 const Patients = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [updating, setUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const {
     patients,
@@ -67,34 +74,159 @@ const Patients = () => {
     }
   }, [selectedPatient, refetch]);
 
+  const handleDeleteSingle = useCallback((patientId) => {
+    confirm({
+      title: 'Delete Patient',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to delete this patient? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setDeletingId(patientId);
+        try {
+          await deletePatient(patientId);
+          message.success('Patient deleted successfully');
+          refetch();
+        } catch (err) {
+          console.error('Delete patient error:', err);
+          message.error(err.message || 'Failed to delete patient');
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
+  }, [refetch]);
+
+  const handleBulkDelete = useCallback(() => {
+    const count = selectedRowKeys.length;
+    confirm({
+      title: `Delete ${count} Patient${count > 1 ? 's' : ''}`,
+      icon: <ExclamationCircleOutlined />,
+      content: 'Are you sure you want to delete the selected patients? This action cannot be undone.',
+      okText: `Delete ${count}`,
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setBulkDeleting(true);
+        try {
+          await deletePatients(selectedRowKeys);
+          message.success(`Successfully deleted ${count} patient${count > 1 ? 's' : ''}`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (err) {
+          console.error('Bulk delete error:', err);
+          message.error(err.message || 'Failed to delete patients');
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
+  }, [selectedRowKeys, refetch]);
+
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setPage(1);
   };
 
-  const handleFilterChange = (e) => {
-    setFilter(e.target.value);
+  const handleFilterChange = (value) => {
+    setFilter(value);
     setPage(1);
   };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
+  const handleTableChange = (pagination) => {
+    setPage(pagination.current);
+    setPageSize(pagination.pageSize);
   };
 
-  const handlePageSizeChange = (newSize) => {
-    setPageSize(newSize);
-    setPage(1);
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: setSelectedRowKeys,
+    getCheckboxProps: (record) => ({
+      disabled: deletingId === record.id,
+    }),
   };
+
+  const columns = useMemo(() => [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (_, record) => (
+        <span>
+          {record.first_name} {record.middle_name ? record.middle_name + ' ' : ''}{record.last_name}
+        </span>
+      ),
+      sorter: (a, b) => a.first_name.localeCompare(b.first_name),
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone_number',
+      key: 'phone',
+      render: (phone) => phone ? formatPhoneDisplay(phone) : '—',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email) => email || '—',
+    },
+    {
+      title: 'Branch',
+      dataIndex: ['branch', 'name'],
+      key: 'branch',
+      render: (name) => name || '—',
+    },
+    {
+      title: 'Orthodontic',
+      dataIndex: 'is_orthodontic',
+      key: 'ortho',
+      render: (isOrtho) => (
+        <S.OrthoBadge $isOrtho={isOrtho}>
+          {isOrtho ? 'Yes' : 'No'}
+        </S.OrthoBadge>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+            style={{ color: '#886217' }}
+          >
+            Edit
+          </Button>
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
+            size="small"
+            danger
+            loading={deletingId === record.id}
+            onClick={() => handleDeleteSingle(record.id)}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ], [handleEdit, handleDeleteSingle, deletingId]);
+
+  const dataSource = patients.map((p) => ({ ...p, key: p.id }));
+  const hasSelected = selectedRowKeys.length > 0;
+  const selectedCount = selectedRowKeys.length;
 
   if (error) {
     return (
       <AdminLayout>
         <S.PageContainer>
-          <div style={{ color: '#dc2626', textAlign: 'center', padding: '40px' }}>
-            <p>Error loading patients: {error}</p>
-            <button onClick={refetch} style={{ marginTop: 8, cursor: 'pointer', padding: '8px 16px' }}>
-              Retry
-            </button>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#dc2626' }}>Error loading patients: {error}</p>
+            <Button onClick={refetch} style={{ marginTop: 8 }}>Retry</Button>
           </div>
         </S.PageContainer>
       </AdminLayout>
@@ -105,82 +237,65 @@ const Patients = () => {
     <AdminLayout>
       <S.PageContainer>
         <S.Header>
-          <S.Title>Patients</S.Title>
+          <S.Title>Patient Management</S.Title>
         </S.Header>
 
-        <S.Filters>
-          <S.SearchInput
-            type="text"
-            placeholder="Search by name, phone, email..."
+        <S.FilterBar>
+          <Search
+            placeholder="Search patients..."
             value={search}
             onChange={handleSearchChange}
+            allowClear
+            prefix={<SearchOutlined style={{ color: '#aaa' }} />}
           />
-          <S.FilterSelect value={filter} onChange={handleFilterChange}>
-            <option value="all">All Patients</option>
-            <option value="ortho">Orthodontic Only</option>
-            <option value="regular">Regular Only</option>
-          </S.FilterSelect>
-        </S.Filters>
+          <Select
+            value={filter}
+            onChange={handleFilterChange}
+            style={{ minWidth: 180 }}
+          >
+            <Option value="all">All Patients</Option>
+            <Option value="ortho">Orthodontic Only</Option>
+            <Option value="regular">Regular Only</Option>
+          </Select>
+        </S.FilterBar>
 
         <S.TableWrapper>
-          <S.Table>
-            <S.Thead>
-              <tr>
-                <S.Th>Name</S.Th>
-                <S.Th>Phone</S.Th>
-                <S.Th>Email</S.Th>
-                <S.Th>Branch</S.Th>
-                <S.Th>Orthodontic</S.Th>
-                <S.Th>Actions</S.Th>
-              </tr>
-            </S.Thead>
-            <tbody>
-              {loading ? (
-                <S.EmptyRow>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <Spin size="large" />
-                  </td>
-                </S.EmptyRow>
-              ) : patients.length === 0 ? (
-                <S.EmptyRow>
-                  <td colSpan="6">No patients found.</td>
-                </S.EmptyRow>
-              ) : (
-                patients.map((patient) => (
-                  <tr key={patient.id}>
-                    <S.Td>
-                      {patient.first_name} {patient.middle_name ? patient.middle_name + ' ' : ''}{patient.last_name}
-                    </S.Td>
-                    <S.Td>{patient.phone_number ? formatPhoneDisplay(patient.phone_number) : '—'}</S.Td>  {/* ✅ Format phone */}
-                    <S.Td>{patient.email || '—'}</S.Td>
-                    <S.Td>{patient.branch?.name || '—'}</S.Td>
-                    <S.Td>
-                      <S.OrthoBadge $isOrtho={patient.is_orthodontic}>
-                        {patient.is_orthodontic ? 'Yes' : 'No'}
-                      </S.OrthoBadge>
-                    </S.Td>
-                    <S.Td>
-                      <S.EditButton onClick={() => handleEdit(patient)}>Edit</S.EditButton>
-                    </S.Td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </S.Table>
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            loading={loading}
+            rowSelection={rowSelection}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              pageSizeOptions: ['5', '10', '20', '50', '100'],
+              showTotal: (total) => `Total ${total} patient${total > 1 ? 's' : ''}`,
+            }}
+            onChange={handleTableChange}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty description="No patients found" />,
+            }}
+            scroll={{ x: 700 }}
+          />
         </S.TableWrapper>
 
-        <S.PaginationWrapper>
-          <span style={{ fontSize: '14px', color: '#555' }}>
-            {totalCount} patient{totalCount !== 1 ? 's' : ''}
-          </span>
-          <Pagination
-            currentPage={page}
-            totalEntries={totalCount}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onSizeChange={handlePageSizeChange}
-          />
-        </S.PaginationWrapper>
+        {/* Floating Delete Button */}
+        {hasSelected && (
+          <S.FloatingDeleteButton
+            onClick={handleBulkDelete}
+            loading={bulkDeleting}
+            disabled={bulkDeleting}
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
+          >
+            Delete {selectedCount}
+          </S.FloatingDeleteButton>
+        )}
 
         <EditPatientModal
           open={editModalOpen}

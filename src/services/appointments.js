@@ -77,6 +77,16 @@ export async function hasBookingConflict({ date, time, excludeAppointmentId }) {
   });
 }
 
+// ── Past-time validation helper ──
+function isPastAppointment(date, time) {
+  const now = dayjs();
+  const appointmentDateTime = dayjs(date)
+    .hour(time.hour())
+    .minute(time.minute())
+    .second(0);
+  return appointmentDateTime.isBefore(now);
+}
+
 // ── Appointment Creation ──
 async function generateReferenceNumber(dateStr) {
   const { count, error } = await supabase
@@ -98,6 +108,14 @@ export async function adminCreateAppointment({
   time,
   adminId,
 }) {
+  // ✅ 1. Ensure the appointment is not in the past
+  if (isPastAppointment(date, time)) {
+    throw new Error(
+      "The selected appointment time has already passed. Please choose a future time.",
+    );
+  }
+
+  // 2. Check for conflicts
   const conflict = await hasBookingConflict({
     date,
     time,
@@ -112,7 +130,7 @@ export async function adminCreateAppointment({
   const dateStr = date.format("YYYYMMDD");
   const reference_number = await generateReferenceNumber(dateStr);
 
-  // ✅ Admin-created appointments default to Confirmed
+  // Admin-created appointments default to Confirmed
   const { approval_status, appointment_status } = STATUS_TO_DB.confirmed;
 
   const { data, error } = await supabase
@@ -156,6 +174,14 @@ export async function adminRescheduleAppointment({
   status,
   adminId,
 }) {
+  // ✅ 1. Ensure the appointment is not in the past
+  if (isPastAppointment(date, time)) {
+    throw new Error(
+      "The selected appointment time has already passed. Please choose a future time.",
+    );
+  }
+
+  // 2. Check for conflicts
   const conflict = await hasBookingConflict({
     date,
     time,
@@ -262,7 +288,7 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
   }
 }
 
-// ── Global Conflict Details (ignores branch) ──
+// ── Conflict Details ──
 export async function getConflictingAppointments({
   date,
   time,
