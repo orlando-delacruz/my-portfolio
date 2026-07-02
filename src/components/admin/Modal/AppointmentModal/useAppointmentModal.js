@@ -28,19 +28,31 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
     async (values, form) => {
       setAddLoading(true);
       try {
-        const patient = await findOrCreatePatient({
-          firstName: values.firstName,
-          middleName: values.middleName || "",
-          lastName: values.lastName,
-          birthDate: values.birthDate
-            ? dayjs(values.birthDate).format("YYYY-MM-DD")
-            : undefined,
-          gender: values.gender,
-          email: values.email || undefined,
-          phoneNumber: getRawPhoneDigits(values.phoneNumber),
-          address: values.address,
-        });
+        let patient;
+        // If orthodontic patient selected, reuse that patient
+        if (
+          values.patientType === "ortho" &&
+          values.selectedOrthodonticPatient
+        ) {
+          patient = values.selectedOrthodonticPatient;
+        } else {
+          // New patient – create or find existing
+          patient = await findOrCreatePatient({
+            firstName: values.firstName,
+            middleName: values.middleName || "",
+            lastName: values.lastName,
+            birthDate: values.birthDate
+              ? dayjs(values.birthDate).format("YYYY-MM-DD")
+              : undefined,
+            gender: values.gender,
+            email: values.email || undefined,
+            phoneNumber: getRawPhoneDigits(values.phoneNumber),
+            address: values.address,
+            isOrthodontic: false, // New patient can be marked ortho later; we don't have a checkbox yet but can add one.
+          });
+        }
 
+        // Check conflict
         const conflictCheck = await checkBookingConflictWithDetails({
           branchId: values.branchId,
           date: dayjs(values.date),
@@ -110,6 +122,8 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       if (!rescheduleTargetId) return;
       setRescheduleLoading(true);
       try {
+        // We'll keep the patient info as-is; but we might want to update if changed.
+        // For simplicity, we don't change patient data in reschedule.
         const updated = await adminRescheduleAppointment({
           appointmentId: rescheduleTargetId,
           branchId: values.branchId,
@@ -117,20 +131,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           time: dayjs(values.time),
           status: values.status,
           adminId: profile?.id,
-        });
-
-        // Update patient info if changed
-        await findOrCreatePatient({
-          firstName: values.firstName,
-          middleName: values.middleName || "",
-          lastName: values.lastName,
-          birthDate: values.birthDate
-            ? dayjs(values.birthDate).format("YYYY-MM-DD")
-            : undefined,
-          gender: values.gender,
-          email: values.email || undefined,
-          phoneNumber: getRawPhoneDigits(values.phoneNumber),
-          address: values.address,
         });
 
         const row = toAppointmentRow(updated);

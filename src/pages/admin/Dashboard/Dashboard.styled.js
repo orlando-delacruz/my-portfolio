@@ -115,9 +115,7 @@ export const StatsGrid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 400px) {
-    grid-template-columns: 1fr;
-  }
+  /* ✅ 2 columns on mobile for 2×2 grid */
 `;
 
 export const StatCard = styled.div`
@@ -137,7 +135,16 @@ export const StatCard = styled.div`
     padding: 14px 12px;
     gap: 12px;
     border-radius: 12px;
-    height: 90px;
+    height: 85px;
+    flex-direction: column;
+    height: 100%;
+    align-items: start;
+  }
+
+  @media (max-width: 360px) {
+    padding: 12px 8px;
+    gap: 8px;
+    height: 75px;
   }
 `;
 
@@ -157,10 +164,18 @@ export const StatIconWrap = styled.div`
   }
 
   @media (max-width: 480px) {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     svg {
       font-size: 20px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    width: 36px;
+    height: 36px;
+    svg {
+      font-size: 16px;
     }
   }
 `;
@@ -176,13 +191,17 @@ export const StatBody = styled.div`
 export const StatLabel = styled.span`
   font-size: 13px;
   color: ${adminTheme.colors.black};
-  line-height: 1.5;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
   @media (max-width: 480px) {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 360px) {
+    font-size: 10px;
   }
 `;
 
@@ -190,23 +209,31 @@ export const StatValue = styled.span`
   font-size: 22px;
   font-weight: 500;
   color: ${adminTheme.colors.black};
-  line-height: 1.4;
+  line-height: 1.3;
 
   @media (max-width: 480px) {
     font-size: 18px;
+  }
+
+  @media (max-width: 360px) {
+    font-size: 16px;
   }
 `;
 
 export const StatNote = styled.span`
   font-size: 11px;
   color: ${({ $color }) => $color};
-  line-height: 1.5;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
   @media (max-width: 480px) {
     font-size: 10px;
+  }
+
+  @media (max-width: 360px) {
+    font-size: 9px;
   }
 `;
 
@@ -390,9 +417,8 @@ export const ViewCalendarLink = styled.button`
 export const ScheduleScrollWrapper = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 2px; /* slight padding to avoid scrollbar clipping */
+  padding: 0 2px;
 
-  /* Hide scrollbar for cleaner look (optional) */
   scrollbar-width: thin;
   &::-webkit-scrollbar {
     height: 6px;
@@ -409,10 +435,10 @@ export const ScheduleScrollWrapper = styled.div`
 export const ScheduleTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  min-width: 640px; /* ensures horizontal scroll on small screens */
+  min-width: 640px;
 
   @media (max-width: 768px) {
-    min-width: 640px; /* maintain min width to force scroll */
+    min-width: 640px;
   }
 `;
 

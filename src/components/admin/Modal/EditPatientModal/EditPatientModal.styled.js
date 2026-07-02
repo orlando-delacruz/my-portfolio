@@ -1,4 +1,4 @@
-// src/components/admin/Modal/AppointmentModal/AppointmentModal.styled.js
+// src/components/admin/Modal/EditPatientModal/EditPatientModal.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../styles/adminTheme";
 
@@ -12,7 +12,7 @@ export const ModalTitle = styled.h2`
 export const FormGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 16px;
+  gap: 16px;
 
   @media (max-width: 576px) {
     grid-template-columns: 1fr;
@@ -21,14 +21,6 @@ export const FormGrid = styled.div`
 
 export const FullWidth = styled.div`
   grid-column: 1 / -1;
-`;
-
-export const FieldLabel = styled.label`
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: ${adminTheme.colors.black};
-  margin-bottom: 4px;
 `;
 
 export const FooterRow = styled.div`
@@ -59,7 +51,7 @@ export const CancelBtn = styled.button`
   }
 `;
 
-export const SubmitBtn = styled.button`
+export const SaveBtn = styled.button`
   padding: 8px 24px;
   border-radius: 8px;
   border: none;
@@ -84,16 +76,4 @@ export const SubmitBtn = styled.button`
     outline: 2px solid ${adminTheme.colors.primary};
     outline-offset: 2px;
   }
-`;
-
-export const WarningText = styled.span`
-  color: #e67e22;
-  font-size: 13px;
-  margin-top: 4px;
-  display: block;
-  background: #fef9e7;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border-left: 3px solid #e67e22;
-  line-height: 1.5;
 `;

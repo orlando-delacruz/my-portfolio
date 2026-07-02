@@ -1,6 +1,6 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button, Alert } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
@@ -23,7 +23,6 @@ const BookAppointmentForm = () => {
     services,
     branchesLoading,
     servicesLoading,
-    branchError,
     disabledTime,
     disabledDate,
     isDateFullyBooked,
@@ -113,10 +112,9 @@ const BookAppointmentForm = () => {
     return Promise.resolve();
   };
 
+  // ── Birthdate is now optional ──
   const validateBirthDate = (_, value) => {
-    if (!value) {
-      return Promise.reject(new Error("Please select your birthdate."));
-    }
+    if (!value) return Promise.resolve();
     if (dayjs(value).isAfter(dayjs(), "day")) {
       return Promise.reject(new Error("Birthdate cannot be in the future."));
     }
@@ -186,7 +184,7 @@ const BookAppointmentForm = () => {
                 <DatePicker
                   style={{ width: "100%" }}
                   format="MMM D, YYYY"
-                  placeholder="Select your birthdate"
+                  placeholder="Select your birthdate (optional)"
                   disabledDate={(current) => current && current > dayjs().endOf('day')}
                 />
               </Form.Item>
@@ -218,8 +216,8 @@ const BookAppointmentForm = () => {
                   }}
                 />
               </Form.Item>
-              <Form.Item name="address" label="Complete Address" rules={[{ required: true, message: "Please enter your complete address." }]}>
-                <Input placeholder="Enter your complete address" size="large" />
+              <Form.Item name="address" label="Complete Address" rules={[{ required: false }]}>
+                <Input placeholder="Enter your complete address (optional)" size="large" />
               </Form.Item>
             </S.FieldGroup>
           </S.FormSection>
@@ -228,16 +226,6 @@ const BookAppointmentForm = () => {
           <S.FormSection>
             <S.FormSectionTitle>Appointment Information</S.FormSectionTitle>
             <S.FieldGroup>
-              {/* Branch Dropdown with error display */}
-              {branchError && (
-                <Alert
-                  message="Error loading branches"
-                  description={branchError}
-                  type="error"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-              )}
               <Form.Item name="branchId" label="Choose Branch" rules={[{ required: true, message: "Please select a branch." }]}>
                 <Select placeholder="Select a branch first" loading={branchesLoading} size="large">
                   {branches.map((b) => (
@@ -279,7 +267,6 @@ const BookAppointmentForm = () => {
                 <S.WarningText>This date is fully booked. Please select another date.</S.WarningText>
               )}
 
-              {/* Service Dropdown */}
               <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
                 <Select
                   placeholder={fields.branchId ? "Select a service" : "Select a branch first"}

@@ -25,6 +25,34 @@ const INITIAL_STATE = {
   notes: "",
 };
 
+// const validateForm = (fields) => {
+//   const errors = {};
+//   if (!fields.firstName?.trim()) errors.firstName = "First name is required.";
+//   if (!fields.lastName?.trim()) errors.lastName = "Last name is required.";
+//   if (!fields.phoneNumber?.trim())
+//     errors.phoneNumber = "Contact number is required.";
+//   else if (!/^(\+63|0)\d{10}$/.test(getRawPhoneDigits(fields.phoneNumber))) {
+//     errors.phoneNumber =
+//       "Enter a valid Philippine number (e.g., 09123456789 or +639123456789).";
+//   }
+//   if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+//     errors.email = "Enter a valid email address.";
+//   }
+//   // ✅ Birthdate is now optional – only validate if provided
+//   if (fields.birthDate && dayjs(fields.birthDate).isAfter(dayjs(), "day")) {
+//     errors.birthDate = "Birthdate cannot be in the future.";
+//   }
+//   if (!fields.branchId) errors.branchId = "Please select a branch.";
+//   if (!fields.serviceBranchId)
+//     errors.serviceBranchId = "Please select a service.";
+//   if (!fields.date) errors.date = "Please select a date.";
+//   else if (dayjs(fields.date).isBefore(dayjs(), "day")) {
+//     errors.date = "Date cannot be in the past.";
+//   }
+//   if (!fields.time) errors.time = "Please select a time.";
+//   return errors;
+// };
+
 export function useBookAppointmentForm(form) {
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
@@ -33,20 +61,14 @@ export function useBookAppointmentForm(form) {
   const [closures, setClosures] = useState([]);
   const isMounted = useRef(true);
 
-  const {
-    branches,
-    loading: branchesLoading,
-    error: branchError,
-  } = useBranches();
+  const { branches, loading: branchesLoading } = useBranches();
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
-  // Use simplified availability hook
   const selectedDate = fields.date ? dayjs(fields.date) : null;
   const { disabledTime, isDateFullyBooked, isDateDisabled } =
     useAppointmentAvailability(fields.branchId, selectedDate);
 
-  // Fetch closures for the selected branch
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -79,26 +101,22 @@ export function useBookAppointmentForm(form) {
     loadClosures();
   }, [fields.branchId]);
 
-  // Combined disabledDate: closures + fully booked
   const disabledDate = useCallback(
     (current) => {
       if (!fields.branchId) return true;
       if (!current) return false;
       const dateStr = dayjs(current).format("YYYY-MM-DD");
-      // Check closures
       const isClosure = closures.some((c) => {
         const start = dayjs(c.start_date);
         const end = dayjs(c.end_date);
         return dayjs(dateStr).isBetween(start, end, "day", "[]");
       });
       if (isClosure) return true;
-      // Check if fully booked via hook
       return isDateDisabled(current);
     },
     [fields.branchId, closures, isDateDisabled],
   );
 
-  // Handlers
   const updateFields = useCallback((newFields) => {
     setFields((prev) => ({ ...prev, ...newFields }));
   }, []);
@@ -159,7 +177,6 @@ export function useBookAppointmentForm(form) {
     services,
     branchesLoading,
     servicesLoading,
-    branchError,
     disabledTime,
     disabledDate,
     isDateFullyBooked,

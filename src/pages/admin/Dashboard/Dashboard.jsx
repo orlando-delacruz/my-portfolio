@@ -338,37 +338,38 @@ const Dashboard = () => {
                 View Calendar
               </S.ViewCalendarLink>
             </S.ScheduleHeader>
-
-            <S.ScheduleTable>
-              <S.ScheduleThead>
-                <tr>
-                  <S.ScheduleTh scope="col">Time</S.ScheduleTh>
-                  <S.ScheduleTh scope="col">Patient</S.ScheduleTh>
-                  <S.ScheduleTh scope="col">Services</S.ScheduleTh>
-                  <S.ScheduleTh scope="col">Status</S.ScheduleTh>
-                </tr>
-              </S.ScheduleThead>
-              <tbody>
-                {schedule.length === 0 ? (
+            <S.ScheduleScrollWrapper>
+              <S.ScheduleTable>
+                <S.ScheduleThead>
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
-                      No appointments scheduled for today
-                    </td>
+                    <S.ScheduleTh scope="col">Time</S.ScheduleTh>
+                    <S.ScheduleTh scope="col">Patient</S.ScheduleTh>
+                    <S.ScheduleTh scope="col">Services</S.ScheduleTh>
+                    <S.ScheduleTh scope="col">Status</S.ScheduleTh>
                   </tr>
-                ) : (
-                  schedule.map((row) => (
-                    <tr key={row.id}>
-                      <S.ScheduleTd>{row.time}</S.ScheduleTd>
-                      <S.ScheduleTd>{row.patient}</S.ScheduleTd>
-                      <S.ScheduleTd>{row.service}</S.ScheduleTd>
-                      <S.ScheduleTd>
-                        <StatusBadge status={row.status} />
-                      </S.ScheduleTd>
+                </S.ScheduleThead>
+                <tbody>
+                  {schedule.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
+                        No appointments scheduled for today
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </S.ScheduleTable>
+                  ) : (
+                    schedule.map((row) => (
+                      <tr key={row.id}>
+                        <S.ScheduleTd>{row.time}</S.ScheduleTd>
+                        <S.ScheduleTd>{row.patient}</S.ScheduleTd>
+                        <S.ScheduleTd>{row.service}</S.ScheduleTd>
+                        <S.ScheduleTd>
+                          <StatusBadge status={row.status} />
+                        </S.ScheduleTd>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </S.ScheduleTable>
+            </S.ScheduleScrollWrapper>
           </S.ScheduleCard>
         </S.TwoColGrid>
 

@@ -1,6 +1,6 @@
 // src/components/admin/Modal/AppointmentModal/AppointmentForm.jsx
 import { memo, useEffect, useCallback, useRef } from "react";
-import { Form, Input, Select, DatePicker, TimePicker } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Radio } from "antd";
 import dayjs from "dayjs";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
@@ -25,10 +25,9 @@ const validatePhone = (_, value) => {
   return Promise.resolve();
 };
 
+// ── Birthdate is now optional ──
 const validateBirthDate = (_, value) => {
-  if (!value) {
-    return Promise.reject(new Error("Please select birthdate."));
-  }
+  if (!value) return Promise.resolve();
   if (dayjs(value).isAfter(dayjs(), "day")) {
     return Promise.reject(new Error("Birthdate cannot be in the future."));
   }
@@ -44,13 +43,22 @@ const validateEmail = (_, value) => {
 };
 
 // ── Component ──
-const AppointmentForm = memo(({ form, showStatus = false }) => {
+const AppointmentForm = memo(({
+  form,
+  showStatus = false,
+  showPatientSelector = false,
+  patientType = 'new',
+  selectedOrthodonticPatient = null,
+  orthodonticPatients = [],
+  onPatientTypeChange,
+  onOrthodonticPatientSelect,
+  loadingOrthoPatients = false,
+}) => {
   const { branches, loading: branchesLoading } = useBranches();
   const selectedBranch = Form.useWatch("branchId", form);
   const selectedDate = Form.useWatch("date", form);
   const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
 
-  // Use simplified availability hook
   const { disabledTime, isDateFullyBooked, isDateDisabled } = useAppointmentAvailability(
     selectedBranch,
     selectedDate
@@ -86,67 +94,234 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
     [selectedBranch, isDateDisabled]
   );
 
+  // ── Patient type change handler ──
+  const handlePatientTypeChange = (e) => {
+    const value = e.target.value;
+    onPatientTypeChange?.(value);
+    if (value === 'new') {
+      form.setFieldsValue({
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        phoneNumber: '',
+        email: '',
+        birthDate: null,
+        gender: '',
+        address: '',
+      });
+    } else {
+      form.setFieldsValue({
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        phoneNumber: '',
+        email: '',
+        birthDate: null,
+        gender: '',
+        address: '',
+      });
+    }
+  };
+
+  // ── Orthodontic patient selection handler ──
+  const handleOrthoPatientSelect = (patientId) => {
+    if (!patientId) {
+      onOrthodonticPatientSelect?.(null);
+      return;
+    }
+    const patient = orthodonticPatients.find(p => p.id === patientId);
+    if (patient) {
+      onOrthodonticPatientSelect?.(patient);
+      form.setFieldsValue({
+        firstName: patient.first_name,
+        middleName: patient.middle_name || '',
+        lastName: patient.last_name,
+        phoneNumber: patient.phone_number || '',
+        email: patient.email || '',
+        birthDate: patient.birth_date ? dayjs(patient.birth_date) : null,
+        gender: patient.gender || '',
+        address: patient.address || '',
+      });
+      form.setFieldValue('serviceBranchId', undefined);
+    }
+  };
+
+  const isOrthoSelected = patientType === 'ortho' && selectedOrthodonticPatient !== null;
+
   return (
     <Form form={form} layout="vertical" requiredMark={false}>
       <S.FormGrid>
+        {/* ── Patient Type Selector (only in Add mode) ── */}
+        {showPatientSelector && (
+          <S.FullWidth>
+            <Form.Item label="Patient Type" required>
+              <Radio.Group
+                value={patientType}
+                onChange={handlePatientTypeChange}
+                buttonStyle="solid"
+              >
+                <Radio.Button value="new">New Patient</Radio.Button>
+                <Radio.Button value="ortho">Orthodontic Patient</Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+          </S.FullWidth>
+        )}
+
+        {/* ── Orthodontic Patient Dropdown ── */}
+        {showPatientSelector && patientType === 'ortho' && (
+          <S.FullWidth>
+            <Form.Item
+              label="Select Orthodontic Patient"
+              rules={[{ required: true, message: "Please select an orthodontic patient." }]}
+            >
+              <Select
+                placeholder="Search orthodontic patients..."
+                loading={loadingOrthoPatients}
+                onChange={handleOrthoPatientSelect}
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                value={selectedOrthodonticPatient?.id}
+              >
+                {orthodonticPatients.map((p) => (
+                  <Option key={p.id} value={p.id}>
+                    {p.first_name} {p.last_name} {p.phone_number ? `(${p.phone_number})` : ''}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </S.FullWidth>
+        )}
+
         {/* ── Patient Information ── */}
-        <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "First name is required." }]}>
-          <Input placeholder="Enter first name" maxLength={80} />
+        <Form.Item
+          name="firstName"
+          label="First Name"
+          rules={[{ required: true, message: "First name is required." }]}
+        >
+          <Input
+            placeholder="Enter first name"
+            maxLength={80}
+            disabled={isOrthoSelected}
+          />
         </Form.Item>
-        <Form.Item name="middleName" label="Middle Name" rules={[{ required: false }]}>
-          <Input placeholder="(Optional)" maxLength={80} />
+        <Form.Item
+          name="middleName"
+          label="Middle Name"
+          rules={[{ required: false }]}
+        >
+          <Input placeholder="(Optional)" maxLength={80} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Last name is required." }]}>
-          <Input placeholder="Enter last name" maxLength={80} />
+        <Form.Item
+          name="lastName"
+          label="Last Name"
+          rules={[{ required: true, message: "Last name is required." }]}
+        >
+          <Input
+            placeholder="Enter last name"
+            maxLength={80}
+            disabled={isOrthoSelected}
+          />
         </Form.Item>
-        <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]}>
-          <Input placeholder="0912 345 6789" maxLength={16} onChange={handlePhoneChange} />
+        <Form.Item
+          name="phoneNumber"
+          label="Contact Number"
+          rules={[{ validator: validatePhone }]}
+        >
+          <Input
+            placeholder="0912 345 6789"
+            maxLength={16}
+            onChange={handlePhoneChange}
+            disabled={isOrthoSelected}
+          />
         </Form.Item>
-        <Form.Item name="email" label="Email" rules={[{ validator: validateEmail }]}>
-          <Input placeholder="Enter email (optional)" maxLength={256} />
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[{ validator: validateEmail }]}
+        >
+          <Input
+            placeholder="Enter email (optional)"
+            maxLength={256}
+            disabled={isOrthoSelected}
+          />
         </Form.Item>
-        <Form.Item name="birthDate" label="Birthdate" rules={[{ validator: validateBirthDate }]}>
+        <Form.Item
+          name="birthDate"
+          label="Birthdate"
+          rules={[{ validator: validateBirthDate }]}  // ✅ optional
+        >
           <DatePicker
             style={{ width: "100%" }}
             format="MMM D, YYYY"
-            placeholder="Select birthdate"
+            placeholder="Select birthdate (optional)"
             disabledDate={(current) => current && current > dayjs().endOf('day')}
+            disabled={isOrthoSelected}
           />
         </Form.Item>
-        <Form.Item name="gender" label="Gender" rules={[{ required: true, message: "Please select gender." }]}>
-          <Select placeholder="Select gender">
+        <Form.Item
+          name="gender"
+          label="Gender"
+          rules={[{ required: true, message: "Please select gender." }]}
+        >
+          <Select placeholder="Select gender" disabled={isOrthoSelected}>
             <Option value="male">Male</Option>
             <Option value="female">Female</Option>
             <Option value="other">Other</Option>
             <Option value="prefer-not-to-say">Prefer not to say</Option>
           </Select>
         </Form.Item>
-        <Form.Item name="address" label="Complete Address" rules={[{ required: true, message: "Address is required." }]}>
-          <Input placeholder="Enter complete address" />
+        <Form.Item
+          name="address"
+          label="Complete Address"
+          rules={[{ required: false }]}  // ✅ optional
+        >
+          <Input
+            placeholder="Enter complete address (optional)"
+            disabled={isOrthoSelected}
+          />
         </Form.Item>
 
         {/* ── Appointment Information ── */}
-        <Form.Item name="branchId" label="Branch" rules={[{ required: true, message: "Please select a branch." }]}>
-          <Select placeholder="Select branch" loading={branchesLoading}>
+        <Form.Item
+          name="branchId"
+          label="Branch"
+          rules={[{ required: true, message: "Please select a branch." }]}
+        >
+          <Select
+            placeholder="Select branch"
+            loading={branchesLoading}
+          >
             {branches.map((b) => (
               <Option key={b.id} value={b.id}>{b.name}</Option>
             ))}
           </Select>
         </Form.Item>
 
-        <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
+        <Form.Item
+          name="serviceBranchId"
+          label="Service"
+          rules={[{ required: true, message: "Please select a service." }]}
+        >
           <Select
             placeholder={selectedBranch ? "Select service" : "Select a branch first"}
             loading={servicesLoading}
             disabled={!selectedBranch}
           >
             {serviceBranches.map((sb) => (
-              <Option key={sb.service_branch_id} value={sb.service_branch_id}>{sb.name}</Option>
+              <Option key={sb.service_branch_id} value={sb.service_branch_id}>
+                {sb.name}
+              </Option>
             ))}
           </Select>
         </Form.Item>
 
-        <Form.Item name="date" label="Preferred Date" rules={[{ required: true, message: "Please pick a date." }]}>
+        <Form.Item
+          name="date"
+          label="Preferred Date"
+          rules={[{ required: true, message: "Please pick a date." }]}
+        >
           <DatePicker
             style={{ width: "100%" }}
             format="MMM D, YYYY"
@@ -167,6 +342,7 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           rules={[{ required: true, message: "Please pick a time." }]}
         >
           <TimePicker
+            key={`time-${selectedBranch}-${selectedDate?.format('YYYY-MM-DD')}`}
             style={{ width: "100%" }}
             format="h:mm A"
             use12Hours
@@ -179,13 +355,21 @@ const AppointmentForm = memo(({ form, showStatus = false }) => {
           />
         </Form.Item>
 
-        <Form.Item name="notes" label="Notes / Remarks" rules={[{ required: false }]}>
+        <Form.Item
+          name="notes"
+          label="Notes / Remarks"
+          rules={[{ required: false }]}
+        >
           <Input.TextArea placeholder="Additional notes (optional)" rows={3} />
         </Form.Item>
 
         {showStatus && (
           <S.FullWidth>
-            <Form.Item name="status" label="Status" rules={[{ required: true, message: "Please select a status." }]}>
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Please select a status." }]}
+            >
               <Select placeholder="Select status">
                 {STATUS_OPTIONS_FORM.map((o) => (
                   <Option key={o.value} value={o.value}>{o.label}</Option>

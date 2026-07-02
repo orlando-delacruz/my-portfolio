@@ -8,6 +8,7 @@ import {
   MdLogout,
 } from "react-icons/md";
 import { BsCalendar2Check } from "react-icons/bs";
+import { FaUserMd } from "react-icons/fa";
 
 export const sidebarNavItems = [
   {
@@ -33,6 +34,12 @@ export const sidebarNavItems = [
     label: "Clinic Closures",
     icon: MdEventBusy,
     path: "/admin/clinic-closures",
+  },
+  {
+    key: "patients",
+    label: "Patients",
+    icon: FaUserMd,
+    path: "/admin/patients",
   },
   { key: "users", label: "Users", icon: MdPeople, path: "/admin/users" },
   {
