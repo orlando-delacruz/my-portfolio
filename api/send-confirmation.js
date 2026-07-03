@@ -1,18 +1,19 @@
 // api/send-confirmation.js
-/* global process */
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY,
-);
+// ── Environment variables ──
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+const resendApiKey = process.env.RESEND_API_KEY;
+const fromEmail = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL =
-  process.env.REMINDER_FROM_EMAIL || "appointments@leidibuddentals.com";
+// ── Clients ──
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const resend = new Resend(resendApiKey);
 
 export default async function handler(req, res) {
+  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 1. Fetch appointment with patient and service details
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
@@ -39,15 +41,24 @@ export default async function handler(req, res) {
       .eq("id", appointmentId)
       .single();
 
-    if (error || !appointment) {
+    if (error) {
+      console.error("Supabase error:", error);
+      return res
+        .status(500)
+        .json({ error: `Database error: ${error.message}` });
+    }
+
+    if (!appointment) {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
     const patient = appointment.patient;
-    if (!patient.email) {
-      return res.status(200).json({ message: "No email address provided" });
+    if (!patient || !patient.email) {
+      // No email to send – still return 200 to avoid client-side errors
+      return res.status(200).json({ message: "No email address for patient" });
     }
 
+    // 2. Build HTML email
     const html = buildConfirmationEmail({
       patientName: `${patient.first_name} ${patient.last_name}`.trim(),
       referenceNumber: appointment.reference_number,
@@ -71,8 +82,9 @@ export default async function handler(req, res) {
         appointment.approval_status === "approved" ? "Confirmed" : "Pending",
     });
 
+    // 3. Send via Resend
     const { data, error: emailError } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: patient.email,
       subject: "Appointment Confirmation – Leidi Bud Dentals",
       html,
@@ -80,10 +92,19 @@ export default async function handler(req, res) {
 
     if (emailError) {
       console.error("Resend error:", emailError);
+      // Log failure
+      await supabase.from("email_logs").insert({
+        appointment_id: appointmentId,
+        recipient_email: patient.email,
+        email_type: "confirmation",
+        delivery_status: "failed",
+        error_message: emailError.message,
+        sent_at: null,
+      });
       return res.status(500).json({ error: emailError.message });
     }
 
-    // Log to email_logs (optional)
+    // 4. Log success
     await supabase.from("email_logs").insert({
       appointment_id: appointmentId,
       recipient_email: patient.email,
@@ -93,13 +114,15 @@ export default async function handler(req, res) {
       sent_at: new Date().toISOString(),
     });
 
+    console.log(`✅ Confirmation email sent to ${patient.email}`);
     return res.status(200).json({ success: true, messageId: data?.id });
   } catch (err) {
-    console.error("Confirmation API error:", err);
+    console.error("Unexpected error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
 
+// ── Email template ──
 function buildConfirmationEmail({
   patientName,
   referenceNumber,
