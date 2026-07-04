@@ -2,7 +2,6 @@
 import { supabase } from "./supabase/supabase";
 import dayjs from "dayjs";
 import { getOperatingHoursForDay } from "../utils/scheduling";
-import { triggerConfirmation } from "./trigger"; // <-- NEW
 
 // ── Constants ──
 const MIN_INTERVAL_MINUTES = 60;
@@ -158,13 +157,6 @@ export async function adminCreateAppointment({
     admin_id: adminId ?? null,
     status: logStatus,
   });
-
-  // ── Trigger confirmation email via Trigger.dev ──
-  if (patient.email) {
-    triggerConfirmation(data.id).catch((err) => {
-      console.error("Failed to trigger confirmation:", err);
-    });
-  }
 
   return data;
 }

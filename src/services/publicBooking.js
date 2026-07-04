@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import { hasBookingConflict, STATUS_TO_DB } from "./appointments";
 import { findOrCreatePatient } from "./patients";
 import { fetchServiceBranchById } from "./serviceBranches";
-import { triggerConfirmation } from "./trigger"; // <-- NEW
 
 function isPastAppointment(date, time) {
   const now = dayjs();
@@ -130,13 +129,6 @@ export async function bookPublicAppointment({
     admin_id: null,
     status: "pending",
   });
-
-  // ── Trigger confirmation email via Trigger.dev ──
-  if (patient.email) {
-    triggerConfirmation(appointment.id).catch((err) => {
-      console.error("Failed to trigger confirmation:", err);
-    });
-  }
 
   return appointment;
 }
