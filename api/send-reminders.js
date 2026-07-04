@@ -1,6 +1,5 @@
-// trigger/jobs/reminder.js
+// api/send-reminders.js
 /*global process*/
-import { job } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
@@ -13,170 +12,151 @@ const FROM_EMAIL = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
 const PUBLIC_APP_URL =
   process.env.PUBLIC_APP_URL || "https://leidibuddentals.vercel.app";
 
-export const reminderJob = job({
-  id: "reminder-email",
-  name: "Send reminder email",
-  version: "1.0.0",
-  trigger: "event",
-  event: "reminder.due",
-  run: async (payload) => {
-    const { appointmentId, type } = payload;
-    console.log(`📧 Sending ${type} reminder for ${appointmentId}`);
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-    // 1. Fetch appointment
-    const { data: appointment, error } = await supabase
-      .from("appointments")
-      .select(
-        `
+  console.log("🕐 Reminder check started");
+
+  const now = new Date();
+  const twoDaysLater = new Date(now);
+  twoDaysLater.setDate(now.getDate() + 2);
+
+  // Fetch approved, scheduled appointments within next 2 days
+  const { data: appointments, error } = await supabase
+    .from("appointments")
+    .select(
+      `
+      *,
+      patient:patients(*),
+      service_branch:service_branches(
         *,
-        patient:patients(*),
-        service_branch:service_branches(
-          *,
-          branch:branches(*),
-          service:services(*)
-        )
-      `,
+        branch:branches(*),
+        service:services(*)
       )
-      .eq("id", appointmentId)
-      .single();
+    `,
+    )
+    .eq("approval_status", "approved")
+    .eq("appointment_status", "scheduled")
+    .gte("preferred_date", now.toISOString().split("T")[0])
+    .lte("preferred_date", twoDaysLater.toISOString().split("T")[0]);
 
-    if (error || !appointment) {
-      console.error("Appointment not found:", error);
-      throw new Error("Appointment not found");
-    }
+  if (error) {
+    console.error("Error fetching appointments:", error);
+    return res.status(500).json({ error: error.message });
+  }
 
-    // 2. Validate appointment is still valid
-    if (appointment.appointment_status === "cancelled") {
-      console.log(
-        `Appointment ${appointmentId} is cancelled, skipping reminder`,
-      );
-      return { success: true, skipped: true };
-    }
-    if (appointment.appointment_status === "completed") {
-      console.log(
-        `Appointment ${appointmentId} is completed, skipping reminder`,
-      );
-      return { success: true, skipped: true };
-    }
-    if (appointment.approval_status !== "approved") {
-      console.log(
-        `Appointment ${appointmentId} is not approved, skipping reminder`,
-      );
-      return { success: true, skipped: true };
-    }
+  let remindersSent = 0;
 
-    const patient = appointment.patient;
-    if (!patient?.email) {
-      console.log(`No email for patient, skipping`);
-      return { success: true, skipped: true };
-    }
+  for (const apt of appointments) {
+    const aptDate = new Date(`${apt.preferred_date}T${apt.preferred_time}`);
+    const diffMinutes = (aptDate.getTime() - now.getTime()) / (1000 * 60);
 
-    // 3. Check if reminder already sent
+    // Determine reminder type
+    let reminderType = null;
+    if (diffMinutes >= 24 * 60 && diffMinutes < 25 * 60)
+      reminderType = "reminder_24h";
+    else if (diffMinutes >= 2 * 60 && diffMinutes < 3 * 60)
+      reminderType = "reminder_2h";
+    else if (diffMinutes >= 30 && diffMinutes < 45)
+      reminderType = "reminder_30min";
+    else continue;
+
+    // Check if already sent
     const { count } = await supabase
       .from("email_logs")
       .select("*", { count: "exact", head: true })
-      .eq("appointment_id", appointmentId)
-      .eq("email_type", type);
+      .eq("appointment_id", apt.id)
+      .eq("email_type", reminderType);
 
     if (count > 0) {
-      console.log(`${type} already sent for ${appointmentId}, skipping`);
-      return { success: true, duplicate: true };
+      console.log(`⏭️ ${reminderType} already sent for ${apt.id}`);
+      continue;
     }
 
-    // 4. Get cancellation token
+    const patient = apt.patient;
+    if (!patient?.email) {
+      console.log(`⚠️ No email for patient ${patient?.id}`);
+      continue;
+    }
+
+    // Get cancellation token
     const { data: tokenData } = await supabase
       .from("appointment_tokens")
       .select("token")
-      .eq("appointment_id", appointmentId)
+      .eq("appointment_id", apt.id)
       .eq("purpose", "cancellation")
       .eq("is_active", true)
       .single();
 
     const token = tokenData?.token;
     if (!token) {
-      console.error(
-        "No cancellation token found for appointment",
-        appointmentId,
-      );
-      return { success: false, error: "No token" };
+      console.error(`❌ No cancellation token for ${apt.id}`);
+      continue;
     }
 
-    // 5. Build reminder email
+    // Build reminder email
     const html = buildReminderEmail({
       patientName: `${patient.first_name} ${patient.last_name}`.trim(),
-      appointmentDate: new Date(appointment.preferred_date).toLocaleDateString(
-        "en-PH",
-        {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        },
-      ),
-      appointmentTime: new Date(
-        `1970-01-01T${appointment.preferred_time}`,
-      ).toLocaleTimeString("en-PH", {
+      appointmentDate: aptDate.toLocaleDateString("en-PH", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+      appointmentTime: aptDate.toLocaleTimeString("en-PH", {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      branch: appointment.service_branch?.branch?.name || "Our Clinic",
+      branch: apt.service_branch?.branch?.name || "Our Clinic",
       service:
-        appointment.snapshot_service_name ||
-        appointment.service_branch?.service?.name ||
+        apt.snapshot_service_name ||
+        apt.service_branch?.service?.name ||
         "Dental Service",
       cancelLink: `${PUBLIC_APP_URL}/cancel-appointment?token=${token}`,
-      type,
+      reminderType,
     });
 
-    // 6. Send email
     const subjectMap = {
       reminder_24h: "Reminder: Your Appointment is Tomorrow",
       reminder_2h: "Reminder: Your Appointment is in 2 Hours",
+      reminder_30min: "Reminder: Your Appointment is in 30 Minutes",
     };
 
     const { data, error: emailError } = await resend.emails.send({
       from: FROM_EMAIL,
       to: patient.email,
-      subject: subjectMap[type] || "Appointment Reminder",
+      subject: subjectMap[reminderType] || "Appointment Reminder",
       html,
     });
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      await logEmail(
-        appointmentId,
-        patient.email,
-        type,
-        "failed",
-        null,
-        emailError.message,
-      );
-      throw emailError;
+      await supabase.from("email_logs").insert({
+        appointment_id: apt.id,
+        recipient_email: patient.email,
+        email_type: reminderType,
+        delivery_status: "failed",
+        error_message: emailError.message,
+      });
+      continue;
     }
 
-    await logEmail(appointmentId, patient.email, type, "sent", data?.id);
-    console.log(`✅ ${type} reminder sent for ${appointmentId}`);
+    await supabase.from("email_logs").insert({
+      appointment_id: apt.id,
+      recipient_email: patient.email,
+      email_type: reminderType,
+      delivery_status: "sent",
+      resend_message_id: data?.id,
+      sent_at: new Date().toISOString(),
+    });
 
-    return { success: true, messageId: data?.id };
-  },
-});
+    remindersSent++;
+    console.log(`✅ Sent ${reminderType} for ${apt.id}`);
+  }
 
-async function logEmail(
-  appointmentId,
-  recipient,
-  emailType,
-  status,
-  messageId,
-  errorMessage,
-) {
-  await supabase.from("email_logs").insert({
-    appointment_id: appointmentId,
-    recipient_email: recipient,
-    email_type: emailType,
-    delivery_status: status,
-    resend_message_id: messageId,
-    error_message: errorMessage || null,
-    sent_at: status === "sent" ? new Date().toISOString() : null,
-  });
+  console.log(`📬 Reminders sent: ${remindersSent}`);
+  return res.status(200).json({ sent: remindersSent });
 }
 
 function buildReminderEmail({
@@ -186,11 +166,12 @@ function buildReminderEmail({
   branch,
   service,
   cancelLink,
-  type,
+  reminderType,
 }) {
   const messageMap = {
     reminder_24h: "This is a reminder that your appointment is tomorrow.",
     reminder_2h: "This is a reminder that your appointment is in 2 hours.",
+    reminder_30min: "Your appointment is in 30 minutes. Please arrive on time.",
   };
 
   return `
@@ -232,7 +213,7 @@ function buildReminderEmail({
     </div>
     <div class="content">
       <p class="greeting">Dear <strong>${patientName}</strong>,</p>
-      <p>${messageMap[type] || "This is a reminder of your upcoming appointment."}</p>
+      <p>${messageMap[reminderType] || "This is a reminder of your upcoming appointment."}</p>
       <div class="appointment-card">
         <div class="row"><span class="label">Date</span><span class="value">${appointmentDate}</span></div>
         <div class="row"><span class="label">Time</span><span class="value">${appointmentTime}</span></div>

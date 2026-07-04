@@ -125,7 +125,14 @@ export function useBookAppointmentForm(form) {
 
       message.success("Appointment booked successfully!");
       setSubmitted(true);
-
+      // ── Send confirmation email ──
+      if (appointment?.id) {
+        fetch("/api/send-confirmation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appointmentId: appointment.id }),
+        }).catch((err) => console.error("Confirmation email failed:", err));
+      }
       // ── Trigger confirmation email via Trigger.dev ──
       if (appointment?.id) {
         fetch("/api/trigger-confirmation", {

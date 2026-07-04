@@ -1,6 +1,5 @@
-// trigger/jobs/confirmation.js
+// api/send-confirmation.js
 /*global process*/
-import { job } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
@@ -11,17 +10,18 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
 
-export const confirmationJob = job({
-  id: "confirmation-email",
-  name: "Send confirmation email and schedule reminders",
-  version: "1.0.0",
-  trigger: "event",
-  event: "appointment.created",
-  run: async (payload, ctx) => {
-    const { appointmentId } = payload;
-    console.log(`📧 Processing confirmation for ${appointmentId}`);
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-    // 1. Fetch appointment with patient and service details
+  const { appointmentId } = req.body;
+  if (!appointmentId) {
+    return res.status(400).json({ error: "Missing appointmentId" });
+  }
+
+  try {
+    // Fetch appointment with patient and service details
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
@@ -39,35 +39,15 @@ export const confirmationJob = job({
       .single();
 
     if (error || !appointment) {
-      console.error("Failed to fetch appointment:", error);
-      throw new Error("Appointment not found");
+      return res.status(404).json({ error: "Appointment not found" });
     }
 
     const patient = appointment.patient;
     if (!patient?.email) {
-      console.log("No email address, skipping");
-      return { success: true, skipped: true };
+      return res.status(200).json({ message: "No email address provided" });
     }
 
-    // 2. Get or create cancellation token
-    let token = await getOrCreateToken(appointmentId);
-    if (!token) {
-      token = crypto.randomUUID();
-      await supabase.from("appointment_tokens").insert({
-        appointment_id: appointmentId,
-        token,
-        purpose: "cancellation",
-        expires_at: new Date(
-          new Date(
-            `${appointment.preferred_date}T${appointment.preferred_time}`,
-          ).getTime() +
-            2 * 60 * 60 * 1000,
-        ).toISOString(),
-        is_active: true,
-      });
-    }
-
-    // 3. Build confirmation email
+    // Build confirmation email
     const html = buildConfirmationEmail({
       patientName: `${patient.first_name} ${patient.last_name}`.trim(),
       referenceNumber: appointment.reference_number,
@@ -91,7 +71,7 @@ export const confirmationJob = job({
         appointment.approval_status === "approved" ? "Confirmed" : "Pending",
     });
 
-    // 4. Send via Resend
+    // Send email
     const { data, error: emailError } = await resend.emails.send({
       from: FROM_EMAIL,
       to: patient.email,
@@ -101,96 +81,34 @@ export const confirmationJob = job({
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      await logEmail(
-        appointmentId,
-        patient.email,
-        "confirmation",
-        "failed",
-        null,
-        emailError.message,
-      );
-      throw emailError;
+      // Log failure to email_logs
+      await supabase.from("email_logs").insert({
+        appointment_id: appointmentId,
+        recipient_email: patient.email,
+        email_type: "confirmation",
+        delivery_status: "failed",
+        error_message: emailError.message,
+      });
+      return res.status(500).json({ error: emailError.message });
     }
 
-    await logEmail(
-      appointmentId,
-      patient.email,
-      "confirmation",
-      "sent",
-      data?.id,
-    );
+    // Log success
+    await supabase.from("email_logs").insert({
+      appointment_id: appointmentId,
+      recipient_email: patient.email,
+      email_type: "confirmation",
+      delivery_status: "sent",
+      resend_message_id: data?.id,
+      sent_at: new Date().toISOString(),
+    });
 
-    // 5. Schedule reminders (if appointment is in the future)
-    const aptDate = new Date(
-      `${appointment.preferred_date}T${appointment.preferred_time}`,
-    );
-    const now = new Date();
-
-    if (aptDate > now) {
-      // 24h reminder
-      const reminder24h = new Date(aptDate.getTime() - 24 * 60 * 60 * 1000);
-      if (reminder24h > now) {
-        await ctx.schedule(`reminder-24h-${appointmentId}`, reminder24h, {
-          event: "reminder.due",
-          payload: { appointmentId, type: "reminder_24h" },
-        });
-        console.log(
-          `📅 Scheduled 24h reminder for ${appointmentId} at ${reminder24h}`,
-        );
-      }
-
-      // 2h reminder
-      const reminder2h = new Date(aptDate.getTime() - 2 * 60 * 60 * 1000);
-      if (reminder2h > now) {
-        await ctx.schedule(`reminder-2h-${appointmentId}`, reminder2h, {
-          event: "reminder.due",
-          payload: { appointmentId, type: "reminder_2h" },
-        });
-        console.log(
-          `📅 Scheduled 2h reminder for ${appointmentId} at ${reminder2h}`,
-        );
-      }
-    }
-
-    return { success: true, messageId: data?.id };
-  },
-});
-
-// ── Helper: get or create token ──
-async function getOrCreateToken(appointmentId) {
-  const { data, error } = await supabase
-    .from("appointment_tokens")
-    .select("token")
-    .eq("appointment_id", appointmentId)
-    .eq("purpose", "cancellation")
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) console.error("Error fetching token:", error);
-  return data?.token;
+    return res.status(200).json({ success: true, messageId: data?.id });
+  } catch (err) {
+    console.error("Confirmation error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 }
 
-// ── Helper: log email to email_logs ──
-async function logEmail(
-  appointmentId,
-  recipient,
-  emailType,
-  status,
-  messageId,
-  errorMessage,
-) {
-  await supabase.from("email_logs").insert({
-    appointment_id: appointmentId,
-    recipient_email: recipient,
-    email_type: emailType,
-    delivery_status: status,
-    resend_message_id: messageId,
-    error_message: errorMessage || null,
-    sent_at: status === "sent" ? new Date().toISOString() : null,
-  });
-}
-
-// ── Helper: build confirmation email ──
 function buildConfirmationEmail({
   patientName,
   referenceNumber,

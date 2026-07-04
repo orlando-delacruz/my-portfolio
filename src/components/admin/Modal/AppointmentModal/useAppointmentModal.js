@@ -87,6 +87,14 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         form.resetFields();
         setAddOpen(false);
         onAddSuccess?.(newRecord);
+        // ── Send confirmation email ──
+        if (created.id) {
+          fetch("/api/send-confirmation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ appointmentId: created.id }),
+          }).catch((err) => console.error("Confirmation email failed:", err));
+        }
 
         // ── Trigger confirmation email via Trigger.dev ──
         if (created.id) {
