@@ -1,29 +1,26 @@
-// api/send-confirmation.js
+// trigger/jobs/confirmation.js
+/*global process*/
+import { job } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-// ── Environment variables ──
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY,
+);
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
 
-// ── Clients ──
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-const resend = new Resend(resendApiKey);
+export const confirmationJob = job({
+  id: "confirmation-email",
+  name: "Send confirmation email and schedule reminders",
+  version: "1.0.0",
+  trigger: "event",
+  event: "appointment.created",
+  run: async (payload, ctx) => {
+    const { appointmentId } = payload;
+    console.log(`📧 Processing confirmation for ${appointmentId}`);
 
-export default async function handler(req, res) {
-  // Only allow POST
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { appointmentId } = req.body;
-  if (!appointmentId) {
-    return res.status(400).json({ error: "Missing appointmentId" });
-  }
-
-  try {
     // 1. Fetch appointment with patient and service details
     const { data: appointment, error } = await supabase
       .from("appointments")
@@ -41,24 +38,36 @@ export default async function handler(req, res) {
       .eq("id", appointmentId)
       .single();
 
-    if (error) {
-      console.error("Supabase error:", error);
-      return res
-        .status(500)
-        .json({ error: `Database error: ${error.message}` });
-    }
-
-    if (!appointment) {
-      return res.status(404).json({ error: "Appointment not found" });
+    if (error || !appointment) {
+      console.error("Failed to fetch appointment:", error);
+      throw new Error("Appointment not found");
     }
 
     const patient = appointment.patient;
-    if (!patient || !patient.email) {
-      // No email to send – still return 200 to avoid client-side errors
-      return res.status(200).json({ message: "No email address for patient" });
+    if (!patient?.email) {
+      console.log("No email address, skipping");
+      return { success: true, skipped: true };
     }
 
-    // 2. Build HTML email
+    // 2. Get or create cancellation token
+    let token = await getOrCreateToken(appointmentId);
+    if (!token) {
+      token = crypto.randomUUID();
+      await supabase.from("appointment_tokens").insert({
+        appointment_id: appointmentId,
+        token,
+        purpose: "cancellation",
+        expires_at: new Date(
+          new Date(
+            `${appointment.preferred_date}T${appointment.preferred_time}`,
+          ).getTime() +
+            2 * 60 * 60 * 1000,
+        ).toISOString(),
+        is_active: true,
+      });
+    }
+
+    // 3. Build confirmation email
     const html = buildConfirmationEmail({
       patientName: `${patient.first_name} ${patient.last_name}`.trim(),
       referenceNumber: appointment.reference_number,
@@ -82,9 +91,9 @@ export default async function handler(req, res) {
         appointment.approval_status === "approved" ? "Confirmed" : "Pending",
     });
 
-    // 3. Send via Resend
+    // 4. Send via Resend
     const { data, error: emailError } = await resend.emails.send({
-      from: fromEmail,
+      from: FROM_EMAIL,
       to: patient.email,
       subject: "Appointment Confirmation – Leidi Bud Dentals",
       html,
@@ -92,37 +101,96 @@ export default async function handler(req, res) {
 
     if (emailError) {
       console.error("Resend error:", emailError);
-      // Log failure
-      await supabase.from("email_logs").insert({
-        appointment_id: appointmentId,
-        recipient_email: patient.email,
-        email_type: "confirmation",
-        delivery_status: "failed",
-        error_message: emailError.message,
-        sent_at: null,
-      });
-      return res.status(500).json({ error: emailError.message });
+      await logEmail(
+        appointmentId,
+        patient.email,
+        "confirmation",
+        "failed",
+        null,
+        emailError.message,
+      );
+      throw emailError;
     }
 
-    // 4. Log success
-    await supabase.from("email_logs").insert({
-      appointment_id: appointmentId,
-      recipient_email: patient.email,
-      email_type: "confirmation",
-      delivery_status: "sent",
-      resend_message_id: data?.id,
-      sent_at: new Date().toISOString(),
-    });
+    await logEmail(
+      appointmentId,
+      patient.email,
+      "confirmation",
+      "sent",
+      data?.id,
+    );
 
-    console.log(`✅ Confirmation email sent to ${patient.email}`);
-    return res.status(200).json({ success: true, messageId: data?.id });
-  } catch (err) {
-    console.error("Unexpected error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+    // 5. Schedule reminders (if appointment is in the future)
+    const aptDate = new Date(
+      `${appointment.preferred_date}T${appointment.preferred_time}`,
+    );
+    const now = new Date();
+
+    if (aptDate > now) {
+      // 24h reminder
+      const reminder24h = new Date(aptDate.getTime() - 24 * 60 * 60 * 1000);
+      if (reminder24h > now) {
+        await ctx.schedule(`reminder-24h-${appointmentId}`, reminder24h, {
+          event: "reminder.due",
+          payload: { appointmentId, type: "reminder_24h" },
+        });
+        console.log(
+          `📅 Scheduled 24h reminder for ${appointmentId} at ${reminder24h}`,
+        );
+      }
+
+      // 2h reminder
+      const reminder2h = new Date(aptDate.getTime() - 2 * 60 * 60 * 1000);
+      if (reminder2h > now) {
+        await ctx.schedule(`reminder-2h-${appointmentId}`, reminder2h, {
+          event: "reminder.due",
+          payload: { appointmentId, type: "reminder_2h" },
+        });
+        console.log(
+          `📅 Scheduled 2h reminder for ${appointmentId} at ${reminder2h}`,
+        );
+      }
+    }
+
+    return { success: true, messageId: data?.id };
+  },
+});
+
+// ── Helper: get or create token ──
+async function getOrCreateToken(appointmentId) {
+  const { data, error } = await supabase
+    .from("appointment_tokens")
+    .select("token")
+    .eq("appointment_id", appointmentId)
+    .eq("purpose", "cancellation")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) console.error("Error fetching token:", error);
+  return data?.token;
 }
 
-// ── Email template ──
+// ── Helper: log email to email_logs ──
+async function logEmail(
+  appointmentId,
+  recipient,
+  emailType,
+  status,
+  messageId,
+  errorMessage,
+) {
+  await supabase.from("email_logs").insert({
+    appointment_id: appointmentId,
+    recipient_email: recipient,
+    email_type: emailType,
+    delivery_status: status,
+    resend_message_id: messageId,
+    error_message: errorMessage || null,
+    sent_at: status === "sent" ? new Date().toISOString() : null,
+  });
+}
+
+// ── Helper: build confirmation email ──
 function buildConfirmationEmail({
   patientName,
   referenceNumber,

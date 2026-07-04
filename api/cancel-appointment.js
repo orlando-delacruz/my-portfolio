@@ -1,5 +1,6 @@
 /* global process */
 import { createClient } from "@supabase/supabase-js";
+import { triggerCancellation } from "../src/services/trigger"; // <-- NEW
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -78,6 +79,11 @@ export default async function handler(req, res) {
       performed_by: "system",
       admin_id: null,
       status: "cancelled",
+    });
+
+    // ── Trigger cancellation event to cancel pending reminders ──
+    await triggerCancellation(apt.id).catch((err) => {
+      console.error("Failed to trigger cancellation event:", err);
     });
 
     return res.status(200).json({ success: true });
