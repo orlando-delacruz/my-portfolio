@@ -4,11 +4,5 @@
       "source": "/(.*)",
       "destination": "/"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/send-reminders",
-      "schedule": "*/15 * * * *"
-    }
   ]
 }
