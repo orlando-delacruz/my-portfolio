@@ -6,7 +6,8 @@ import AdminLayout from '../../../components/admin/AdminLayout';
 import { useUsers } from '../../../hooks/useUsers';
 import UserTable from './sections/Table';
 import UserModal from '../../../components/admin/Modal/UserModal';
-import { createAdmin, updateAdmin, deleteAdmin } from '../../../services/admins';
+import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
+import { createAdminUser, updateAdmin, deleteAdmin } from '../../../services/admins';
 import * as S from './Users.styled';
 
 const { confirm } = Modal;
@@ -27,6 +28,10 @@ const Users = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [selected, setSelected] = useState(new Set());
+
+  // ── Details Modal state ──
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const handleAdd = useCallback(() => {
     setEditingUser(null);
@@ -50,7 +55,7 @@ const Users = () => {
         await updateAdmin(editingUser.id, data);
         message.success('User updated successfully!');
       } else {
-        await createAdmin(data);
+        await createAdminUser(data);
         message.success('User created successfully!');
       }
       handleModalClose();
@@ -86,6 +91,7 @@ const Users = () => {
   }, [refetch]);
 
   const handleBulkDelete = useCallback(() => {
+    // ... (same as before)
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     confirm({
@@ -128,6 +134,17 @@ const Users = () => {
     });
   }, []);
 
+  // ── Click row → open details modal ──
+  const handleRowClick = useCallback((user) => {
+    setSelectedUser(user);
+    setDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedUser(null);
+  }, []);
+
   const allSelected = users.length > 0 && selected.size === users.length;
 
   return (
@@ -136,7 +153,7 @@ const Users = () => {
         <S.Header>
           <S.TitleGroup>
             <S.Title>Users</S.Title>
-            <S.Subtitle>Manage administrator accounts and roles</S.Subtitle>
+            <S.Subtitle>Manage administrator accounts</S.Subtitle>
           </S.TitleGroup>
           <S.HeaderActions>
             <S.SearchInput
@@ -171,6 +188,7 @@ const Users = () => {
           onSizeChange={setPageSize}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onRowClick={handleRowClick}
         />
 
         {selected.size > 0 && (
@@ -189,6 +207,15 @@ const Users = () => {
         user={editingUser}
         onClose={handleModalClose}
         onSave={handleSave}
+        loading={modalLoading}
+      />
+
+      <UserDetailsModal
+        open={detailsModalOpen}
+        user={selectedUser}
+        onClose={handleCloseDetails}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         loading={modalLoading}
       />
     </AdminLayout>

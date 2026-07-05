@@ -13,6 +13,11 @@ export const PageContainer = styled.div`
     padding: 16px;
     gap: 16px;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    gap: 12px;
+  }
 `;
 
 export const Header = styled.div`
@@ -42,6 +47,10 @@ export const Title = styled.h1`
   color: ${adminTheme.colors.black};
   margin: 0;
   line-height: 1.3;
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -49,6 +58,10 @@ export const Subtitle = styled.p`
   color: ${adminTheme.colors.gray};
   margin: 0;
   opacity: 0.8;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
 `;
 
 export const HeaderActions = styled.div`
@@ -158,5 +171,7 @@ export const FloatingDeleteButton = styled(Button)`
     padding: 10px 20px !important;
     font-size: 14px !important;
     min-width: 120px;
+    width: calc(100% - 40px);
+    justify-content: center;
   }
 `;

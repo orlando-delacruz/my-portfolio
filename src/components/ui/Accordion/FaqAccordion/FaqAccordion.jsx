@@ -1,12 +1,9 @@
+// src/components/ui/Accordion/FaqAccordion/FaqAccordion.jsx
 import { memo } from "react";
 import { Collapse } from "antd";
 import { FiPlus, FiMinus } from "react-icons/fi";
 import * as S from "./FaqAccordion.styled";
 
-/**
- *
- * @param {Array}  items  - Array of { id, question, answer }
- */
 const FaqAccordion = memo(({ items }) => {
   const collapseItems = items.map(({ id, question, answer }) => ({
     key: id,
@@ -19,12 +16,16 @@ const FaqAccordion = memo(({ items }) => {
       <Collapse
         accordion
         ghost
-        expandIconPosition="end"
+        expandIconPlacement="end" // ✅ fixed
         expandIcon={({ isActive }) =>
           isActive ? (
-            <S.IconWrap aria-hidden="true"><FiMinus /></S.IconWrap>
+            <S.IconWrap aria-hidden="true">
+              <FiMinus />
+            </S.IconWrap>
           ) : (
-            <S.IconWrap aria-hidden="true"><FiPlus /></S.IconWrap>
+            <S.IconWrap aria-hidden="true">
+              <FiPlus />
+            </S.IconWrap>
           )
         }
         items={collapseItems}

@@ -1,5 +1,6 @@
 // src/pages/admin/Users/sections/Table/Table.styled.js
 import styled from "styled-components";
+import { Button } from "antd";
 import adminTheme from "../../../../../styles/adminTheme";
 
 const champagne = adminTheme.colors.champagne;
@@ -9,6 +10,10 @@ export const TableCard = styled.div`
   border-radius: 20px;
   box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    border-radius: 16px;
+  }
 `;
 
 export const ScrollWrapper = styled.div`
@@ -25,13 +30,22 @@ export const ScrollWrapper = styled.div`
   &::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  @media (max-width: 768px) {
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
 `;
 
 export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 800px;
   font-size: 14px;
+
+  @media (max-width: 768px) {
+    min-width: 700px;
+  }
 `;
 
 export const THead = styled.thead`
@@ -45,6 +59,7 @@ export const TR = styled.tr`
   background: ${({ $selected }) =>
     $selected ? "rgba(136,98,23,0.05)" : "transparent"};
   transition: background 0.15s;
+  cursor: ${({ $selected }) => ($selected ? "pointer" : "pointer")};
 
   &:last-child {
     border-bottom: none;
@@ -70,6 +85,11 @@ export const TH = styled.th`
   &:last-child {
     padding-right: 20px;
   }
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    padding: 10px 10px;
+  }
 `;
 
 export const TD = styled.td`
@@ -84,6 +104,11 @@ export const TD = styled.td`
   }
   &:last-child {
     padding-right: 20px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    padding: 10px 10px;
   }
 `;
 
@@ -104,6 +129,11 @@ export const StatusBadge = styled.span`
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+
+  @media (max-width: 480px) {
+    padding: 2px 8px;
+    font-size: 11px;
+  }
 `;
 
 export const StatusDot = styled.span`
@@ -124,6 +154,31 @@ export const RoleBadge = styled.span`
   font-weight: 500;
   border: 1px solid ${({ $color }) => $color}40;
   width: fit-content;
+`;
+
+export const ActionButton = styled(Button)`
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 8px;
+  color: ${adminTheme.colors.black} !important;
+
+  .anticon {
+    color: ${adminTheme.colors.black} !important;
+    font-size: 16px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+  &:focus-visible {
+    outline: 2px solid ${adminTheme.colors.primary};
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+  }
 `;
 
 export const LoadingText = styled.div`

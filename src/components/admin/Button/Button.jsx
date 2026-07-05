@@ -2,14 +2,6 @@
 import { memo } from "react";
 import * as S from "./Button.styled";
 
-/**
- * @param {ReactNode} icon
- * @param {string}    label
- * @param {string}    variant
- * @param {function}  onClick
- * @param {string}    type
- * @param {boolean}   disabled
- */
 const Button = ({
   icon,
   label,

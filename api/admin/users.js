@@ -1,5 +1,4 @@
 // api/admin/users.js
-/*global process*/
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -8,7 +7,6 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -33,7 +31,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // 1. Create user in Supabase Auth
+      // 1. Create auth user
       const { data: authUser, error: authError } =
         await supabase.auth.admin.createUser({
           email,
@@ -47,14 +45,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: authError.message });
       }
 
-      // 2. Add to allowed_emails
-      await supabase
-        .from("allowed_emails")
-        .insert({ email })
-        .onConflict("email")
-        .ignore();
-
-      // 3. Insert admin profile
+      // 2. Insert admin profile (no allowed_emails insert)
       const { data: admin, error: adminError } = await supabase
         .from("admins")
         .insert({

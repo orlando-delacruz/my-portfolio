@@ -1,3 +1,4 @@
+// src/data/HomePage/testimonials.js
 export const heading = {
   eyebrow: "Testimonials",
   headingStart: "What Our ",
@@ -60,7 +61,7 @@ export const testimonials = [
     avatar: "https://picsum.photos/seed/rosa/100/100",
   },
   {
-    id: "t-006",
+    id: "t-007", // ✅ Fixed duplicate key
     quote:
       "The services here are good and cheap. The Dentist here is also nice and kind.❤❤❤",
     name: "Jenel Ituriaga",
@@ -69,7 +70,7 @@ export const testimonials = [
     avatar: "https://picsum.photos/seed/rosa/100/100",
   },
   {
-    id: "t-007",
+    id: "t-008",
     quote: "Nice services and cheap.",
     name: "Denber G. Embanecido",
     service: "",

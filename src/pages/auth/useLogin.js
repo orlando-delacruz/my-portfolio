@@ -64,11 +64,13 @@ function validate(fields) {
 export function useLogin() {
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
+  const setProfile = useAuthStore((state) => state.setProfile);
+  const setLoading = useAuthStore((state) => state.setLoading);
 
   const [fields, setFields] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [globalError, setGlobalError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoadingState] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -105,7 +107,7 @@ export function useLogin() {
       }
 
       submitting.current = true;
-      setLoading(true);
+      setLoadingState(true);
 
       try {
         const email = sanitize(fields.email);
@@ -132,49 +134,49 @@ export function useLogin() {
           return;
         }
 
-        // ── Check if the email is in the allowed_emails table ──
         const user = data.user;
         if (!user?.email) {
           setGlobalError("No email associated with this account.");
           return;
         }
 
-        const { data: allowed, error: allowedError } = await supabase
-          .from("allowed_emails")
-          .select("email")
-          .eq("email", user.email)
+        // ── Check if this user is an admin (exists in admins table) ──
+        const { data: admin, error: adminError } = await supabase
+          .from("admins")
+          .select("id, role, full_name, avatar_url")
+          .eq("auth_user_id", user.id)
           .maybeSingle();
 
-        if (allowedError) {
-          console.error("Error checking allowed_emails:", allowedError);
+        if (adminError) {
+          console.error("Admin lookup error:", adminError);
           setGlobalError("Unable to verify access. Please try again.");
           return;
         }
 
-        if (!allowed) {
-          // Sign out the user because they are not authorized
+        if (!admin) {
           await supabase.auth.signOut();
           setGlobalError(
-            "Your email address is not authorized to access this admin panel. " +
-              "Please contact the administrator.",
+            "Your email is not registered as an administrator. Please contact support.",
           );
           return;
         }
 
-        // ── ✅ CRITICAL FIX: Update Zustand store immediately ──
+        // ── Update Zustand store immediately ──
         setUser(user);
+        setProfile(admin);
+        setLoading(false);
 
-        // ── All good: navigate to dashboard ──
-        navigate("/admin/dashboard", { replace: true });
+        // ── ✅ Redirect to admin dashboard (not home) ──
+        navigate("/admin", { replace: true });
       } catch (err) {
         console.error("Login error:", err);
         setGlobalError("An unexpected error occurred. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingState(false);
         submitting.current = false;
       }
     },
-    [fields, navigate, setUser],
+    [fields, navigate, setUser, setProfile, setLoading],
   );
 
   const handleGoogleLogin = useCallback(async () => {
@@ -211,7 +213,7 @@ export function useLogin() {
       }));
       return;
     }
-    setLoading(true);
+    setLoadingState(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -226,7 +228,7 @@ export function useLogin() {
       console.error("Forgot password error:", err);
       setGlobalError("An unexpected error occurred.");
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   }, [fields.email]);
 

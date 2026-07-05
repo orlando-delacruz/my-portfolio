@@ -1,6 +1,6 @@
 // src/pages/admin/Users/sections/Table/Table.jsx
 import { memo } from 'react';
-import { Checkbox, Avatar, Dropdown, Button } from 'antd';
+import { Checkbox, Avatar, Dropdown, Tooltip } from 'antd';
 import { MoreOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import Pagination from '../../../../../components/admin/Pagination/Pagination';
 import { formatDate } from '../../../../../utils/dateFormatter';
@@ -68,10 +68,15 @@ const Actions = memo(({ user, onEdit, onDelete }) => {
     },
   ];
 
+  // Stop event propagation to prevent row click when clicking dropdown
+  const handleClick = (e) => e.stopPropagation();
+
   return (
-    <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
-      <Button type="text" size="small" icon={<MoreOutlined />} />
-    </Dropdown>
+    <div onClick={handleClick}>
+      <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+        <S.ActionButton type="text" size="small" icon={<MoreOutlined />} />
+      </Dropdown>
+    </div>
   );
 });
 Actions.displayName = 'Actions';
@@ -91,8 +96,25 @@ const UserTable = ({
   onSizeChange,
   onEdit,
   onDelete,
+  onRowClick,
 }) => {
   const handleSelectAll = (e) => onSelectAll(e.target.checked);
+
+  // Handle row click – ignore if clicking on checkbox, action buttons, or dropdown
+  const handleRowClick = (e, user) => {
+    // Ignore clicks on interactive elements
+    const target = e.target;
+    if (
+      target.closest('input[type="checkbox"]') ||
+      target.closest('button') ||
+      target.closest('.ant-dropdown-trigger') ||
+      target.closest('.ant-checkbox') ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    onRowClick?.(user);
+  };
 
   return (
     <S.TableCard>
@@ -136,7 +158,12 @@ const UserTable = ({
               </S.TR>
             ) : (
               users.map((user) => (
-                <S.TR key={user.id} $selected={selected.has(user.id)}>
+                <S.TR
+                  key={user.id}
+                  $selected={selected.has(user.id)}
+                  onClick={(e) => handleRowClick(e, user)}
+                  style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                >
                   <S.TD $checkbox>
                     <Checkbox
                       checked={selected.has(user.id)}
@@ -154,7 +181,13 @@ const UserTable = ({
                       <RoleBadge role={user.role} />
                     </S.NameCell>
                   </S.TD>
-                  <S.TD>{user.email}</S.TD>
+                  <S.TD>
+                    <Tooltip title={user.email} placement="top">
+                      <span style={{ display: 'inline-block', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user.email}
+                      </span>
+                    </Tooltip>
+                  </S.TD>
                   <S.TD>
                     <LoginMethodIcon method={user.login_method} />
                   </S.TD>
@@ -172,7 +205,12 @@ const UserTable = ({
                     )}
                   </S.TD>
                   <S.TD $center>
-                    <Actions user={user} onEdit={onEdit} onDelete={onDelete} />
+                    <Actions
+                      user={user}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onRowClick={onRowClick}
+                    />
                   </S.TD>
                 </S.TR>
               ))

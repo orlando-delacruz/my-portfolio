@@ -1,4 +1,4 @@
-// src\routes\PublicRoutes.jsx
+// src/routes/PublicRoutes.jsx
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "../utils/ScrollToTop";

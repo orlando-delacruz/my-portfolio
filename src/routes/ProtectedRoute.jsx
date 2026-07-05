@@ -1,4 +1,4 @@
-// src\routes\ProtectedRoute.jsx
+// src/routes/ProtectedRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
 import { Spin } from "antd";
 import { useAuthStore } from "../store/authStore";
@@ -7,6 +7,7 @@ export default function ProtectedRoute() {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
 
+  // If still loading, show spinner
   if (loading) {
     return (
       <div

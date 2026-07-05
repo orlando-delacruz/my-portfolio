@@ -96,10 +96,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       };
 
       if (user) {
-        // Update profile
         await updateAdmin(user.id, payload);
-
-        // Password update if requested
         if (changePassword && values.newPassword) {
           const authUserId = user.auth_user_id || null;
           if (!authUserId) {
@@ -114,7 +111,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         }
         onSave(payload);
       } else {
-        // Create new user
         const createPayload = {
           ...payload,
           password: values.password,
@@ -148,11 +144,15 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       width={640}
       footer={null}
       destroyOnHidden
-      styles={{ body: { paddingTop: 8 } }}
+      styles={{
+        body: { paddingTop: 8 },
+        content: { borderRadius: '16px' },
+      }}
+      className="user-modal"
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24} sm={24}>
             <Form.Item label="Avatar">
               <S.AvatarUploadWrapper>
                 <S.AvatarPreview>
@@ -162,7 +162,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                     <div className="placeholder">No avatar</div>
                   )}
                 </S.AvatarPreview>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <Upload {...uploadProps}>
                     <Button icon={<UploadOutlined />} loading={avatarLoading}>
                       Upload
@@ -184,7 +184,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24} sm={24}>
             <Form.Item
               name="email"
               label="Email"
@@ -199,7 +199,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <Form.Item
               name="full_name"
               label="Full Name"
@@ -208,7 +208,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
               <Input placeholder="Full Name" size="large" />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <Form.Item
               name="username"
               label="Username"
@@ -220,7 +220,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item label="Login Method">
               <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 4, fontSize: 14 }}>
                 {user ? user.login_method || 'Password' : 'Password'}
@@ -231,7 +231,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
 
         {!user && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="password"
                 label="Password"
@@ -248,7 +248,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="confirmPassword"
                 label="Confirm Password"
@@ -279,7 +279,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         {user && (
           <>
             <Row gutter={16}>
-              <Col span={24}>
+              <Col xs={24}>
                 <Form.Item>
                   <Checkbox
                     checked={changePassword}
@@ -292,7 +292,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             </Row>
             {changePassword && (
               <Row gutter={16}>
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="newPassword"
                     label="New Password"
@@ -309,7 +309,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="confirmNewPassword"
                     label="Confirm New Password"
@@ -340,12 +340,12 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         )}
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <Form.Item name="phone_number" label="Phone Number">
               <Input placeholder="+63 912 345 6789" size="large" />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <Form.Item
               name="role"
               label="Role"
@@ -361,7 +361,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item
               name="status"
               label="Status"
@@ -384,6 +384,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             loading={submitting || loading}
             size="large"
             disabled={submitting || loading}
+            style={{ borderRadius: '8px' }}
           >
             {user ? 'Update' : 'Create'}
           </Button>

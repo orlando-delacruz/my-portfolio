@@ -42,7 +42,7 @@ const Brand = memo(function Brand() {
         width={70}
         height={70}
         loading="eager"
-        fetchpriority="high"
+        fetchPriority="high"
       />
       <BrandText>
         <BrandName>Leidi Bud Dentals</BrandName>

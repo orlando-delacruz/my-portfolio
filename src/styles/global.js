@@ -137,5 +137,19 @@ const GlobalStyle = createGlobalStyle`
   display: none;
 }
 }
+
+@media (max-width: 576px) {
+  .ant-modal {
+    max-width: 100% !important;
+    margin: 8px !important;
+    width: calc(100% - 16px) !important;
+  }
+  .ant-modal-content {
+    border-radius: 16px !important;
+  }
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+}
 `;
 export default GlobalStyle;

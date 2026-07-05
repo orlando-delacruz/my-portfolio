@@ -17,15 +17,14 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
   useEffect(() => {
     if (open) {
       if (closure) {
-        // Edit mode
         form.setFieldsValue({
           branch_id: closure.branch_id || closure.branch?.id,
           title: closure.title,
           closure_type: closure.closure_type,
-          reason: closure.reason || '',
+          reason: closure.reason,
           dateRange: [
-            closure.start_date ? dayjs(closure.start_date) : dayjs(),
-            closure.end_date ? dayjs(closure.end_date) : dayjs(),
+            dayjs(closure.start_date),
+            dayjs(closure.end_date),
           ],
           is_all_day: closure.is_all_day ?? true,
           start_time: closure.start_time ? dayjs(closure.start_time, 'HH:mm:ss') : null,
@@ -34,7 +33,6 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
         });
         setIsAllDay(closure.is_all_day ?? true);
       } else {
-        // Add mode
         form.resetFields();
         form.setFieldsValue({
           is_all_day: true,
@@ -68,7 +66,12 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
       onCancel={onClose}
       width={720}
       footer={null}
-      destroyOnClose
+      destroyOnHidden // ✅ fixed
+      styles={{
+        body: { paddingTop: 8 },
+        content: { borderRadius: '16px' },
+      }}
+      className="clinic-closure-modal"
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
         {/* Branch */}
@@ -198,4 +201,4 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
   );
 });
 
-export default ClinicClosureModal;
+export default memo(ClinicClosureModal);
