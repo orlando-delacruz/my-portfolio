@@ -1,5 +1,4 @@
 // api/admin/users.js
-/*global process*/
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -23,7 +22,7 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    // ── CREATE ADMIN USER ──
+    // ── CREATE ADMIN ──
     if (action === "create") {
       const {
         email,
@@ -50,20 +49,7 @@ export default async function handler(req, res) {
           .json({ error: "Password must be at least 8 characters." });
       }
 
-      // ── Duplicate check: admins table ──
-      const { data: existingAdmin } = await supabase
-        .from("admins")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (existingAdmin) {
-        return res
-          .status(409)
-          .json({ error: "An administrator with this email already exists." });
-      }
-
-      // ── Duplicate check: auth.users (to avoid 422) ──
+      // Check if email already exists in auth.users (to avoid 422)
       const { data: existingAuthUser } = await supabase
         .from("auth.users")
         .select("id")
@@ -73,7 +59,7 @@ export default async function handler(req, res) {
       if (existingAuthUser) {
         return res.status(409).json({
           error:
-            "This email is already registered in the authentication system. Please use a different email or contact support to recover the account.",
+            "This email is already registered in the authentication system. Please use a different email.",
         });
       }
 
@@ -120,6 +106,102 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, admin });
+    }
+
+    // ── UPDATE ADMIN ──
+    if (action === "update") {
+      const {
+        adminId,
+        email,
+        full_name,
+        username,
+        phone_number,
+        role,
+        status,
+        avatar_url,
+      } = req.body;
+
+      if (!adminId) return res.status(400).json({ error: "Missing adminId" });
+
+      // 1. Update admin profile
+      const { data: admin, error: adminError } = await supabase
+        .from("admins")
+        .update({
+          email,
+          full_name,
+          username,
+          phone_number,
+          role,
+          status,
+          avatar_url,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", adminId)
+        .select()
+        .single();
+
+      if (adminError) {
+        console.error("❌ Update admin error:", adminError);
+        return res
+          .status(400)
+          .json({ error: `Update error: ${adminError.message}` });
+      }
+
+      // 2. If email changed, update auth user email
+      if (email) {
+        const { error: authUpdateError } =
+          await supabase.auth.admin.updateUserById(admin.auth_user_id, {
+            email,
+          });
+        if (authUpdateError) {
+          // Log but don't fail; the profile is already updated
+          console.warn("⚠️ Failed to update auth email:", authUpdateError);
+        }
+      }
+
+      return res.status(200).json({ success: true, admin });
+    }
+
+    // ── DELETE ADMIN ──
+    if (action === "delete") {
+      const { adminId, authUserId } = req.body;
+
+      if (!adminId) {
+        return res.status(400).json({ error: "Missing adminId" });
+      }
+
+      // 1. Delete the admin record (will cascade to auth.users if we had FK with CASCADE, but we have it)
+      // We'll delete admin first, then auth user.
+      const { error: deleteAdminError } = await supabase
+        .from("admins")
+        .delete()
+        .eq("id", adminId);
+
+      if (deleteAdminError) {
+        console.error("❌ Delete admin error:", deleteAdminError);
+        return res.status(400).json({
+          error: `Failed to delete admin: ${deleteAdminError.message}`,
+        });
+      }
+
+      // 2. Delete the auth user (if authUserId provided)
+      if (authUserId) {
+        const { error: deleteAuthError } =
+          await supabase.auth.admin.deleteUser(authUserId);
+        if (deleteAuthError) {
+          console.error(
+            "⚠️ Auth user deletion failed (admin deleted):",
+            deleteAuthError,
+          );
+          return res.status(200).json({
+            success: true,
+            warning:
+              "Admin deleted, but auth user could not be removed. Please clean up manually.",
+          });
+        }
+      }
+
+      return res.status(200).json({ success: true });
     }
 
     // ── UPDATE PASSWORD ──

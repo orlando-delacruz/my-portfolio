@@ -53,15 +53,9 @@ export async function createAdminUser(data) {
 
 export const createAdmin = createAdminUser;
 
-export async function updateAdmin(id, data) {
-  const { data: result, error } = await supabase
-    .from("admins")
-    .update(data)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return result;
+export async function updateAdmin(adminId, data) {
+  const result = await callAdminAPI("update", { adminId, ...data });
+  return result.admin;
 }
 
 export async function updateAdminPassword(userId, password) {
@@ -71,12 +65,21 @@ export async function updateAdminPassword(userId, password) {
   return result;
 }
 
-export async function deleteAdmin(id) {
-  const { error } = await supabase.from("admins").delete().eq("id", id);
-  if (error) throw error;
+export async function deleteAdmin(adminId, authUserId) {
+  const result = await callAdminAPI("delete", { adminId, authUserId });
+  return result;
 }
 
 export async function bulkDeleteAdmins(ids) {
-  const { error } = await supabase.from("admins").delete().in("id", ids);
+  // Fetch all admins with their auth_user_id
+  const { data: admins, error } = await supabase
+    .from("admins")
+    .select("id, auth_user_id")
+    .in("id", ids);
+
   if (error) throw error;
+
+  for (const admin of admins) {
+    await deleteAdmin(admin.id, admin.auth_user_id);
+  }
 }
