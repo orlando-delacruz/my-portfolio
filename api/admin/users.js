@@ -1,4 +1,5 @@
 // api/admin/users.js
+/*global process*/
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
+    // ── CREATE ADMIN USER ──
     if (action === "create") {
       const {
         email,
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
         avatar_url,
       } = req.body;
 
-      // ── Validate ──
+      // Validate required fields
       if (!email) return res.status(400).json({ error: "Email is required." });
       if (!password)
         return res.status(400).json({ error: "Password is required." });
@@ -48,7 +50,7 @@ export default async function handler(req, res) {
           .json({ error: "Password must be at least 8 characters." });
       }
 
-      // ── Check duplicate in admins ──
+      // ── Duplicate check: admins table ──
       const { data: existingAdmin } = await supabase
         .from("admins")
         .select("id")
@@ -61,7 +63,7 @@ export default async function handler(req, res) {
           .json({ error: "An administrator with this email already exists." });
       }
 
-      // ── Check duplicate in auth.users (to avoid 422) ──
+      // ── Duplicate check: auth.users (to avoid 422) ──
       const { data: existingAuthUser } = await supabase
         .from("auth.users")
         .select("id")
@@ -109,7 +111,7 @@ export default async function handler(req, res) {
         .single();
 
       if (adminError) {
-        // Rollback
+        // Rollback: delete the auth user
         await supabase.auth.admin.deleteUser(authUser.user.id);
         console.error("❌ Admin insert error:", adminError);
         return res
@@ -120,6 +122,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, admin });
     }
 
+    // ── UPDATE PASSWORD ──
     if (action === "update-password") {
       const { userId, password } = req.body;
       if (!userId) return res.status(400).json({ error: "Missing userId" });

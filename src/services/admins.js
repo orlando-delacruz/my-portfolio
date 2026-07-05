@@ -1,7 +1,6 @@
 // src/services/admins.js
 import { supabase } from "./supabase/supabase";
 
-// ── Helper: call Vercel API route ──
 async function callAdminAPI(action, body) {
   const res = await fetch(`/api/admin/users?action=${action}`, {
     method: "POST",
@@ -9,7 +8,6 @@ async function callAdminAPI(action, body) {
     body: JSON.stringify(body),
   });
 
-  // Check if response is JSON
   const contentType = res.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     const text = await res.text();
@@ -25,7 +23,6 @@ async function callAdminAPI(action, body) {
   return result;
 }
 
-// ── Public functions ──
 export async function fetchAdmins({
   page = 1,
   pageSize = 10,

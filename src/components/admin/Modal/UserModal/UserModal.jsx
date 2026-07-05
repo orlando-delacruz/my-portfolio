@@ -20,6 +20,9 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
+// ── 🛡️ Module‑level lock (global to this module) ──
+let isProcessing = false;
+
 const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [form] = Form.useForm();
   const [avatarFile, setAvatarFile] = useState(null);
@@ -29,6 +32,14 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [submitting, setSubmitting] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
   const isSubmittingRef = useRef(false);
+
+  // Reset lock when modal opens
+  useEffect(() => {
+    if (open) {
+      isProcessing = false;
+      isSubmittingRef.current = false;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -52,7 +63,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         setChangePassword(false);
       }
       setAvatarError(null);
-      isSubmittingRef.current = false; // reset on modal open
     }
   }, [open, user, form]);
 
@@ -77,11 +87,19 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const handleFinish = async (values) => {
-    // ── 🛡️ Guard against double submission ──
+    // ── 🛡️ Global lock ──
+    if (isProcessing) {
+      console.warn('⏳ A submission is already in progress – ignoring.');
+      return;
+    }
+
+    // ── 🛡️ Local lock ──
     if (isSubmittingRef.current) {
       console.warn('⏳ Submission already in progress – ignoring duplicate.');
       return;
     }
+
+    isProcessing = true;
     isSubmittingRef.current = true;
     setSubmitting(true);
     setAvatarError(null);
@@ -98,6 +116,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           setAvatarError(uploadErr.message || 'Avatar upload failed');
           setAvatarLoading(false);
           setSubmitting(false);
+          isProcessing = false;
           isSubmittingRef.current = false;
           return;
         } finally {
@@ -122,6 +141,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           if (!authUserId) {
             setAvatarError('This user is not linked to an authentication account. Please contact support.');
             setSubmitting(false);
+            isProcessing = false;
             isSubmittingRef.current = false;
             return;
           }
@@ -137,13 +157,18 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         await createAdminUser(createPayload);
         onSave(createPayload);
       }
-      // ── ✅ Success: reset ref and state ──
-      isSubmittingRef.current = false;
-      setSubmitting(false);
+
+      // ── Success: release locks after a small delay ──
+      setTimeout(() => {
+        isProcessing = false;
+        isSubmittingRef.current = false;
+        setSubmitting(false);
+      }, 300);
     } catch (err) {
       console.error('❌ Save error:', err);
       setAvatarError(err.message || 'An unexpected error occurred.');
       setSubmitting(false);
+      isProcessing = false;
       isSubmittingRef.current = false;
     }
   };
@@ -233,7 +258,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
-        {/* ── Full Name & Username ── */}
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -255,7 +279,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
-        {/* ── Login Method (read-only) ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item label="Login Method">
@@ -266,7 +289,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
-        {/* ── Password fields for Add ── */}
         {!user && (
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -314,7 +336,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Row>
         )}
 
-        {/* ── Password change for Edit ── */}
         {user && (
           <>
             <Row gutter={16}>
@@ -378,7 +399,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </>
         )}
 
-        {/* ── Phone & Role ── */}
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="phone_number" label="Phone Number">
@@ -400,7 +420,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
-        {/* ── Status ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item
