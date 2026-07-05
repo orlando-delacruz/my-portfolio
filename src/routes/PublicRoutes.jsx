@@ -16,6 +16,7 @@ const Patients = lazy(() => import("../pages/admin/Patients"))
 const PageDevelopment = lazy(() => import("../pages/admin/PageDevelopment"));
 const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
 const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
+const Users = lazy(() => import("../pages/admin/Users"))
 
 // ── Fallbacks ─────────────────────────────────────────────────────────────────
 const PageFallback = () => (
@@ -30,7 +31,7 @@ function GuestRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
   if (loading) return <PageFallback />;
-  if (user) return <Navigate to="/admin/dashboard" replace />;
+  if (user) return <Navigate to="/admin" replace />;
   return children;
 }
 
@@ -61,7 +62,7 @@ export default function PublicRoutes() {
           <Route path="calendar" element={<AppointmentCalendar />} />
           <Route path="clinic-closures" element={<ClinicClosures />} />
           <Route path="patients" element={<Patients />} />
-          <Route path="users" element={<PageDevelopment />} />
+          <Route path="users" element={<Users />} />
           <Route path="settings" element={<PageDevelopment />} />
         </Route>
 

@@ -28,12 +28,7 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
 
   if (error) {
     return (
-      <Alert
-        type="error"
-        showIcon
-        message="Couldn't load the calendar"
-        description={error}
-      />
+      <Alert type="error" showIcon title="Couldn't load the calendar" description={error} />
     );
   }
 
