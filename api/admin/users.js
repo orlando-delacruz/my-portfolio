@@ -35,7 +35,6 @@ export default async function handler(req, res) {
         avatar_url,
       } = req.body;
 
-      // Validate required fields
       if (!email) return res.status(400).json({ error: "Email is required." });
       if (!password)
         return res.status(400).json({ error: "Password is required." });
@@ -49,7 +48,7 @@ export default async function handler(req, res) {
           .json({ error: "Password must be at least 8 characters." });
       }
 
-      // Check if email already exists in auth.users (to avoid 422)
+      // Check if email already exists in auth.users
       const { data: existingAuthUser } = await supabase
         .from("auth.users")
         .select("id")
@@ -154,7 +153,6 @@ export default async function handler(req, res) {
             email,
           });
         if (authUpdateError) {
-          // Log but don't fail; the profile is already updated
           console.warn("⚠️ Failed to update auth email:", authUpdateError);
         }
       }
@@ -170,35 +168,31 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing adminId" });
       }
 
-      // 1. Delete the admin record (will cascade to auth.users if we had FK with CASCADE, but we have it)
-      // We'll delete admin first, then auth user.
+      // 1. Delete the auth user (if authUserId provided)
+      if (authUserId) {
+        const { error: deleteAuthError } =
+          await supabase.auth.admin.deleteUser(authUserId);
+        if (deleteAuthError) {
+          console.error("❌ Auth deletion error:", deleteAuthError);
+          return res.status(400).json({
+            error: `Failed to delete auth user: ${deleteAuthError.message}`,
+          });
+        }
+      }
+
+      // 2. Delete the admin profile
       const { error: deleteAdminError } = await supabase
         .from("admins")
         .delete()
         .eq("id", adminId);
 
       if (deleteAdminError) {
-        console.error("❌ Delete admin error:", deleteAdminError);
-        return res.status(400).json({
-          error: `Failed to delete admin: ${deleteAdminError.message}`,
+        console.error("❌ Admin deletion error:", deleteAdminError);
+        return res.status(200).json({
+          success: true,
+          warning:
+            "Auth user deleted, but admin record could not be removed. Please check manually.",
         });
-      }
-
-      // 2. Delete the auth user (if authUserId provided)
-      if (authUserId) {
-        const { error: deleteAuthError } =
-          await supabase.auth.admin.deleteUser(authUserId);
-        if (deleteAuthError) {
-          console.error(
-            "⚠️ Auth user deletion failed (admin deleted):",
-            deleteAuthError,
-          );
-          return res.status(200).json({
-            success: true,
-            warning:
-              "Admin deleted, but auth user could not be removed. Please clean up manually.",
-          });
-        }
       }
 
       return res.status(200).json({ success: true });

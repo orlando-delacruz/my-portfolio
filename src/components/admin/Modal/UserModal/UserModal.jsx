@@ -20,7 +20,7 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
-// ── 🛡️ Module‑level lock (global to this module) ──
+// ── Module‑level lock to prevent double submission ──
 let isProcessing = false;
 
 const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
@@ -33,7 +33,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [changePassword, setChangePassword] = useState(false);
   const isSubmittingRef = useRef(false);
 
-  // Reset lock when modal opens
   useEffect(() => {
     if (open) {
       isProcessing = false;

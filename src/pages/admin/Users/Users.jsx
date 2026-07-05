@@ -77,7 +77,9 @@ const Users = () => {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          await deleteAdmin(id);
+          // Find the user object to get auth_user_id
+          const user = users.find(u => u.id === id);
+          await deleteAdmin(id, user?.auth_user_id);
           message.success('User deleted successfully!');
           refetch();
           setSelected(new Set());
@@ -87,7 +89,7 @@ const Users = () => {
         }
       },
     });
-  }, [refetch]);
+  }, [users, refetch]);
 
   const handleBulkDelete = useCallback(() => {
     const ids = Array.from(selected);
@@ -102,7 +104,8 @@ const Users = () => {
       onOk: async () => {
         for (const id of ids) {
           try {
-            await deleteAdmin(id);
+            const user = users.find(u => u.id === id);
+            await deleteAdmin(id, user?.auth_user_id);
           } catch (err) {
             console.error('Bulk delete error:', err);
             message.error(`Failed to delete user ${id}`);
@@ -113,7 +116,7 @@ const Users = () => {
         setSelected(new Set());
       },
     });
-  }, [selected, refetch]);
+  }, [selected, users, refetch]);
 
   const handleSearchChange = useCallback((e) => {
     setSearch(e.target.value);
