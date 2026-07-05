@@ -3,7 +3,7 @@ import { memo, useEffect, useState, useRef } from 'react';
 import { Modal, Form, Input, Select, Row, Col, Button, Upload, Alert, Checkbox } from 'antd';
 import { UploadOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { uploadAvatar } from '../../../../services/storage';
-import { createAdminProfile, updateAdmin, updateAdminPassword } from '../../../../services/admins';
+import { createAdmin, updateAdmin, updateAdminPassword } from '../../../../services/admins';
 import * as S from './UserModal.styled';
 
 const { Option } = Select;
@@ -17,7 +17,6 @@ const ROLE_OPTIONS = [
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending' },
 ];
 
 // ── Module‑level lock ──
@@ -33,7 +32,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [changePassword, setChangePassword] = useState(false);
   const isSubmittingRef = useRef(false);
 
-  // Reset locks when modal opens
   useEffect(() => {
     if (open) {
       isProcessing = false;
@@ -42,7 +40,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     }
   }, [open]);
 
-  // Prefill form when editing
   useEffect(() => {
     if (open) {
       if (user) {
@@ -59,7 +56,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         setChangePassword(false);
       } else {
         form.resetFields();
-        form.setFieldsValue({ status: 'pending' });
+        form.setFieldsValue({ status: 'active' });
         setAvatarPreview(null);
         setAvatarFile(null);
         setChangePassword(false);
@@ -147,9 +144,13 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         }
         onSave(payload);
       } else {
-        // Create pending profile
-        await createAdminProfile(payload);
-        onSave(payload);
+        // Create new admin (Auth + Profile)
+        const createPayload = {
+          ...payload,
+          password: values.password,
+        };
+        await createAdmin(createPayload);
+        onSave(createPayload);
       }
 
       // ── Success: release locks after a short delay ──
@@ -165,15 +166,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       isProcessing = false;
       isSubmittingRef.current = false;
     }
-  };
-
-  // ── Custom submit handler to set lock immediately ──
-  const handleSubmitClick = (e) => {
-    if (isProcessing || isSubmittingRef.current || submitting) {
-      e.preventDefault();
-      return;
-    }
-    // The lock will be set inside handleFinish
   };
 
   const uploadProps = {
@@ -284,11 +276,58 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           <Col xs={24}>
             <Form.Item label="Login Method">
               <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 4, fontSize: 14 }}>
-                {user ? user.login_method || 'Password' : 'Password (will be set during activation)'}
+                {user ? user.login_method || 'Password' : 'Password'}
               </div>
             </Form.Item>
           </Col>
         </Row>
+
+        {!user && (
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="password"
+                label="Password"
+                rules={[
+                  { required: true, message: 'Please enter password.' },
+                  { min: 8, message: 'Password must be at least 8 characters.' },
+                ]}
+                hasFeedback
+              >
+                <Input.Password
+                  placeholder="Enter password"
+                  size="large"
+                  iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="confirmPassword"
+                label="Confirm Password"
+                dependencies={['password']}
+                rules={[
+                  { required: true, message: 'Please confirm password.' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Passwords do not match.'));
+                    },
+                  }),
+                ]}
+                hasFeedback
+              >
+                <Input.Password
+                  placeholder="Confirm password"
+                  size="large"
+                  iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        )}
 
         {user && (
           <>
@@ -401,7 +440,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             size="large"
             disabled={isFormSubmitting || isAvatarUploading}
             style={{ borderRadius: '8px' }}
-            onClick={handleSubmitClick}
           >
             {user ? 'Update' : 'Create'}
           </Button>

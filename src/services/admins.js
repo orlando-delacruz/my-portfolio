@@ -46,7 +46,7 @@ export async function fetchAdmins({
   return { data: data || [], count: count || 0 };
 }
 
-export async function createAdminProfile(data) {
+export async function createAdmin(data) {
   const result = await callAdminAPI("create", data);
   return result.admin;
 }
@@ -61,7 +61,6 @@ export async function deleteAdmin(adminId, authUserId) {
   return result;
 }
 
-// Keep password update if needed
 export async function updateAdminPassword(userId, password) {
   if (!userId)
     throw new Error("Missing auth_user_id – admin not linked to auth user.");

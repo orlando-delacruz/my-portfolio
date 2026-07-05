@@ -7,7 +7,7 @@ import { useUsers } from '../../../hooks/useUsers';
 import UserTable from './sections/Table';
 import UserModal from '../../../components/admin/Modal/UserModal';
 import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
-import { createAdminProfile, updateAdmin, deleteAdmin } from '../../../services/admins';
+import { createAdmin, updateAdmin, deleteAdmin } from '../../../services/admins';
 import * as S from './Users.styled';
 
 const { confirm } = Modal;
@@ -59,9 +59,9 @@ const Users = () => {
         await updateAdmin(editingUser.id, data);
         message.success('User updated successfully!');
       } else {
-        // Create pending admin profile (no auth user yet)
-        await createAdminProfile(data);
-        message.success('User profile created! The user can now log in with their email.');
+        // Create new admin (Auth + Profile)
+        await createAdmin(data);
+        message.success('User created successfully!');
       }
       handleModalClose();
       refetch();
