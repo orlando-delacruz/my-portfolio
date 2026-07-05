@@ -1,30 +1,37 @@
 // src/hooks/useMobileFilter.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const MOBILE_BREAKPOINT = 768; // px
 
 export function useMobileFilter() {
-  const [isMobile, setIsMobile] = useState(false);
+  // Initialize isMobile directly with a function to avoid effect setState
+  const [isMobile, setIsMobile] = useState(
+    () => window.innerWidth <= MOBILE_BREAKPOINT,
+  );
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Detect screen size
+  // Use a ref to track the previous mobile state across renders
+  const previousIsMobileRef = useRef(isMobile);
+
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    const handleResize = () => {
+      const currentIsMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+      // Only update if the value actually changed
+      if (currentIsMobile !== previousIsMobileRef.current) {
+        setIsMobile(currentIsMobile);
+
+        // If transitioning from mobile to desktop, close the filter
+        if (previousIsMobileRef.current && !currentIsMobile) {
+          setIsFilterOpen(false);
+        }
+        previousIsMobileRef.current = currentIsMobile;
+      }
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Close filter when switching from mobile to desktop
-  useEffect(() => {
-    if (!isMobile) {
-      setIsFilterOpen(false);
-    }
-  }, [isMobile]);
 
   const toggleFilter = useCallback(() => {
     setIsFilterOpen((prev) => !prev);
