@@ -5,6 +5,7 @@ import { SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { usePatients } from '../../../hooks/usePatients';
 import EditPatientModal from '../../../components/admin/Modal/EditPatientModal';
+import PatientDetailsModal from '../../../components/admin/Modal/PatientDetailsModal';
 import { updatePatient, deletePatient, deletePatients } from '../../../services/patients';
 import { formatPhoneDisplay } from '../../../utils/phoneFormatter';
 import * as S from './Patients.styled';
@@ -20,6 +21,10 @@ const Patients = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // ── Details Modal state ──
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedPatientForDetails, setSelectedPatientForDetails] = useState(null);
 
   const {
     patients,
@@ -139,6 +144,18 @@ const Patients = () => {
     setPageSize(pagination.pageSize);
   };
 
+  // ── Row click handler for details modal ──
+  const handleRowClick = useCallback((record) => {
+    setSelectedPatientForDetails(record);
+    setDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedPatientForDetails(null);
+  }, []);
+
+  // ── Table row selection ──
   const rowSelection = {
     selectedRowKeys,
     onChange: setSelectedRowKeys,
@@ -147,6 +164,7 @@ const Patients = () => {
     }),
   };
 
+  // ── Columns definition ──
   const columns = useMemo(() => [
     {
       title: 'Name',
@@ -191,7 +209,7 @@ const Patients = () => {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
           <Button
             type="text"
             icon={<EditOutlined />}
@@ -265,6 +283,10 @@ const Patients = () => {
             dataSource={dataSource}
             loading={loading}
             rowSelection={rowSelection}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+              style: { cursor: 'pointer' },
+            })}
             pagination={{
               current: page,
               pageSize: pageSize,
@@ -303,6 +325,15 @@ const Patients = () => {
           loading={updating}
           onClose={handleCloseEdit}
           onSave={handleSavePatient}
+        />
+
+        <PatientDetailsModal
+          open={detailsModalOpen}
+          patient={selectedPatientForDetails}
+          onClose={handleCloseDetails}
+          onEdit={handleEdit}
+          onDelete={handleDeleteSingle}
+          loading={deletingId ? true : false}
         />
       </S.PageContainer>
     </AdminLayout>
