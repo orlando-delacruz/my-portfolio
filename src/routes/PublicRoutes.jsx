@@ -14,7 +14,7 @@ const Dashboard = lazy(() => import("../pages/admin/Dashboard/Dashboard"));
 const Appointment = lazy(() => import("../pages/admin/Appointment"));
 const Patients = lazy(() => import("../pages/admin/Patients"))
 const PageDevelopment = lazy(() => import("../pages/admin/PageDevelopment"));
-// const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
+const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
 // const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
 
 // ── Fallbacks ─────────────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ export default function PublicRoutes() {
           <Route path="appointments" element={<Appointment />} />
           <Route path="calendar" element={<PageDevelopment />} />
           <Route path="calendar" element={<PageDevelopment />} />
-          <Route path="clinic-closures" element={<PageDevelopment />} />
+          <Route path="clinic-closures" element={<ClinicClosures />} />
           <Route path="patients" element={<Patients />} />
           <Route path="users" element={<PageDevelopment />} />
           <Route path="settings" element={<PageDevelopment />} />

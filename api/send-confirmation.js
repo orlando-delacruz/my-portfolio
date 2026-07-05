@@ -176,7 +176,7 @@ function buildConfirmationEmail({
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://your-clinic-domain.com/logo.png" alt="Leidi Bud Dentals" class="logo" />
+      <img src="https://leidibuddentals.vercel.app/logo.png" alt="Leidi Bud Dentals" class="logo" />
       <h1 class="clinic-name">Leidi Bud Dentals</h1>
     </div>
     <div class="content">

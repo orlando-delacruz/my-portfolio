@@ -45,7 +45,7 @@ export const TR = styled.tr`
 `;
 
 export const TH = styled.th`
-  padding: 10px 14px;
+  padding: 14px 14px;
   font-size: 12px;
   font-weight: 600;
   color: ${adminTheme.colors.black};
@@ -57,7 +57,7 @@ export const TH = styled.th`
 
 export const TD = styled.td`
   padding: 10px 14px;
-  font-size: 10px;
+  font-size: 14px;
   color: ${adminTheme.colors.black};
   vertical-align: middle;
   text-align: ${({ $center }) => ($center ? "center" : "left")};
@@ -72,7 +72,7 @@ export const DateCell = styled.div`
 `;
 
 export const DayOfWeek = styled.span`
-  font-size: 10px;
+  font-size: 14px;
   color: ${adminTheme.colors.gray};
   font-weight: 400;
 `;
@@ -85,7 +85,7 @@ export const StatusBadge = styled.span`
   border-radius: 5px;
   background: ${({ $bg }) => $bg};
   color: ${({ $color }) => $color};
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
   border: 1px solid ${({ $color }) => $color};
@@ -103,7 +103,7 @@ export const TypeBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 14px;
   color: ${adminTheme.colors.black};
   line-height: 15px;
 
@@ -127,7 +127,7 @@ export const ActionBtn = styled.button`
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   font-family: inherit;
   white-space: nowrap;
