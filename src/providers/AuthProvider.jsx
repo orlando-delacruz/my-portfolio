@@ -1,7 +1,7 @@
 // src/providers/AuthProvider.jsx
-import { useEffect } from "react";
-import { supabase } from "../services/supabase/supabase";
-import { useAuthStore } from "../store/authStore";
+import { useEffect } from 'react';
+import { supabase } from '../services/supabase/supabase';
+import { useAuthStore } from '../store/authStore';
 
 export default function AuthProvider({ children }) {
   const { setUser, setLoading, fetchProfile, clear } = useAuthStore();
@@ -13,11 +13,10 @@ export default function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       if (session?.user) {
-        // console.log('🔄 Session restored:', session.user.email);
         setUser(session.user);
+        // Fetch admin profile from admins table using auth_user_id
         fetchProfile(session.user.id).finally(() => setLoading(false));
       } else {
-        // console.log('🔄 No session found');
         setLoading(false);
       }
     });
@@ -27,19 +26,11 @@ export default function AuthProvider({ children }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      // console.log('🔄 Auth event:', event, session?.user?.email);
-
       if (session?.user) {
-        // Only set user and profile on sign-in or token refresh
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          setUser(session.user);
-          fetchProfile(session.user.id).finally(() => setLoading(false));
-        }
+        setUser(session.user);
+        fetchProfile(session.user.id).finally(() => setLoading(false));
       } else {
-        // On sign-out or session expiry, clear the store
-        if (event === 'SIGNED_OUT') {
-          clear();
-        }
+        clear();
       }
     });
 

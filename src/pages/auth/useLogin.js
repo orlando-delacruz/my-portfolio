@@ -140,11 +140,11 @@ export function useLogin() {
           return;
         }
 
-        // ── Check if this user is an admin (exists in admins table) ──
+        // ── Check if this email exists in admins table ──
         const { data: admin, error: adminError } = await supabase
           .from("admins")
-          .select("id, role, full_name, avatar_url")
-          .eq("auth_user_id", user.id)
+          .select("*")
+          .eq("email", user.email)
           .maybeSingle();
 
         if (adminError) {
@@ -154,6 +154,7 @@ export function useLogin() {
         }
 
         if (!admin) {
+          // Not an admin – sign out and deny access
           await supabase.auth.signOut();
           setGlobalError(
             "Your email is not registered as an administrator. Please contact support.",
@@ -161,12 +162,49 @@ export function useLogin() {
           return;
         }
 
-        // ── Update Zustand store immediately ──
+        // ── If the admin is pending or auth_user_id is null, link and activate ──
+        if (!admin.auth_user_id || admin.status === "pending") {
+          // Update the admin record with the auth_user_id and set status to active
+          const { error: updateError } = await supabase
+            .from("admins")
+            .update({
+              auth_user_id: user.id,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", admin.id);
+
+          if (updateError) {
+            console.error("Admin update error:", updateError);
+            setGlobalError(
+              "Failed to activate account. Please contact support.",
+            );
+            await supabase.auth.signOut();
+            return;
+          }
+
+          // Fetch the updated admin profile
+          const { data: updatedAdmin, error: fetchError } = await supabase
+            .from("admins")
+            .select("*")
+            .eq("id", admin.id)
+            .single();
+
+          if (fetchError) {
+            console.error("Failed to fetch updated admin:", fetchError);
+          }
+
+          // Update the store with the admin profile
+          setProfile(updatedAdmin || admin);
+        } else {
+          // Already active – just use the existing admin profile
+          setProfile(admin);
+        }
+
+        // ── Update Zustand store with user ──
         setUser(user);
-        setProfile(admin);
         setLoading(false);
 
-        // ── ✅ Redirect to admin dashboard (not home) ──
         navigate("/admin", { replace: true });
       } catch (err) {
         console.error("Login error:", err);

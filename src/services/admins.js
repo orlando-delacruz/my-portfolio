@@ -51,25 +51,21 @@ export async function createAdminProfile(data) {
   return result.admin;
 }
 
-export async function activateAdmin(adminId, password) {
-  const result = await callAdminAPI("activate", { adminId, password });
-  return result.admin;
-}
-
 export async function updateAdmin(adminId, data) {
   const result = await callAdminAPI("update", { adminId, ...data });
   return result.admin;
 }
 
+export async function deleteAdmin(adminId, authUserId) {
+  const result = await callAdminAPI("delete", { adminId, authUserId });
+  return result;
+}
+
+// Keep password update if needed
 export async function updateAdminPassword(userId, password) {
   if (!userId)
     throw new Error("Missing auth_user_id – admin not linked to auth user.");
   const result = await callAdminAPI("update-password", { userId, password });
-  return result;
-}
-
-export async function deleteAdmin(adminId, authUserId) {
-  const result = await callAdminAPI("delete", { adminId, authUserId });
   return result;
 }
 

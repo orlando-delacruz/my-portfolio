@@ -20,6 +20,7 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
+// ── Module‑level lock ──
 let isProcessing = false;
 
 const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
@@ -32,6 +33,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [changePassword, setChangePassword] = useState(false);
   const isSubmittingRef = useRef(false);
 
+  // Reset locks when modal opens
   useEffect(() => {
     if (open) {
       isProcessing = false;
@@ -40,6 +42,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     }
   }, [open]);
 
+  // Prefill form when editing
   useEffect(() => {
     if (open) {
       if (user) {
@@ -86,11 +89,13 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const handleFinish = async (values) => {
+    // ── Lock check ──
     if (isProcessing || isSubmittingRef.current || submitting) {
       console.warn('⏳ Submission already in progress – ignoring duplicate.');
       return;
     }
 
+    // ── Set all locks ──
     isProcessing = true;
     isSubmittingRef.current = true;
     setSubmitting(true);
@@ -127,7 +132,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       };
 
       if (user) {
-        // Update existing user (including password if requested)
+        // Update existing user
         await updateAdmin(user.id, payload);
         if (changePassword && values.newPassword) {
           const authUserId = user.auth_user_id || null;
@@ -147,6 +152,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         onSave(payload);
       }
 
+      // ── Success: release locks after a short delay ──
       setTimeout(() => {
         isProcessing = false;
         isSubmittingRef.current = false;
@@ -159,6 +165,15 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       isProcessing = false;
       isSubmittingRef.current = false;
     }
+  };
+
+  // ── Custom submit handler to set lock immediately ──
+  const handleSubmitClick = (e) => {
+    if (isProcessing || isSubmittingRef.current || submitting) {
+      e.preventDefault();
+      return;
+    }
+    // The lock will be set inside handleFinish
   };
 
   const uploadProps = {
@@ -386,6 +401,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             size="large"
             disabled={isFormSubmitting || isAvatarUploading}
             style={{ borderRadius: '8px' }}
+            onClick={handleSubmitClick}
           >
             {user ? 'Update' : 'Create'}
           </Button>

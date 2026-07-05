@@ -1,21 +1,21 @@
 // src/routes/ProtectedRoute.jsx
-import { Navigate, Outlet } from "react-router-dom";
-import { Spin } from "antd";
-import { useAuthStore } from "../store/authStore";
+import { Navigate, Outlet } from 'react-router-dom';
+import { Spin } from 'antd';
+import { useAuthStore } from '../store/authStore';
 
 export default function ProtectedRoute() {
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const loading = useAuthStore((s) => s.loading);
 
-  // If still loading, show spinner
   if (loading) {
     return (
       <div
         style={{
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          minHeight: '100dvh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
         role="status"
         aria-label="Verifying session…"
@@ -25,7 +25,8 @@ export default function ProtectedRoute() {
     );
   }
 
-  if (!user) {
+  // User must be authenticated and have a valid admin profile
+  if (!user || !profile) {
     return <Navigate to="/login" replace />;
   }
 
