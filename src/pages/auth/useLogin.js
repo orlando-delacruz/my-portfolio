@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabase/supabase";
+import { useAuthStore } from "../../store/authStore";
 
 function sanitize(str) {
   return String(str)
@@ -62,6 +63,7 @@ function validate(fields) {
 
 export function useLogin() {
   const navigate = useNavigate();
+  const setUser = useAuthStore((state) => state.setUser);
 
   const [fields, setFields] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -159,6 +161,9 @@ export function useLogin() {
           return;
         }
 
+        // ── ✅ CRITICAL FIX: Update Zustand store immediately ──
+        setUser(user);
+
         // ── All good: navigate to dashboard ──
         navigate("/admin/dashboard", { replace: true });
       } catch (err) {
@@ -169,7 +174,7 @@ export function useLogin() {
         submitting.current = false;
       }
     },
-    [fields, navigate],
+    [fields, navigate, setUser],
   );
 
   const handleGoogleLogin = useCallback(async () => {
