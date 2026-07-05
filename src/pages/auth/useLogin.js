@@ -23,7 +23,6 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 
 function createRateLimiter() {
   const timestamps = [];
-
   return {
     attempt() {
       const now = Date.now();
@@ -110,7 +109,7 @@ export function useLogin() {
         const email = sanitize(fields.email);
         const { password } = fields;
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -131,8 +130,39 @@ export function useLogin() {
           return;
         }
 
+        // ── Check if the email is in the allowed_emails table ──
+        const user = data.user;
+        if (!user?.email) {
+          setGlobalError("No email associated with this account.");
+          return;
+        }
+
+        const { data: allowed, error: allowedError } = await supabase
+          .from("allowed_emails")
+          .select("email")
+          .eq("email", user.email)
+          .maybeSingle();
+
+        if (allowedError) {
+          console.error("Error checking allowed_emails:", allowedError);
+          setGlobalError("Unable to verify access. Please try again.");
+          return;
+        }
+
+        if (!allowed) {
+          // Sign out the user because they are not authorized
+          await supabase.auth.signOut();
+          setGlobalError(
+            "Your email address is not authorized to access this admin panel. " +
+              "Please contact the administrator.",
+          );
+          return;
+        }
+
+        // ── All good: navigate to dashboard ──
         navigate("/admin/dashboard", { replace: true });
-      } catch {
+      } catch (err) {
+        console.error("Login error:", err);
         setGlobalError("An unexpected error occurred. Please try again.");
       } finally {
         setLoading(false);
@@ -159,7 +189,8 @@ export function useLogin() {
       if (error) {
         setGlobalError("Google sign-in failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Google login error:", err);
       setGlobalError("An unexpected error occurred.");
     } finally {
       setGoogleLoading(false);
@@ -181,12 +212,13 @@ export function useLogin() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (!error) {
-        setGlobalError(""); // clear errors
+        setGlobalError("");
         alert(`Password reset link sent to ${email}`);
       } else {
         setGlobalError("Could not send reset email. Try again.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Forgot password error:", err);
       setGlobalError("An unexpected error occurred.");
     } finally {
       setLoading(false);

@@ -97,21 +97,20 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
 
       if (user) {
         // Update profile
-        console.log('🔄 Updating admin profile:', user.id);
         await updateAdmin(user.id, payload);
 
         // Password update if requested
         if (changePassword && values.newPassword) {
-          console.log('🔑 Password change requested for auth_user_id:', user.auth_user_id);
-          // Ensure we have the correct auth_user_id
-          const authUserId = user.auth_user_id || user.id;
+          const authUserId = user.auth_user_id || null;
           if (!authUserId) {
-            throw new Error('Missing auth_user_id – cannot update password');
+            setAvatarError(
+              'This user is not linked to an authentication account. ' +
+              'Please contact support to fix this issue.'
+            );
+            setSubmitting(false);
+            return;
           }
           await updateAdminPassword(authUserId, values.newPassword);
-          console.log('✅ Password updated successfully');
-        } else {
-          console.log('ℹ️ No password change requested (checkbox not checked or no new password)');
         }
         onSave(payload);
       } else {
@@ -121,12 +120,11 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           password: values.password,
           login_method: 'password',
         };
-        console.log('🆕 Creating new user:', createPayload.email);
         await createAdminUser(createPayload);
         onSave(createPayload);
       }
     } catch (err) {
-      console.error('❌ Save error:', err);
+      console.error('Save error:', err);
       setAvatarError(err.message);
     } finally {
       setSubmitting(false);
@@ -190,7 +188,10 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             <Form.Item
               name="email"
               label="Email"
-              rules={[{ required: true, message: 'Please enter email.' }, { type: 'email' }]}
+              rules={[
+                { required: true, message: 'Please enter email.' },
+                { type: 'email', message: 'Invalid email address.' },
+              ]}
             >
               <Input placeholder="user@example.com" size="large" disabled={!!user} />
             </Form.Item>
@@ -199,12 +200,20 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="full_name" label="Full Name" rules={[{ required: true }]}>
+            <Form.Item
+              name="full_name"
+              label="Full Name"
+              rules={[{ required: true, message: 'Please enter full name.' }]}
+            >
               <Input placeholder="Full Name" size="large" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Form.Item
+              name="username"
+              label="Username"
+              rules={[{ required: true, message: 'Please enter username.' }]}
+            >
               <Input placeholder="Username" size="large" />
             </Form.Item>
           </Col>
@@ -226,7 +235,10 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
               <Form.Item
                 name="password"
                 label="Password"
-                rules={[{ required: true, min: 8 }]}
+                rules={[
+                  { required: true, message: 'Please enter password.' },
+                  { min: 8, message: 'Password must be at least 8 characters.' },
+                ]}
                 hasFeedback
               >
                 <Input.Password
@@ -242,11 +254,13 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                 label="Confirm Password"
                 dependencies={['password']}
                 rules={[
-                  { required: true },
+                  { required: true, message: 'Please confirm password.' },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
-                      if (!value || getFieldValue('password') === value) return Promise.resolve();
-                      return Promise.reject('Passwords do not match.');
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Passwords do not match.'));
                     },
                   }),
                 ]}
@@ -267,7 +281,10 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             <Row gutter={16}>
               <Col span={24}>
                 <Form.Item>
-                  <Checkbox checked={changePassword} onChange={(e) => setChangePassword(e.target.checked)}>
+                  <Checkbox
+                    checked={changePassword}
+                    onChange={(e) => setChangePassword(e.target.checked)}
+                  >
                     Change Password
                   </Checkbox>
                 </Form.Item>
@@ -279,7 +296,10 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                   <Form.Item
                     name="newPassword"
                     label="New Password"
-                    rules={[{ required: true, min: 8 }]}
+                    rules={[
+                      { required: true, message: 'Please enter new password.' },
+                      { min: 8, message: 'Password must be at least 8 characters.' },
+                    ]}
                     hasFeedback
                   >
                     <Input.Password
@@ -295,11 +315,13 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                     label="Confirm New Password"
                     dependencies={['newPassword']}
                     rules={[
-                      { required: true },
+                      { required: true, message: 'Please confirm new password.' },
                       ({ getFieldValue }) => ({
                         validator(_, value) {
-                          if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                          return Promise.reject('Passwords do not match.');
+                          if (!value || getFieldValue('newPassword') === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error('Passwords do not match.'));
                         },
                       }),
                     ]}
@@ -324,7 +346,11 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+            <Form.Item
+              name="role"
+              label="Role"
+              rules={[{ required: true, message: 'Please select a role.' }]}
+            >
               <Select placeholder="Select role" size="large">
                 {ROLE_OPTIONS.map((opt) => (
                   <Option key={opt.value} value={opt.value}>{opt.label}</Option>
@@ -336,7 +362,11 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
 
         <Row gutter={16}>
           <Col span={24}>
-            <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: 'Please select a status.' }]}
+            >
               <Select placeholder="Select status" size="large">
                 {STATUS_OPTIONS.map((opt) => (
                   <Option key={opt.value} value={opt.value}>{opt.label}</Option>
