@@ -80,14 +80,17 @@ export const SearchInput = styled(Input.Search)`
   width: 260px;
 
   .ant-input {
-    border-radius: 10px !important;
+    border-radius: 10px 0 0 10px !important;
     font-size: 14px !important;
   }
   .ant-input-affix-wrapper {
-    border-radius: 10px !important;
+    border-radius: 10px 0 0 10px !important;
   }
   .ant-input-group-addon {
-    display: none;
+    border-radius: 0 10px 10px 0 !important;
+    button {
+      border-radius: 0 10px 10px 0 !important;
+    }
   }
 
   @media (max-width: 768px) {
