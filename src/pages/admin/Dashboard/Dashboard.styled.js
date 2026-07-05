@@ -138,6 +138,11 @@ export const StatCard = styled.div`
     height: 140px;
     align-items: start;
   }
+
+  @media (max-width: 360px) {
+    padding: 20px;
+    gap: 8px;
+  }
 `;
 
 export const StatIconWrap = styled.div`

@@ -7,11 +7,7 @@ import * as S from "./Status.styled";
 
 const { Option } = Select;
 
-/**
- * @param {string}   value
- * @param {function} onChange
- */
-const Status = ({ value, onChange }) => (
+const Status = ({ value, onChange, error }) => (
   <S.Wrapper>
     <S.Label htmlFor="filter-status">Status</S.Label>
     <S.SelectWrapper>
@@ -22,6 +18,7 @@ const Status = ({ value, onChange }) => (
         id="filter-status"
         value={value}
         onChange={onChange}
+        $hasError={!!error}
         aria-label="Filter by appointment status"
         popupMatchSelectWidth={false}
       >

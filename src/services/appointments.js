@@ -40,7 +40,7 @@ function formatMinutesToTime(minutes) {
   return dayjs(`2000-01-01T${timeStr}`).format("h:mm A");
 }
 
-// ── Global Conflict Check (ignores branch) ──
+// ── Global Conflict Check ──
 export async function hasBookingConflict({ date, time, excludeAppointmentId }) {
   const dateStr = date.format("YYYY-MM-DD");
   const requestedMinutes = time.hour() * 60 + time.minute();
@@ -77,7 +77,7 @@ export async function hasBookingConflict({ date, time, excludeAppointmentId }) {
   });
 }
 
-// ── Past-time validation helper ──
+// ── Past-time validation ──
 function isPastAppointment(date, time) {
   const now = dayjs();
   const appointmentDateTime = dayjs(date)
@@ -88,17 +88,6 @@ function isPastAppointment(date, time) {
 }
 
 // ── Appointment Creation ──
-async function generateReferenceNumber(dateStr) {
-  const { count, error } = await supabase
-    .from("appointments")
-    .select("id", { count: "exact", head: true })
-    .like("reference_number", `REF-${dateStr}-%`);
-
-  if (error) throw error;
-  const seq = String((count ?? 0) + 1).padStart(3, "0");
-  return `REF-${dateStr}-${seq}`;
-}
-
 const SELECT_WITH_RELATIONS = `*, patients(first_name,last_name,phone_number), service_branches(branch_id, services(name))`;
 
 export async function adminCreateAppointment({
@@ -108,27 +97,32 @@ export async function adminCreateAppointment({
   time,
   adminId,
 }) {
-  // ✅ 1. Ensure the appointment is not in the past
+  // 1. Prevent past appointments
   if (isPastAppointment(date, time)) {
     throw new Error(
       "The selected appointment time has already passed. Please choose a future time.",
     );
   }
 
-  // 2. Check for conflicts
-  const conflict = await hasBookingConflict({
-    date,
-    time,
-  });
-
+  // 2. Check conflicts
+  const conflict = await hasBookingConflict({ date, time });
   if (conflict) {
     throw new Error(
       `That time slot is too close to an existing appointment. Please choose a time at least ${MIN_INTERVAL_MINUTES} minutes apart.`,
     );
   }
 
-  const dateStr = date.format("YYYYMMDD");
-  const reference_number = await generateReferenceNumber(dateStr);
+  // 3. Generate reference number atomically via RPC
+  const dateStr = date.format("YYYY-MM-DD");
+  const { data: refNumber, error: refError } = await supabase.rpc(
+    "generate_reference_number",
+    { p_date: dateStr },
+  );
+
+  if (refError) {
+    console.error("Reference number generation error:", refError);
+    throw new Error("Failed to generate reference number. Please try again.");
+  }
 
   // Admin-created appointments default to Confirmed
   const { approval_status, appointment_status } = STATUS_TO_DB.confirmed;
@@ -136,7 +130,7 @@ export async function adminCreateAppointment({
   const { data, error } = await supabase
     .from("appointments")
     .insert({
-      reference_number,
+      reference_number: refNumber,
       patient_id: patient.id,
       service_branch_id: serviceBranch.service_branch_id,
       booked_by: "admin",
@@ -174,14 +168,12 @@ export async function adminRescheduleAppointment({
   status,
   adminId,
 }) {
-  // ✅ 1. Ensure the appointment is not in the past
   if (isPastAppointment(date, time)) {
     throw new Error(
       "The selected appointment time has already passed. Please choose a future time.",
     );
   }
 
-  // 2. Check for conflicts
   const conflict = await hasBookingConflict({
     date,
     time,
@@ -419,7 +411,7 @@ export async function checkBookingConflictWithDetails({
   };
 }
 
-// ── Get single appointment by ID (full details) ──
+// ── Get single appointment by ID ──
 export async function getAppointmentById(appointmentId) {
   const { data, error } = await supabase
     .from("appointments")

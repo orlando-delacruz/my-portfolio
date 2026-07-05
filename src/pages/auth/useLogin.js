@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabase/supabase";
+import { useAuthStore } from "../../store/authStore";
 
 function sanitize(str) {
   return String(str)
@@ -23,7 +24,6 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 
 function createRateLimiter() {
   const timestamps = [];
-
   return {
     attempt() {
       const now = Date.now();
@@ -63,11 +63,14 @@ function validate(fields) {
 
 export function useLogin() {
   const navigate = useNavigate();
+  const setUser = useAuthStore((state) => state.setUser);
+  const setProfile = useAuthStore((state) => state.setProfile);
+  const setLoading = useAuthStore((state) => state.setLoading);
 
   const [fields, setFields] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [globalError, setGlobalError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoadingState] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -104,13 +107,13 @@ export function useLogin() {
       }
 
       submitting.current = true;
-      setLoading(true);
+      setLoadingState(true);
 
       try {
         const email = sanitize(fields.email);
         const { password } = fields;
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -131,15 +134,49 @@ export function useLogin() {
           return;
         }
 
-        navigate("/admin/dashboard", { replace: true });
-      } catch {
+        const user = data.user;
+        if (!user?.email) {
+          setGlobalError("No email associated with this account.");
+          return;
+        }
+
+        // ── Check if this user is an admin (exists in admins table) ──
+        const { data: admin, error: adminError } = await supabase
+          .from("admins")
+          .select("id, role, full_name, avatar_url")
+          .eq("auth_user_id", user.id)
+          .maybeSingle();
+
+        if (adminError) {
+          console.error("Admin lookup error:", adminError);
+          setGlobalError("Unable to verify access. Please try again.");
+          return;
+        }
+
+        if (!admin) {
+          await supabase.auth.signOut();
+          setGlobalError(
+            "Your email is not registered as an administrator. Please contact support.",
+          );
+          return;
+        }
+
+        // ── Update Zustand store immediately ──
+        setUser(user);
+        setProfile(admin);
+        setLoading(false);
+
+        // ── ✅ Redirect to admin dashboard (not home) ──
+        navigate("/admin", { replace: true });
+      } catch (err) {
+        console.error("Login error:", err);
         setGlobalError("An unexpected error occurred. Please try again.");
       } finally {
-        setLoading(false);
+        setLoadingState(false);
         submitting.current = false;
       }
     },
-    [fields, navigate],
+    [fields, navigate, setUser, setProfile, setLoading],
   );
 
   const handleGoogleLogin = useCallback(async () => {
@@ -159,7 +196,8 @@ export function useLogin() {
       if (error) {
         setGlobalError("Google sign-in failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Google login error:", err);
       setGlobalError("An unexpected error occurred.");
     } finally {
       setGoogleLoading(false);
@@ -175,21 +213,22 @@ export function useLogin() {
       }));
       return;
     }
-    setLoading(true);
+    setLoadingState(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (!error) {
-        setGlobalError(""); // clear errors
+        setGlobalError("");
         alert(`Password reset link sent to ${email}`);
       } else {
         setGlobalError("Could not send reset email. Try again.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Forgot password error:", err);
       setGlobalError("An unexpected error occurred.");
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   }, [fields.email]);
 

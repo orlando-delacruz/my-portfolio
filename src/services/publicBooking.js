@@ -14,9 +14,6 @@ function isPastAppointment(date, time) {
   return appointmentDateTime.isBefore(now);
 }
 
-/**
- * Book a new appointment from the public website
- */
 export async function bookPublicAppointment({
   firstName,
   middleName,
@@ -54,7 +51,7 @@ export async function bookPublicAppointment({
     throw new Error("Invalid time format. Please select a valid time.");
   }
 
-  // ✅ 2. Ensure the appointment is not in the past
+  // 2. Prevent past appointments
   if (isPastAppointment(dateObj, timeObj)) {
     throw new Error(
       "The selected appointment time has already passed. Please choose a future time.",
@@ -88,23 +85,24 @@ export async function bookPublicAppointment({
   // 5. Fetch service branch details for snapshot
   const serviceBranch = await fetchServiceBranchById(serviceBranchId);
 
-  // 6. Generate reference number
-  const dateStr = dateObj.format("YYYYMMDD");
-  const { count, error: countErr } = await supabase
-    .from("appointments")
-    .select("id", { count: "exact", head: true })
-    .like("reference_number", `REF-${dateStr}-%`);
+  // 6. Generate reference number atomically via RPC
+  const dateStr = dateObj.format("YYYY-MM-DD");
+  const { data: refNumber, error: refError } = await supabase.rpc(
+    "generate_reference_number",
+    { p_date: dateStr },
+  );
 
-  if (countErr) throw countErr;
-  const seq = String((count ?? 0) + 1).padStart(3, "0");
-  const referenceNumber = `REF-${dateStr}-${seq}`;
+  if (refError) {
+    console.error("Reference number generation error:", refError);
+    throw new Error("Failed to generate reference number. Please try again.");
+  }
 
   // 7. Insert appointment – Pending
   const { approval_status, appointment_status } = STATUS_TO_DB.pending;
   const { data: appointment, error: insertErr } = await supabase
     .from("appointments")
     .insert({
-      reference_number: referenceNumber,
+      reference_number: refNumber,
       patient_id: patient.id,
       service_branch_id: serviceBranchId,
       booked_by: "website",

@@ -3,22 +3,30 @@ import { create } from "zustand";
 import { supabase } from "../services/supabase/supabase";
 
 export const useAuthStore = create((set) => ({
-  user: null, // Supabase auth user object
-  profile: null, // Row from public.admins table
-  loading: true,
+  user: null,
+  profile: null,
+  loading: true, // initially true until session is checked
 
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading }),
 
-  /** Fetch the admins row for a given auth_user_id */
   fetchProfile: async (authUserId) => {
-    const { data } = await supabase
-      .from("admins") // users → admins
+    if (!authUserId) {
+      set({ profile: null });
+      return;
+    }
+    const { data, error } = await supabase
+      .from("admins")
       .select("*")
-      .eq("auth_user_id", authUserId) // auth_id → auth_user_id
+      .eq("auth_user_id", authUserId)
       .single();
-    set({ profile: data ?? null });
+    if (error) {
+      console.error("Error fetching admin profile:", error);
+      set({ profile: null });
+    } else {
+      set({ profile: data });
+    }
   },
 
   clear: () => set({ user: null, profile: null, loading: false }),

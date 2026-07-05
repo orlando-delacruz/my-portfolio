@@ -1,9 +1,10 @@
-// src\routes\PublicRoutes.jsx
+// src/routes/PublicRoutes.jsx
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "../utils/ScrollToTop";
 import ProtectedRoute from "./ProtectedRoute";
 import { useAuthStore } from "../store/authStore";
+import CancelAppointment from '../pages/public/CancelAppointment';
 
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 const Home = lazy(() => import("../pages/public/Home"));
@@ -13,7 +14,9 @@ const Dashboard = lazy(() => import("../pages/admin/Dashboard/Dashboard"));
 const Appointment = lazy(() => import("../pages/admin/Appointment"));
 const Patients = lazy(() => import("../pages/admin/Patients"))
 const PageDevelopment = lazy(() => import("../pages/admin/PageDevelopment"));
-// const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
+const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
+const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
+const Users = lazy(() => import("../pages/admin/Users"))
 
 // ── Fallbacks ─────────────────────────────────────────────────────────────────
 const PageFallback = () => (
@@ -28,7 +31,7 @@ function GuestRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
   if (loading) return <PageFallback />;
-  if (user) return <Navigate to="/admin/dashboard" replace />;
+  if (user) return <Navigate to="/admin" replace />;
   return children;
 }
 
@@ -41,6 +44,7 @@ export default function PublicRoutes() {
         {/* Public */}
         <Route path="/" element={<Home />} />
         <Route path="/book" element={<BookAppointment />} />
+        <Route path="/cancel-appointment" element={<CancelAppointment />} />
 
         <Route
           path="/login"
@@ -55,11 +59,10 @@ export default function PublicRoutes() {
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route path="/admin" element={<Dashboard />} />
           <Route path="appointments" element={<Appointment />} />
-          {/* <Route path="calendar" element={<AppointmentCalendar />} /> */}
-          <Route path="calendar" element={<PageDevelopment />} />
-          <Route path="clinic-closures" element={<PageDevelopment />} />
+          <Route path="calendar" element={<AppointmentCalendar />} />
+          <Route path="clinic-closures" element={<ClinicClosures />} />
           <Route path="patients" element={<Patients />} />
-          <Route path="users" element={<PageDevelopment />} />
+          <Route path="users" element={<Users />} />
           <Route path="settings" element={<PageDevelopment />} />
         </Route>
 

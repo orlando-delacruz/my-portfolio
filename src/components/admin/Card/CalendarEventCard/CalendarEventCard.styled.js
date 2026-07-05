@@ -1,4 +1,4 @@
-// src\components\admin\Card\CalendarEventCard\CalendarEventCard.styled.js
+// src/components/admin/Card/CalendarEventCard/CalendarEventCard.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../styles/adminTheme";
 
@@ -27,6 +27,28 @@ export const Card = styled.button`
   }
 `;
 
+export const Row = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+`;
+
+export const BranchBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color || "#888888"};
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  flex-shrink: 0;
+  line-height: 1;
+`;
+
 export const Time = styled.span`
   font-family: Inter, sans-serif;
   font-size: 10px;
@@ -45,6 +67,7 @@ export const PatientName = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  width: 100%;
 `;
 
 export const StatusRow = styled.div`

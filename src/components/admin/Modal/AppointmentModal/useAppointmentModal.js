@@ -29,14 +29,12 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       setAddLoading(true);
       try {
         let patient;
-        // If orthodontic patient selected, reuse that patient
         if (
           values.patientType === "ortho" &&
           values.selectedOrthodonticPatient
         ) {
           patient = values.selectedOrthodonticPatient;
         } else {
-          // New patient – create or find existing
           patient = await findOrCreatePatient({
             firstName: values.firstName,
             middleName: values.middleName || "",
@@ -48,11 +46,10 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
             email: values.email || undefined,
             phoneNumber: getRawPhoneDigits(values.phoneNumber),
             address: values.address,
-            isOrthodontic: values.isOrthodontic || false, // ✅ New toggle
+            isOrthodontic: values.isOrthodontic || false,
           });
         }
 
-        // Check conflict
         const conflictCheck = await checkBookingConflictWithDetails({
           branchId: values.branchId,
           date: dayjs(values.date),
@@ -90,6 +87,23 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         form.resetFields();
         setAddOpen(false);
         onAddSuccess?.(newRecord);
+        // ── Send confirmation email ──
+        if (created.id) {
+          fetch("/api/send-confirmation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ appointmentId: created.id }),
+          }).catch((err) => console.error("Confirmation email failed:", err));
+        }
+
+        // ── Trigger confirmation email via Trigger.dev ──
+        if (created.id) {
+          fetch("/api/trigger-confirmation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ appointmentId: created.id }),
+          }).catch((err) => console.error("Trigger confirmation failed:", err));
+        }
       } catch (err) {
         console.error(err);
         message.error(

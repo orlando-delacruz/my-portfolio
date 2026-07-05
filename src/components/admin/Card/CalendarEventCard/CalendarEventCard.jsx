@@ -1,17 +1,16 @@
-// src\components\admin\Card\CalendarEventCard\CalendarEventCard.jsx
-import { memo } from "react";
-import { STATUS_MAP } from "../../../../constants/calendarConstants";
-import * as S from "./CalendarEventCard.styled";
+// src/components/admin/Card/CalendarEventCard/CalendarEventCard.jsx
+import { memo } from 'react';
+import { STATUS_MAP } from '../../../../constants/calendarConstants';
+import * as S from './CalendarEventCard.styled';
 
-/**
- * Compact appointment card rendered inside a calendar day cell.
- *
- * @param {string} time
- * @param {string} patientName
- * @param {string} status — one of APPOINTMENT_STATUSES values
- * @param {function} [onClick]
- */
-const CalendarEventCard = ({ time, patientName, status, onClick }) => {
+const CalendarEventCard = memo(({
+  time,
+  patientName,
+  status,
+  onClick,
+  branchInitial,
+  branchColor,
+}) => {
   const statusInfo = STATUS_MAP[status];
 
   return (
@@ -20,7 +19,12 @@ const CalendarEventCard = ({ time, patientName, status, onClick }) => {
       onClick={onClick}
       aria-label={`${patientName}, ${time}, status ${statusInfo?.label ?? status}`}
     >
-      <S.Time>{time}</S.Time>
+      <S.Row>
+        <S.BranchBadge $color={branchColor} aria-label={`Branch ${branchInitial}`}>
+          {branchInitial || '•'}
+        </S.BranchBadge>
+        <S.Time>{time}</S.Time>
+      </S.Row>
       <S.PatientName>{patientName}</S.PatientName>
       <S.StatusRow>
         <S.StatusBadge $color={statusInfo?.color} $bg={statusInfo?.bg}>
@@ -29,6 +33,7 @@ const CalendarEventCard = ({ time, patientName, status, onClick }) => {
       </S.StatusRow>
     </S.Card>
   );
-};
+});
 
-export default memo(CalendarEventCard);
+CalendarEventCard.displayName = 'CalendarEventCard';
+export default CalendarEventCard;

@@ -1,10 +1,11 @@
 // src/pages/admin/Patients/Patients.jsx
 import { memo, useState, useCallback, useMemo } from 'react';
-import { Table, Input, Select, Button, Empty, message, Modal } from 'antd';
+import { Table, Input, Select, Button, Empty, message, Modal, Spin } from 'antd';
 import { SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { usePatients } from '../../../hooks/usePatients';
 import EditPatientModal from '../../../components/admin/Modal/EditPatientModal';
+import PatientDetailsModal from '../../../components/admin/Modal/PatientDetailsModal';
 import { updatePatient, deletePatient, deletePatients } from '../../../services/patients';
 import { formatPhoneDisplay } from '../../../utils/phoneFormatter';
 import * as S from './Patients.styled';
@@ -20,6 +21,8 @@ const Patients = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedPatientForDetails, setSelectedPatientForDetails] = useState(null);
 
   const {
     patients,
@@ -139,6 +142,16 @@ const Patients = () => {
     setPageSize(pagination.pageSize);
   };
 
+  const handleRowClick = useCallback((record) => {
+    setSelectedPatientForDetails(record);
+    setDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedPatientForDetails(null);
+  }, []);
+
   const rowSelection = {
     selectedRowKeys,
     onChange: setSelectedRowKeys,
@@ -191,7 +204,7 @@ const Patients = () => {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
           <Button
             type="text"
             icon={<EditOutlined />}
@@ -217,8 +230,18 @@ const Patients = () => {
   ], [handleEdit, handleDeleteSingle, deletingId]);
 
   const dataSource = patients.map((p) => ({ ...p, key: p.id }));
-  const hasSelected = selectedRowKeys.length > 0;
-  const selectedCount = selectedRowKeys.length;
+
+  if (loading && patients.length === 0) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" description="Loading patients..." />
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
 
   if (error) {
     return (
@@ -265,6 +288,10 @@ const Patients = () => {
             dataSource={dataSource}
             loading={loading}
             rowSelection={rowSelection}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+              style: { cursor: 'pointer' },
+            })}
             pagination={{
               current: page,
               pageSize: pageSize,
@@ -283,8 +310,7 @@ const Patients = () => {
           />
         </S.TableWrapper>
 
-        {/* Floating Delete Button */}
-        {hasSelected && (
+        {selectedRowKeys.length > 0 && (
           <S.FloatingDeleteButton
             onClick={handleBulkDelete}
             loading={bulkDeleting}
@@ -293,7 +319,7 @@ const Patients = () => {
             danger
             icon={<DeleteOutlined />}
           >
-            Delete {selectedCount}
+            Delete {selectedRowKeys.length}
           </S.FloatingDeleteButton>
         )}
 
@@ -303,6 +329,15 @@ const Patients = () => {
           loading={updating}
           onClose={handleCloseEdit}
           onSave={handleSavePatient}
+        />
+
+        <PatientDetailsModal
+          open={detailsModalOpen}
+          patient={selectedPatientForDetails}
+          onClose={handleCloseDetails}
+          onEdit={handleEdit}
+          onDelete={handleDeleteSingle}
+          loading={deletingId ? true : false}
         />
       </S.PageContainer>
     </AdminLayout>

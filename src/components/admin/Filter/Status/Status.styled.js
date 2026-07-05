@@ -1,4 +1,3 @@
-// src/components/admin/Filter/Status/Status.styled.js
 import styled from "styled-components";
 import { Select } from "antd";
 
@@ -38,7 +37,8 @@ export const StyledSelect = styled(Select)`
 
   .ant-select-selector {
     border-radius: 10px !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid
+      ${({ $hasError }) => ($hasError ? "#dc2626" : "rgba(0, 0, 0, 0.10)")} !important;
     padding-left: 32px !important;
     font-family: "Inter", sans-serif !important;
     font-size: 10px !important;
@@ -55,7 +55,8 @@ export const StyledSelect = styled(Select)`
 
   &:hover .ant-select-selector,
   &.ant-select-focused .ant-select-selector {
-    border-color: rgba(0, 0, 0, 0.2) !important;
+    border-color: ${({ $hasError }) =>
+      $hasError ? "#b91c1c" : "rgba(0, 0, 0, 0.20)"} !important;
     box-shadow: none !important;
   }
 
