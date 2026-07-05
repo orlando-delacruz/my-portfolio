@@ -43,16 +43,19 @@ const ClosureTypeBadge = memo(({ type }) => {
 ClosureTypeBadge.displayName = 'ClosureTypeBadge';
 
 // ── Actions ──
-const Actions = memo(({ closure, onEdit, onDelete }) => (
-  <S.Actions>
-    <S.ActionBtn $variant="secondary" onClick={() => onEdit(closure)}>
-      Edit
-    </S.ActionBtn>
-    <S.ActionBtn $variant="danger" onClick={() => onDelete(closure.id)}>
-      Delete
-    </S.ActionBtn>
-  </S.Actions>
-));
+const Actions = memo(({ closure, onEdit, onDelete }) => {
+  const handleClick = (e) => e.stopPropagation();
+  return (
+    <S.Actions onClick={handleClick}>
+      <S.ActionBtn $variant="secondary" onClick={() => onEdit(closure)}>
+        Edit
+      </S.ActionBtn>
+      <S.ActionBtn $variant="danger" onClick={() => onDelete(closure.id)}>
+        Delete
+      </S.ActionBtn>
+    </S.Actions>
+  );
+});
 Actions.displayName = 'Actions';
 
 // ── Main Table ──
@@ -68,10 +71,24 @@ const ClosureTable = ({
   pageSize,
   onPageChange,
   onSizeChange,
-  onEdit,    // <-- ADDED
-  onDelete,  // <-- ADDED
+  onEdit,
+  onDelete,
+  onRowClick,
 }) => {
   const handleSelectAll = (e) => onSelectAll(e.target.checked);
+
+  const handleRowClick = (e, closure) => {
+    const target = e.target;
+    if (
+      target.closest('input[type="checkbox"]') ||
+      target.closest('button') ||
+      target.closest('.ant-checkbox') ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    onRowClick?.(closure);
+  };
 
   return (
     <S.TableCard>
@@ -110,7 +127,12 @@ const ClosureTable = ({
               </S.TR>
             ) : (
               closures.map((closure) => (
-                <S.TR key={closure.id} $selected={selected.has(closure.id)}>
+                <S.TR
+                  key={closure.id}
+                  $selected={selected.has(closure.id)}
+                  onClick={(e) => handleRowClick(e, closure)}
+                  style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                >
                   <S.TD $checkbox>
                     <Checkbox
                       checked={selected.has(closure.id)}
@@ -137,6 +159,7 @@ const ClosureTable = ({
                       closure={closure}
                       onEdit={onEdit}
                       onDelete={onDelete}
+                      onRowClick={onRowClick}
                     />
                   </S.TD>
                 </S.TR>

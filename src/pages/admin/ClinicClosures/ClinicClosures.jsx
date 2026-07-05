@@ -7,6 +7,7 @@ import PageTitle from './sections/PageTitle';
 import Filter from './sections/Filter';
 import ClosureTable from './sections/Table';
 import ClinicClosureModal from '../../../components/admin/Modal/ClinicClosureModal';
+import ClinicClosureDetailsModal from '../../../components/admin/Modal/ClinicClosureDetailsModal';
 import { useClinicClosures } from './useClinicClosures';
 import { createClinicClosure, updateClinicClosure, deleteClinicClosure } from '../../../services/clinicClosures';
 import * as S from './ClinicClosures.styled';
@@ -29,6 +30,10 @@ const ClinicClosures = () => {
   const [editingClosure, setEditingClosure] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [selected, setSelected] = useState(new Set());
+
+  // ── Details Modal state ──
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedClosure, setSelectedClosure] = useState(null);
 
   const handleAdd = useCallback(() => {
     setEditingClosure(null);
@@ -142,6 +147,17 @@ const ClinicClosures = () => {
     });
   }, []);
 
+  // ── Row click → details modal ──
+  const handleRowClick = useCallback((closure) => {
+    setSelectedClosure(closure);
+    setDetailsModalOpen(true);
+  }, []);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsModalOpen(false);
+    setSelectedClosure(null);
+  }, []);
+
   const allSelected = closures.length > 0 && selected.size === closures.length;
 
   return (
@@ -167,6 +183,7 @@ const ClinicClosures = () => {
           onSizeChange={setPageSize}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onRowClick={handleRowClick}
         />
         {selected.size > 0 && (
           <S.FloatingDeleteButton
@@ -183,6 +200,14 @@ const ClinicClosures = () => {
         closure={editingClosure}
         onClose={handleModalClose}
         onSave={handleSave}
+        loading={modalLoading}
+      />
+      <ClinicClosureDetailsModal
+        open={detailsModalOpen}
+        closure={selectedClosure}
+        onClose={handleCloseDetails}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         loading={modalLoading}
       />
     </AdminLayout>

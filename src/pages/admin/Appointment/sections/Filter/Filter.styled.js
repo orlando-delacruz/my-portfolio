@@ -29,17 +29,6 @@ export const FilterCard = styled.aside`
     }
   }
 
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   & > * {
     border-right: 1px solid rgba(0, 0, 0, 0.06);
   }
@@ -50,6 +39,17 @@ export const FilterCard = styled.aside`
   @media (max-width: 992px) and (min-width: 769px) {
     & > *:nth-child(2n) {
       border-right: none;
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 `;

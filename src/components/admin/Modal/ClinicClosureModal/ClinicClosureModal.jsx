@@ -22,10 +22,8 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
           title: closure.title,
           closure_type: closure.closure_type,
           reason: closure.reason,
-          dateRange: [
-            dayjs(closure.start_date),
-            dayjs(closure.end_date),
-          ],
+          start_date: closure.start_date ? dayjs(closure.start_date) : null,
+          end_date: closure.end_date ? dayjs(closure.end_date) : null,
           is_all_day: closure.is_all_day ?? true,
           start_time: closure.start_time ? dayjs(closure.start_time, 'HH:mm:ss') : null,
           end_time: closure.end_time ? dayjs(closure.end_time, 'HH:mm:ss') : null,
@@ -37,7 +35,8 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
         form.setFieldsValue({
           is_all_day: true,
           affects_booking: true,
-          dateRange: [dayjs(), dayjs()],
+          start_date: dayjs(),
+          end_date: dayjs(),
         });
         setIsAllDay(true);
       }
@@ -45,13 +44,11 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
   }, [open, closure, form]);
 
   const handleFinish = async (values) => {
-    const { dateRange, start_time, end_time, ...rest } = values;
-    const startDate = dateRange[0].format('YYYY-MM-DD');
-    const endDate = dateRange[1].format('YYYY-MM-DD');
+    const { start_date, end_date, start_time, end_time, ...rest } = values;
     const payload = {
       ...rest,
-      start_date: startDate,
-      end_date: endDate,
+      start_date: start_date ? start_date.format('YYYY-MM-DD') : null,
+      end_date: end_date ? end_date.format('YYYY-MM-DD') : null,
       start_time: isAllDay ? null : (start_time ? start_time.format('HH:mm:ss') : null),
       end_time: isAllDay ? null : (end_time ? end_time.format('HH:mm:ss') : null),
       affects_booking: rest.affects_booking ?? true,
@@ -66,7 +63,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
       onCancel={onClose}
       width={720}
       footer={null}
-      destroyOnHidden // ✅ fixed
+      destroyOnHidden
       styles={{
         body: { paddingTop: 8 },
         content: { borderRadius: '16px' },
@@ -76,7 +73,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
         {/* Branch */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item
               name="branch_id"
               label="Branch"
@@ -93,7 +90,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
 
         {/* Title */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item
               name="title"
               label="Title"
@@ -106,7 +103,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
 
         {/* Closure Type */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item
               name="closure_type"
               label="Closure Type"
@@ -123,25 +120,39 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
 
         {/* Reason */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item name="reason" label="Reason">
               <TextArea placeholder="Optional reason" rows={3} />
             </Form.Item>
           </Col>
         </Row>
 
-        {/* Date Range */}
+        {/* Date Range – Two separate DatePickers */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24} sm={12}>
             <Form.Item
-              name="dateRange"
-              label="Date Range"
-              rules={[{ required: true, message: 'Please select a date range.' }]}
+              name="start_date"
+              label="Start Date"
+              rules={[{ required: true, message: 'Please select a start date.' }]}
             >
-              <DatePicker.RangePicker
+              <DatePicker
                 style={{ width: '100%' }}
                 format="MMM D, YYYY"
-                placeholder={['Start date', 'End date']}
+                placeholder="Start date"
+                disabledDate={(current) => current && current < dayjs().startOf('day')}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name="end_date"
+              label="End Date"
+              rules={[{ required: true, message: 'Please select an end date.' }]}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                format="MMM D, YYYY"
+                placeholder="End date"
                 disabledDate={(current) => current && current < dayjs().startOf('day')}
               />
             </Form.Item>
@@ -150,7 +161,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
 
         {/* All Day Switch */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item name="is_all_day" label="All Day" valuePropName="checked">
               <Switch checked={isAllDay} onChange={(checked) => setIsAllDay(checked)} />
             </Form.Item>
@@ -160,7 +171,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
         {/* Times (only if not all-day) */}
         {!isAllDay && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="start_time"
                 label="Start Time"
@@ -169,7 +180,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
                 <TimePicker format="h:mm A" use12Hours style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="end_time"
                 label="End Time"
@@ -183,7 +194,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
 
         {/* Affects Booking */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col xs={24}>
             <Form.Item name="affects_booking" label="Affects Booking" valuePropName="checked">
               <Switch defaultChecked />
             </Form.Item>
