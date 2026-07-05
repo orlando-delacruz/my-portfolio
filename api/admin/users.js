@@ -1,21 +1,36 @@
 // api/admin/users.js
-/*global process*/
 import { createClient } from "@supabase/supabase-js";
 
+// ── Environment variables ──
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const serviceRoleKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl) throw new Error("Missing VITE_SUPABASE_URL");
-if (!serviceRoleKey)
+if (!supabaseUrl) {
+  throw new Error("Missing VITE_SUPABASE_URL environment variable.");
+}
+if (!serviceRoleKey) {
   throw new Error(
-    "Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY",
+    "Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY environment variable.",
   );
+}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+// ── CORS headers (optional, but good for preflight) ──
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 export default async function handler(req, res) {
+  if (req.method === "OPTIONS") {
+    res.setHeaders(corsHeaders);
+    return res.status(204).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -31,7 +46,7 @@ export default async function handler(req, res) {
         username,
         phone_number,
         role,
-        branch_id,
+        status,
         avatar_url,
       } = req.body;
 
@@ -41,12 +56,19 @@ export default async function handler(req, res) {
       if (!username)
         return res.status(400).json({ error: "Username is required." });
 
-      // Check if email already exists in admins (including pending)
-      const { data: existingAdmin } = await supabase
+      // Check if email already exists in admins
+      const { data: existingAdmin, error: checkError } = await supabase
         .from("admins")
         .select("id")
         .eq("email", email)
         .maybeSingle();
+
+      if (checkError) {
+        console.error("❌ Check error:", checkError);
+        return res
+          .status(500)
+          .json({ error: `Database check error: ${checkError.message}` });
+      }
 
       if (existingAdmin) {
         return res
@@ -55,7 +77,7 @@ export default async function handler(req, res) {
       }
 
       // Insert admin profile with status 'pending'
-      const { data: admin, error: adminError } = await supabase
+      const { data: admin, error: insertError } = await supabase
         .from("admins")
         .insert({
           email,
@@ -63,18 +85,17 @@ export default async function handler(req, res) {
           username,
           phone_number: phone_number || null,
           role: role || "staff",
-          status: "pending",
-          branch_id: branch_id || null,
+          status: status || "pending",
           avatar_url: avatar_url || null,
         })
         .select()
         .single();
 
-      if (adminError) {
-        console.error("❌ Admin insert error:", adminError);
+      if (insertError) {
+        console.error("❌ Insert error:", insertError);
         return res
-          .status(400)
-          .json({ error: `Database error: ${adminError.message}` });
+          .status(500)
+          .json({ error: `Database insert error: ${insertError.message}` });
       }
 
       return res.status(200).json({ success: true, admin });
@@ -136,9 +157,9 @@ export default async function handler(req, res) {
         });
 
       if (authError) {
-        console.error("❌ Auth creation error:", authError);
+        console.error("❌ Auth error:", authError);
         return res
-          .status(400)
+          .status(500)
           .json({ error: `Auth error: ${authError.message}` });
       }
 
@@ -159,8 +180,8 @@ export default async function handler(req, res) {
         await supabase.auth.admin.deleteUser(authUser.user.id);
         console.error("❌ Update error:", updateError);
         return res
-          .status(400)
-          .json({ error: `Database error: ${updateError.message}` });
+          .status(500)
+          .json({ error: `Update error: ${updateError.message}` });
       }
 
       return res.status(200).json({ success: true, admin: updatedAdmin });
@@ -182,7 +203,7 @@ export default async function handler(req, res) {
       if (!adminId) return res.status(400).json({ error: "Missing adminId" });
 
       // Update admin profile
-      const { data: admin, error: adminError } = await supabase
+      const { data: admin, error: updateError } = await supabase
         .from("admins")
         .update({
           email,
@@ -198,11 +219,11 @@ export default async function handler(req, res) {
         .select()
         .single();
 
-      if (adminError) {
-        console.error("❌ Update admin error:", adminError);
+      if (updateError) {
+        console.error("❌ Update admin error:", updateError);
         return res
-          .status(400)
-          .json({ error: `Update error: ${adminError.message}` });
+          .status(500)
+          .json({ error: `Update error: ${updateError.message}` });
       }
 
       // If email changed and admin is active, update auth user email
@@ -225,17 +246,14 @@ export default async function handler(req, res) {
 
       if (!adminId) return res.status(400).json({ error: "Missing adminId" });
 
-      // If authUserId exists, delete auth user first
       if (authUserId) {
         const { error: deleteAuthError } =
           await supabase.auth.admin.deleteUser(authUserId);
         if (deleteAuthError) {
           console.error("❌ Auth deletion error:", deleteAuthError);
-          // We continue to delete admin anyway (but log the error)
         }
       }
 
-      // Delete admin profile
       const { error: deleteAdminError } = await supabase
         .from("admins")
         .delete()
@@ -243,15 +261,15 @@ export default async function handler(req, res) {
 
       if (deleteAdminError) {
         console.error("❌ Admin deletion error:", deleteAdminError);
-        return res.status(400).json({
-          error: `Failed to delete admin: ${deleteAdminError.message}`,
-        });
+        return res
+          .status(500)
+          .json({ error: `Delete error: ${deleteAdminError.message}` });
       }
 
       return res.status(200).json({ success: true });
     }
 
-    // ── UPDATE PASSWORD ── (for existing active admins)
+    // ── UPDATE PASSWORD ──
     if (action === "update-password") {
       const { userId, password } = req.body;
       if (!userId) return res.status(400).json({ error: "Missing userId" });
@@ -267,7 +285,7 @@ export default async function handler(req, res) {
       if (error) {
         console.error("❌ Password update error:", error);
         return res
-          .status(400)
+          .status(500)
           .json({ error: `Password update error: ${error.message}` });
       }
 
@@ -277,6 +295,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Invalid action: ${action}` });
   } catch (err) {
     console.error("💥 Unhandled error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({
+      error: `Internal server error: ${err.message || "Unknown error"}`,
+    });
   }
 }
