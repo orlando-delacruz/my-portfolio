@@ -46,12 +46,15 @@ export async function fetchAdmins({
   return { data: data || [], count: count || 0 };
 }
 
-export async function createAdminUser(data) {
+export async function createAdminProfile(data) {
   const result = await callAdminAPI("create", data);
   return result.admin;
 }
 
-export const createAdmin = createAdminUser;
+export async function activateAdmin(adminId, password) {
+  const result = await callAdminAPI("activate", { adminId, password });
+  return result.admin;
+}
 
 export async function updateAdmin(adminId, data) {
   const result = await callAdminAPI("update", { adminId, ...data });
@@ -71,7 +74,6 @@ export async function deleteAdmin(adminId, authUserId) {
 }
 
 export async function bulkDeleteAdmins(ids) {
-  // Fetch all admins with their auth_user_id
   const { data: admins, error } = await supabase
     .from("admins")
     .select("id, auth_user_id")

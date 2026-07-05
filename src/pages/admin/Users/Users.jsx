@@ -7,7 +7,8 @@ import { useUsers } from '../../../hooks/useUsers';
 import UserTable from './sections/Table';
 import UserModal from '../../../components/admin/Modal/UserModal';
 import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
-import { createAdminUser, updateAdmin, deleteAdmin } from '../../../services/admins';
+import ActivateAdminModal from '../../../components/admin/Modal/ActivateAdminModal';
+import { createAdminProfile, updateAdmin, deleteAdmin, activateAdmin } from '../../../services/admins';
 import * as S from './Users.styled';
 
 const { confirm } = Modal;
@@ -32,6 +33,10 @@ const Users = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  const [activationModalOpen, setActivationModalOpen] = useState(false);
+  const [activatingUser, setActivatingUser] = useState(null);
+  const [activationLoading, setActivationLoading] = useState(false);
+
   const handleAdd = useCallback(() => {
     setEditingUser(null);
     setModalOpen(true);
@@ -54,8 +59,8 @@ const Users = () => {
         await updateAdmin(editingUser.id, data);
         message.success('User updated successfully!');
       } else {
-        await createAdminUser(data);
-        message.success('User created successfully!');
+        await createAdminProfile(data);
+        message.success('User profile created! You can now activate the account.');
       }
       handleModalClose();
       refetch();
@@ -67,6 +72,32 @@ const Users = () => {
     }
   }, [editingUser, refetch, handleModalClose]);
 
+  const handleActivateClick = useCallback((user) => {
+    setActivatingUser(user);
+    setActivationModalOpen(true);
+  }, []);
+
+  const handleActivationClose = useCallback(() => {
+    setActivationModalOpen(false);
+    setActivatingUser(null);
+  }, []);
+
+  const handleActivate = useCallback(async (adminId, password) => {
+    setActivationLoading(true);
+    try {
+      await activateAdmin(adminId, password);
+      message.success('Account activated successfully! The user can now log in.');
+      setActivationModalOpen(false);
+      setActivatingUser(null);
+      refetch();
+    } catch (err) {
+      console.error('Activation error:', err);
+      throw err;
+    } finally {
+      setActivationLoading(false);
+    }
+  }, [refetch]);
+
   const handleDelete = useCallback((id) => {
     confirm({
       title: 'Delete User',
@@ -77,7 +108,6 @@ const Users = () => {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          // Find the user object to get auth_user_id
           const user = users.find(u => u.id === id);
           await deleteAdmin(id, user?.auth_user_id);
           message.success('User deleted successfully!');
@@ -200,6 +230,7 @@ const Users = () => {
           onSizeChange={setPageSize}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onActivate={handleActivateClick}
           onRowClick={handleRowClick}
         />
 
@@ -229,6 +260,14 @@ const Users = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         loading={modalLoading}
+      />
+
+      <ActivateAdminModal
+        open={activationModalOpen}
+        admin={activatingUser}
+        onClose={handleActivationClose}
+        onActivate={handleActivate}
+        loading={activationLoading}
       />
     </AdminLayout>
   );

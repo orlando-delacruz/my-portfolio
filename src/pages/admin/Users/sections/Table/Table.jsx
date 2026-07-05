@@ -1,7 +1,7 @@
 // src/pages/admin/Users/sections/Table/Table.jsx
 import { memo } from 'react';
 import { Checkbox, Avatar, Dropdown, Tooltip, Spin, Empty } from 'antd';
-import { MoreOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { MoreOutlined, EditOutlined, DeleteOutlined, UserOutlined, MailOutlined } from '@ant-design/icons';
 import Pagination from '../../../../../components/admin/Pagination/Pagination';
 import { formatDate } from '../../../../../utils/dateFormatter';
 import * as S from './Table.styled';
@@ -51,7 +51,7 @@ const LoginMethodIcon = memo(({ method }) => {
 LoginMethodIcon.displayName = 'LoginMethodIcon';
 
 // ── Actions Dropdown ──
-const Actions = memo(({ user, onEdit, onDelete }) => {
+const Actions = memo(({ user, onEdit, onDelete, onActivate }) => {
   const items = [
     {
       key: 'edit',
@@ -67,6 +67,15 @@ const Actions = memo(({ user, onEdit, onDelete }) => {
       onClick: () => onDelete(user.id),
     },
   ];
+
+  if (user.status === 'pending') {
+    items.unshift({
+      key: 'activate',
+      label: 'Activate Account',
+      icon: <MailOutlined />,
+      onClick: () => onActivate(user),
+    });
+  }
 
   const handleClick = (e) => e.stopPropagation();
 
@@ -95,6 +104,7 @@ const UserTable = ({
   onSizeChange,
   onEdit,
   onDelete,
+  onActivate,
   onRowClick,
 }) => {
   const handleSelectAll = (e) => onSelectAll(e.target.checked);
@@ -194,7 +204,12 @@ const UserTable = ({
                     )}
                   </S.TD>
                   <S.TD $center>
-                    <Actions user={user} onEdit={onEdit} onDelete={onDelete} />
+                    <Actions
+                      user={user}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onActivate={onActivate}
+                    />
                   </S.TD>
                 </S.TR>
               ))}
