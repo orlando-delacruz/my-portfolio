@@ -1,10 +1,18 @@
 // api/admin/users.js
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) throw new Error("Missing VITE_SUPABASE_URL");
+if (!serviceRoleKey)
+  throw new Error(
+    "Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY",
+  );
+
+const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,7 +22,6 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    // ── CREATE USER ──
     if (action === "create") {
       const {
         email,
@@ -27,8 +34,45 @@ export default async function handler(req, res) {
         avatar_url,
       } = req.body;
 
-      if (!email || !password || !full_name || !username) {
-        return res.status(400).json({ error: "Missing required fields" });
+      // ── Validate ──
+      if (!email) return res.status(400).json({ error: "Email is required." });
+      if (!password)
+        return res.status(400).json({ error: "Password is required." });
+      if (!full_name)
+        return res.status(400).json({ error: "Full name is required." });
+      if (!username)
+        return res.status(400).json({ error: "Username is required." });
+      if (password.length < 8) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 8 characters." });
+      }
+
+      // ── Check duplicate in admins ──
+      const { data: existingAdmin } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingAdmin) {
+        return res
+          .status(409)
+          .json({ error: "An administrator with this email already exists." });
+      }
+
+      // ── Check duplicate in auth.users (to avoid 422) ──
+      const { data: existingAuthUser } = await supabase
+        .from("auth.users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingAuthUser) {
+        return res.status(409).json({
+          error:
+            "This email is already registered in the authentication system. Please use a different email or contact support to recover the account.",
+        });
       }
 
       // 1. Create auth user
@@ -41,11 +85,13 @@ export default async function handler(req, res) {
         });
 
       if (authError) {
-        console.error("Auth error:", authError);
-        return res.status(400).json({ error: authError.message });
+        console.error("❌ Auth error:", authError);
+        return res
+          .status(400)
+          .json({ error: `Auth error: ${authError.message}` });
       }
 
-      // 2. Insert admin profile (no allowed_emails insert)
+      // 2. Insert admin profile
       const { data: admin, error: adminError } = await supabase
         .from("admins")
         .insert({
@@ -65,37 +111,40 @@ export default async function handler(req, res) {
       if (adminError) {
         // Rollback
         await supabase.auth.admin.deleteUser(authUser.user.id);
-        console.error("Admin insert error:", adminError);
-        return res.status(400).json({ error: adminError.message });
+        console.error("❌ Admin insert error:", adminError);
+        return res
+          .status(400)
+          .json({ error: `Database error: ${adminError.message}` });
       }
 
       return res.status(200).json({ success: true, admin });
     }
 
-    // ── UPDATE PASSWORD ──
     if (action === "update-password") {
       const { userId, password } = req.body;
-
-      if (!userId || !password || password.length < 8) {
+      if (!userId) return res.status(400).json({ error: "Missing userId" });
+      if (!password || password.length < 8) {
         return res
           .status(400)
-          .json({ error: "Missing userId or password too short" });
+          .json({ error: "Password must be at least 8 characters." });
       }
 
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         password,
       });
       if (error) {
-        console.error("Password update error:", error);
-        return res.status(400).json({ error: error.message });
+        console.error("❌ Password update error:", error);
+        return res
+          .status(400)
+          .json({ error: `Password update error: ${error.message}` });
       }
 
       return res.status(200).json({ success: true });
     }
 
-    return res.status(400).json({ error: "Invalid action" });
+    return res.status(400).json({ error: `Invalid action: ${action}` });
   } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("💥 Unhandled error:", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 }

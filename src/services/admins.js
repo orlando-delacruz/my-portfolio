@@ -1,115 +1,27 @@
 // src/services/admins.js
 import { supabase } from "./supabase/supabase";
 
-// ── Helper to call admin operations using the service role key ──
+// ── Helper: call Vercel API route ──
 async function callAdminAPI(action, body) {
-  // For local development, we can use the service role key directly with supabase client.
-  // We'll temporarily set the auth header to use the service role key for this request.
-  const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-
-  if (import.meta.env.DEV && serviceRoleKey) {
-    // Clone the supabase client with a new auth header for this request.
-    // We'll use fetch directly to avoid creating a new client.
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/admin/users`;
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
-    };
-
-    if (action === "create") {
-      const {
-        email,
-        password,
-        full_name,
-        username,
-        phone_number,
-        role,
-        status,
-        avatar_url,
-      } = body;
-
-      // 1. Create auth user via direct API call
-      const createRes = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: { full_name, username },
-        }),
-      });
-      if (!createRes.ok) {
-        const errorData = await createRes.json();
-        throw new Error(errorData.message || "Auth creation failed");
-      }
-      const authUser = await createRes.json();
-
-      // 2. Insert admin profile via supabase client (with service role key)
-      // Since we're using the regular supabase client, we need to set the auth header for this request.
-      // We'll use the supabase client's `auth.setSession` to set a temporary session? No.
-
-      // Simpler: use fetch directly for the admin profile insert as well.
-      const insertRes = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/admins`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
-            apikey: serviceRoleKey,
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({
-            auth_user_id: authUser.id,
-            email,
-            full_name,
-            username,
-            phone_number: phone_number || null,
-            role: role || "staff",
-            status: status || "active",
-            login_method: "password",
-            avatar_url: avatar_url || null,
-          }),
-        },
-      );
-      if (!insertRes.ok) {
-        // Rollback: delete the auth user
-        await fetch(`${url}/${authUser.id}`, {
-          method: "DELETE",
-          headers,
-        });
-        const errorData = await insertRes.json();
-        throw new Error(errorData.message || "Admin insert failed");
-      }
-      const admin = await insertRes.json();
-      return { admin: admin[0] };
-    }
-
-    if (action === "update-password") {
-      const { userId, password } = body;
-      const updateRes = await fetch(`${url}/${userId}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ password }),
-      });
-      if (!updateRes.ok) {
-        const errorData = await updateRes.json();
-        throw new Error(errorData.message || "Password update failed");
-      }
-      return { success: true };
-    }
-  }
-
-  // Production: use Vercel API route
   const res = await fetch(`/api/admin/users?action=${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+  // Check if response is JSON
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(
+      `Unexpected response from API: ${text || "empty response"}`,
+    );
+  }
+
   const result = await res.json();
-  if (!res.ok) throw new Error(result.error || "API call failed");
+  if (!res.ok) {
+    throw new Error(result.error || "API request failed");
+  }
   return result;
 }
 

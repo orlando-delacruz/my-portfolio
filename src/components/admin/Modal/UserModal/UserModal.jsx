@@ -1,5 +1,5 @@
 // src/components/admin/Modal/UserModal/UserModal.jsx
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { Modal, Form, Input, Select, Row, Col, Button, Upload, Alert, Checkbox } from 'antd';
 import { UploadOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { uploadAvatar } from '../../../../services/storage';
@@ -28,6 +28,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [avatarError, setAvatarError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -51,6 +52,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         setChangePassword(false);
       }
       setAvatarError(null);
+      isSubmittingRef.current = false; // reset on modal open
     }
   }, [open, user, form]);
 
@@ -58,9 +60,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     setAvatarError(null);
     try {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-      };
+      reader.onloadend = () => setAvatarPreview(reader.result);
       reader.readAsDataURL(file);
       setAvatarFile(file);
     } catch (err) {
@@ -77,6 +77,12 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const handleFinish = async (values) => {
+    // ── 🛡️ Guard against double submission ──
+    if (isSubmittingRef.current) {
+      console.warn('⏳ Submission already in progress – ignoring duplicate.');
+      return;
+    }
+    isSubmittingRef.current = true;
     setSubmitting(true);
     setAvatarError(null);
 
@@ -92,6 +98,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           setAvatarError(uploadErr.message || 'Avatar upload failed');
           setAvatarLoading(false);
           setSubmitting(false);
+          isSubmittingRef.current = false;
           return;
         } finally {
           setAvatarLoading(false);
@@ -113,11 +120,9 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         if (changePassword && values.newPassword) {
           const authUserId = user.auth_user_id || null;
           if (!authUserId) {
-            setAvatarError(
-              'This user is not linked to an authentication account. ' +
-              'Please contact support to fix this issue.'
-            );
+            setAvatarError('This user is not linked to an authentication account. Please contact support.');
             setSubmitting(false);
+            isSubmittingRef.current = false;
             return;
           }
           await updateAdminPassword(authUserId, values.newPassword);
@@ -132,11 +137,14 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         await createAdminUser(createPayload);
         onSave(createPayload);
       }
-    } catch (err) {
-      console.error('Save error:', err);
-      setAvatarError(err.message || 'An unexpected error occurred.');
-    } finally {
+      // ── ✅ Success: reset ref and state ──
+      isSubmittingRef.current = false;
       setSubmitting(false);
+    } catch (err) {
+      console.error('❌ Save error:', err);
+      setAvatarError(err.message || 'An unexpected error occurred.');
+      setSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -167,6 +175,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       className="user-modal"
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
+        {/* ── Avatar ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item label="Avatar">
@@ -208,6 +217,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
+        {/* ── Email ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item
@@ -223,6 +233,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
+        {/* ── Full Name & Username ── */}
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -244,6 +255,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
+        {/* ── Login Method (read-only) ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item label="Login Method">
@@ -254,6 +266,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
+        {/* ── Password fields for Add ── */}
         {!user && (
           <Row gutter={16}>
             <Col xs={24} sm={12}>
@@ -301,6 +314,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Row>
         )}
 
+        {/* ── Password change for Edit ── */}
         {user && (
           <>
             <Row gutter={16}>
@@ -364,6 +378,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </>
         )}
 
+        {/* ── Phone & Role ── */}
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="phone_number" label="Phone Number">
@@ -385,6 +400,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           </Col>
         </Row>
 
+        {/* ── Status ── */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item
