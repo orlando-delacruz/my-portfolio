@@ -46,23 +46,14 @@ export async function fetchAdmins({
   return { data: data || [], count: count || 0 };
 }
 
-export async function createAdminUser(data) {
+export async function createAdminProfile(data) {
   const result = await callAdminAPI("create", data);
   return result.admin;
 }
 
-export const createAdmin = createAdminUser;
-
 export async function updateAdmin(adminId, data) {
   const result = await callAdminAPI("update", { adminId, ...data });
   return result.admin;
-}
-
-export async function updateAdminPassword(userId, password) {
-  if (!userId)
-    throw new Error("Missing auth_user_id – admin not linked to auth user.");
-  const result = await callAdminAPI("update-password", { userId, password });
-  return result;
 }
 
 export async function deleteAdmin(adminId, authUserId) {
@@ -70,8 +61,15 @@ export async function deleteAdmin(adminId, authUserId) {
   return result;
 }
 
+// Keep password update if needed
+export async function updateAdminPassword(userId, password) {
+  if (!userId)
+    throw new Error("Missing auth_user_id – admin not linked to auth user.");
+  const result = await callAdminAPI("update-password", { userId, password });
+  return result;
+}
+
 export async function bulkDeleteAdmins(ids) {
-  // Fetch all admins with their auth_user_id
   const { data: admins, error } = await supabase
     .from("admins")
     .select("id, auth_user_id")

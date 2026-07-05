@@ -7,7 +7,7 @@ import { useUsers } from '../../../hooks/useUsers';
 import UserTable from './sections/Table';
 import UserModal from '../../../components/admin/Modal/UserModal';
 import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
-import { createAdminUser, updateAdmin, deleteAdmin } from '../../../services/admins';
+import { createAdminProfile, updateAdmin, deleteAdmin } from '../../../services/admins';
 import * as S from './Users.styled';
 
 const { confirm } = Modal;
@@ -32,30 +32,36 @@ const Users = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // ── Open Add modal ──
   const handleAdd = useCallback(() => {
     setEditingUser(null);
     setModalOpen(true);
   }, []);
 
+  // ── Open Edit modal ──
   const handleEdit = useCallback((user) => {
     setEditingUser(user);
     setModalOpen(true);
   }, []);
 
+  // ── Close modal ──
   const handleModalClose = useCallback(() => {
     setModalOpen(false);
     setEditingUser(null);
   }, []);
 
+  // ── Save (create or update) ──
   const handleSave = useCallback(async (data) => {
     setModalLoading(true);
     try {
       if (editingUser) {
+        // Update existing admin profile
         await updateAdmin(editingUser.id, data);
         message.success('User updated successfully!');
       } else {
-        await createAdminUser(data);
-        message.success('User created successfully!');
+        // Create pending admin profile (no auth user yet)
+        await createAdminProfile(data);
+        message.success('User profile created! The user can now log in with their email.');
       }
       handleModalClose();
       refetch();
@@ -67,6 +73,7 @@ const Users = () => {
     }
   }, [editingUser, refetch, handleModalClose]);
 
+  // ── Delete a single admin ──
   const handleDelete = useCallback((id) => {
     confirm({
       title: 'Delete User',
@@ -77,8 +84,7 @@ const Users = () => {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          // Find the user object to get auth_user_id
-          const user = users.find(u => u.id === id);
+          const user = users.find((u) => u.id === id);
           await deleteAdmin(id, user?.auth_user_id);
           message.success('User deleted successfully!');
           refetch();
@@ -91,6 +97,7 @@ const Users = () => {
     });
   }, [users, refetch]);
 
+  // ── Bulk delete ──
   const handleBulkDelete = useCallback(() => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
@@ -104,7 +111,7 @@ const Users = () => {
       onOk: async () => {
         for (const id of ids) {
           try {
-            const user = users.find(u => u.id === id);
+            const user = users.find((u) => u.id === id);
             await deleteAdmin(id, user?.auth_user_id);
           } catch (err) {
             console.error('Bulk delete error:', err);
@@ -118,11 +125,13 @@ const Users = () => {
     });
   }, [selected, users, refetch]);
 
+  // ── Search ──
   const handleSearchChange = useCallback((e) => {
     setSearch(e.target.value);
     setPage(1);
   }, [setSearch, setPage]);
 
+  // ── Table selection ──
   const handleSelectAll = useCallback((checked) => {
     setSelected(checked ? new Set(users.map((u) => u.id)) : new Set());
   }, [users]);
@@ -135,6 +144,7 @@ const Users = () => {
     });
   }, []);
 
+  // ── Row click → open details modal ──
   const handleRowClick = useCallback((user) => {
     setSelectedUser(user);
     setDetailsModalOpen(true);
@@ -147,6 +157,7 @@ const Users = () => {
 
   const allSelected = users.length > 0 && selected.size === users.length;
 
+  // ── Page‑level loading ──
   if (loading && users.length === 0) {
     return (
       <AdminLayout>
@@ -162,6 +173,7 @@ const Users = () => {
   return (
     <AdminLayout>
       <S.PageContainer>
+        {/* ── Header ── */}
         <S.Header>
           <S.TitleGroup>
             <S.Title>Users</S.Title>
@@ -186,6 +198,7 @@ const Users = () => {
           </S.HeaderActions>
         </S.Header>
 
+        {/* ── Table ── */}
         <UserTable
           users={users}
           selected={selected}
@@ -203,6 +216,7 @@ const Users = () => {
           onRowClick={handleRowClick}
         />
 
+        {/* ── Floating delete button ── */}
         {selected.size > 0 && (
           <S.FloatingDeleteButton
             onClick={handleBulkDelete}
@@ -214,6 +228,7 @@ const Users = () => {
         )}
       </S.PageContainer>
 
+      {/* ── Modals ── */}
       <UserModal
         open={modalOpen}
         user={editingUser}
