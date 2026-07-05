@@ -1,252 +1,250 @@
-// src/pages/admin/Users/Users.jsx
-import { memo, useState, useCallback } from 'react';
-import { Modal, message, Spin } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import AdminLayout from '../../../components/admin/AdminLayout';
-import { useUsers } from '../../../hooks/useUsers';
-import UserTable from './sections/Table';
-import UserModal from '../../../components/admin/Modal/UserModal';
-import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
-import { createAdmin, updateAdmin, deleteAdmin } from '../../../services/admins';
-import * as S from './Users.styled';
+// api/admin/users.js
+import { createClient } from '@supabase/supabase-js';
 
-const { confirm } = Modal;
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-const Users = () => {
-  const {
-    users,
-    loading,
-    pagination,
-    search,
-    setSearch,
-    setPage,
-    setPageSize,
-    refetch,
-  } = useUsers();
+if (!supabaseUrl) throw new Error('Missing VITE_SUPABASE_URL');
+if (!serviceRoleKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY');
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [selected, setSelected] = useState(new Set());
+const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+// ── Helper: log and return JSON error ──
+function errorResponse(res, step, message, status = 500, details = null) {
+  console.error(`❌ ${step}:`, message, details || '');
+  return res.status(status).json({
+    success: false,
+    step,
+    message,
+    details: details || undefined,
+  });
+}
 
-  // ── Open Add modal ──
-  const handleAdd = useCallback(() => {
-    setEditingUser(null);
-    setModalOpen(true);
-  }, []);
-
-  // ── Open Edit modal ──
-  const handleEdit = useCallback((user) => {
-    setEditingUser(user);
-    setModalOpen(true);
-  }, []);
-
-  // ── Close modal ──
-  const handleModalClose = useCallback(() => {
-    setModalOpen(false);
-    setEditingUser(null);
-  }, []);
-
-  // ── Save (create or update) ──
-  const handleSave = useCallback(async (data) => {
-    setModalLoading(true);
-    try {
-      if (editingUser) {
-        // Update existing admin profile
-        await updateAdmin(editingUser.id, data);
-        message.success('User updated successfully!');
-      } else {
-        // Create new admin (Auth + Profile)
-        await createAdmin(data);
-        message.success('User created successfully!');
-      }
-      handleModalClose();
-      refetch();
-    } catch (err) {
-      console.error('Save error:', err);
-      message.error(err.message || 'Failed to save user. Please try again.');
-    } finally {
-      setModalLoading(false);
-    }
-  }, [editingUser, refetch, handleModalClose]);
-
-  // ── Delete a single admin ──
-  const handleDelete = useCallback((id) => {
-    confirm({
-      title: 'Delete User',
-      icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete this user? This action cannot be undone.',
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          const user = users.find((u) => u.id === id);
-          await deleteAdmin(id, user?.auth_user_id);
-          message.success('User deleted successfully!');
-          refetch();
-          setSelected(new Set());
-        } catch (err) {
-          console.error('Delete error:', err);
-          message.error(err.message || 'Failed to delete user.');
-        }
-      },
-    });
-  }, [users, refetch]);
-
-  // ── Bulk delete ──
-  const handleBulkDelete = useCallback(() => {
-    const ids = Array.from(selected);
-    if (ids.length === 0) return;
-    confirm({
-      title: `Delete ${ids.length} User${ids.length > 1 ? 's' : ''}`,
-      icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete the selected users? This action cannot be undone.',
-      okText: `Delete ${ids.length}`,
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        for (const id of ids) {
-          try {
-            const user = users.find((u) => u.id === id);
-            await deleteAdmin(id, user?.auth_user_id);
-          } catch (err) {
-            console.error('Bulk delete error:', err);
-            message.error(`Failed to delete user ${id}`);
-          }
-        }
-        message.success(`${ids.length} user(s) deleted.`);
-        refetch();
-        setSelected(new Set());
-      },
-    });
-  }, [selected, users, refetch]);
-
-  // ── Search ──
-  const handleSearchChange = useCallback((e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  }, [setSearch, setPage]);
-
-  // ── Table selection ──
-  const handleSelectAll = useCallback((checked) => {
-    setSelected(checked ? new Set(users.map((u) => u.id)) : new Set());
-  }, [users]);
-
-  const handleSelectRow = useCallback((id) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }, []);
-
-  // ── Row click → open details modal ──
-  const handleRowClick = useCallback((user) => {
-    setSelectedUser(user);
-    setDetailsModalOpen(true);
-  }, []);
-
-  const handleCloseDetails = useCallback(() => {
-    setDetailsModalOpen(false);
-    setSelectedUser(null);
-  }, []);
-
-  const allSelected = users.length > 0 && selected.size === users.length;
-
-  // ── Page‑level loading ──
-  if (loading && users.length === 0) {
-    return (
-      <AdminLayout>
-        <S.PageContainer>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <Spin size="large" description="Loading users..." />
-          </div>
-        </S.PageContainer>
-      </AdminLayout>
-    );
+export default async function handler(req, res) {
+  // Only POST allowed
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  return (
-    <AdminLayout>
-      <S.PageContainer>
-        {/* ── Header ── */}
-        <S.Header>
-          <S.TitleGroup>
-            <S.Title>Users</S.Title>
-            <S.Subtitle>Manage administrator accounts</S.Subtitle>
-          </S.TitleGroup>
-          <S.HeaderActions>
-            <S.SearchInput
-              placeholder="Search users..."
-              value={search}
-              onChange={handleSearchChange}
-              allowClear
-              size="large"
-            />
-            <S.AddButton
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-              size="large"
-            >
-              Add User
-            </S.AddButton>
-          </S.HeaderActions>
-        </S.Header>
+  const { action } = req.query;
+  console.log(`📥 Incoming request: action=${action}, body:`, req.body);
 
-        {/* ── Table ── */}
-        <UserTable
-          users={users}
-          selected={selected}
-          allSelected={allSelected}
-          onSelectAll={handleSelectAll}
-          onSelectRow={handleSelectRow}
-          loading={loading}
-          currentPage={pagination.page}
-          totalEntries={pagination.total}
-          pageSize={pagination.pageSize}
-          onPageChange={setPage}
-          onSizeChange={setPageSize}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onRowClick={handleRowClick}
-        />
+  try {
+    // ── CREATE ──
+    if (action === 'create') {
+      const { email, password, full_name, username, phone_number, role, status, avatar_url } = req.body;
 
-        {/* ── Floating delete button ── */}
-        {selected.size > 0 && (
-          <S.FloatingDeleteButton
-            onClick={handleBulkDelete}
-            danger
-            icon={<ExclamationCircleOutlined />}
-          >
-            Delete {selected.size}
-          </S.FloatingDeleteButton>
-        )}
-      </S.PageContainer>
+      if (!email) return errorResponse(res, 'create_validate', 'Email is required.', 400);
+      if (!password) return errorResponse(res, 'create_validate', 'Password is required.', 400);
+      if (!full_name) return errorResponse(res, 'create_validate', 'Full name is required.', 400);
+      if (!username) return errorResponse(res, 'create_validate', 'Username is required.', 400);
+      if (password.length < 8) {
+        return errorResponse(res, 'create_validate', 'Password must be at least 8 characters.', 400);
+      }
 
-      {/* ── Modals ── */}
-      <UserModal
-        open={modalOpen}
-        user={editingUser}
-        onClose={handleModalClose}
-        onSave={handleSave}
-        loading={modalLoading}
-      />
+      // ── Check if admin already exists (idempotent) ──
+      const { data: existingAdmin, error: checkAdminError } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
 
-      <UserDetailsModal
-        open={detailsModalOpen}
-        user={selectedUser}
-        onClose={handleCloseDetails}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        loading={modalLoading}
-      />
-    </AdminLayout>
-  );
-};
+      if (checkAdminError) {
+        return errorResponse(res, 'create_check_admin', checkAdminError.message, 500, checkAdminError);
+      }
 
-export default memo(Users);
+      if (existingAdmin) {
+        // If admin already exists, return success (idempotent)
+        console.log(`ℹ️ Admin already exists for email ${email}, returning existing.`);
+        return res.status(200).json({ success: true, admin: existingAdmin });
+      }
+
+      // ── Check if auth user already exists (idempotent) ──
+      const { data: existingAuthUser, error: authCheckError } = await supabase
+        .from('auth.users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (authCheckError) {
+        return errorResponse(res, 'create_check_auth', authCheckError.message, 500, authCheckError);
+      }
+
+      let authUserId;
+      if (existingAuthUser) {
+        authUserId = existingAuthUser.id;
+        console.log(`ℹ️ Auth user already exists for email ${email}, reusing.`);
+      } else {
+        // 1. Create auth user
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name, username },
+        });
+
+        if (authError) {
+          return errorResponse(res, 'create_auth_user', authError.message, 500, authError);
+        }
+        authUserId = authUser.user.id;
+        console.log(`✅ Auth user created: ${authUserId}`);
+      }
+
+      // 2. Insert admin profile
+      const { data: admin, error: adminInsertError } = await supabase
+        .from('admins')
+        .insert({
+          auth_user_id: authUserId,
+          email,
+          full_name,
+          username,
+          phone_number: phone_number || null,
+          role: role || 'staff',
+          status: status || 'active',
+          avatar_url: avatar_url || null,
+        })
+        .select()
+        .single();
+
+      if (adminInsertError) {
+        // Rollback: delete the auth user if we just created it and admin insert fails
+        if (!existingAuthUser) {
+          await supabase.auth.admin.deleteUser(authUserId);
+        }
+        return errorResponse(res, 'create_admin_profile', adminInsertError.message, 500, adminInsertError);
+      }
+
+      console.log(`✅ Admin created: ${admin.id}`);
+      return res.status(200).json({ success: true, admin });
+    }
+
+    // ── UPDATE ──
+    if (action === 'update') {
+      const { adminId, email, full_name, username, phone_number, role, status, avatar_url } = req.body;
+
+      if (!adminId) {
+        return errorResponse(res, 'update_validate', 'Missing adminId', 400);
+      }
+
+      console.log(`📝 Updating admin ${adminId}:`, { email, full_name, username, role, status });
+
+      // 1. Update admin profile
+      const { data: admin, error: updateError } = await supabase
+        .from('admins')
+        .update({
+          email,
+          full_name,
+          username,
+          phone_number,
+          role,
+          status,
+          avatar_url,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', adminId)
+        .select()
+        .single();
+
+      if (updateError) {
+        return errorResponse(res, 'update_admin_profile', updateError.message, 500, updateError);
+      }
+
+      console.log(`✅ Admin profile updated:`, admin);
+
+      // 2. If email changed and admin has auth_user_id, update auth user email
+      if (email && admin.auth_user_id) {
+        console.log(`📧 Updating auth email for user ${admin.auth_user_id} to ${email}`);
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(admin.auth_user_id, {
+          email,
+        });
+        if (authUpdateError) {
+          // Log warning but don't fail the whole operation
+          console.warn('⚠️ Failed to update auth email:', authUpdateError);
+          return res.status(200).json({
+            success: true,
+            admin,
+            warning: `Auth email update failed: ${authUpdateError.message}`,
+          });
+        }
+        console.log(`✅ Auth email updated successfully`);
+      }
+
+      return res.status(200).json({ success: true, admin });
+    }
+
+    // ── DELETE ──
+    if (action === 'delete') {
+      const { adminId, authUserId } = req.body;
+
+      if (!adminId) {
+        return errorResponse(res, 'delete_validate', 'Missing adminId', 400);
+      }
+
+      console.log(`🗑️ Deleting admin ${adminId}, authUserId: ${authUserId || 'none'}`);
+
+      // 1. Delete auth user if present
+      if (authUserId) {
+        console.log(`🗑️ Deleting auth user ${authUserId}`);
+        const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(authUserId);
+        if (deleteAuthError) {
+          // Log error but continue deleting admin
+          console.error('⚠️ Auth deletion failed:', deleteAuthError);
+          // Continue to delete admin, but return a warning
+          const { error: deleteAdminError } = await supabase
+            .from('admins')
+            .delete()
+            .eq('id', adminId);
+
+          if (deleteAdminError) {
+            return errorResponse(res, 'delete_admin_after_auth_fail', deleteAdminError.message, 500, deleteAdminError);
+          }
+
+          return res.status(200).json({
+            success: true,
+            warning: `Admin deleted, but auth user could not be removed: ${deleteAuthError.message}`,
+          });
+        }
+        console.log(`✅ Auth user deleted`);
+      }
+
+      // 2. Delete admin profile
+      const { error: deleteAdminError } = await supabase
+        .from('admins')
+        .delete()
+        .eq('id', adminId);
+
+      if (deleteAdminError) {
+        return errorResponse(res, 'delete_admin_profile', deleteAdminError.message, 500, deleteAdminError);
+      }
+
+      console.log(`✅ Admin profile deleted`);
+      return res.status(200).json({ success: true });
+    }
+
+    // ── UPDATE PASSWORD ──
+    if (action === 'update-password') {
+      const { userId, password } = req.body;
+      if (!userId) return errorResponse(res, 'password_validate', 'Missing userId', 400);
+      if (!password || password.length < 8) {
+        return errorResponse(res, 'password_validate', 'Password must be at least 8 characters.', 400);
+      }
+
+      const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+      if (error) {
+        return errorResponse(res, 'password_update', error.message, 500, error);
+      }
+
+      return res.status(200).json({ success: true });
+    }
+
+    return errorResponse(res, 'unknown_action', `Invalid action: ${action}`, 400);
+  } catch (err) {
+    console.error('💥 Unhandled exception:', err);
+    return res.status(500).json({
+      success: false,
+      step: 'unhandled',
+      message: err.message || 'Unknown error',
+      stack: err.stack,
+    });
+  }
+}
