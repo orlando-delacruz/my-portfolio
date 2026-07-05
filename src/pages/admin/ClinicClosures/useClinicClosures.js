@@ -1,6 +1,7 @@
 // src/pages/admin/ClinicClosures/useClinicClosures.js
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { mockClosures } from "../../../data/admin/clinicClosures";
+import { useState, useEffect, useCallback } from "react";
+import dayjs from "dayjs";
+import { fetchClinicClosures } from "../../../services/clinicClosures";
 
 export function useClinicClosures() {
   const [closures, setClosures] = useState([]);
@@ -15,86 +16,81 @@ export function useClinicClosures() {
     status: "all",
   });
   const [refetchKey, setRefetchKey] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const refetch = useCallback(() => setRefetchKey((prev) => prev + 1), []);
 
-  // Simulate data fetching
   useEffect(() => {
     let isMounted = true;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setError(null);
-
-    const timer = setTimeout(() => {
+    const loadClosures = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        // Filter mock data
-        let filtered = [...mockClosures];
-
-        // Search
-        if (filters.search.trim()) {
-          const searchLower = filters.search.toLowerCase().trim();
-          filtered = filtered.filter(
-            (c) =>
-              c.reason.toLowerCase().includes(searchLower) ||
-              c.closureType.toLowerCase().includes(searchLower),
-          );
-        }
-
-        // Branch filter (mock - all closures have branchId)
-        if (filters.branch !== "all") {
-          filtered = filtered.filter((c) => c.branchId === filters.branch);
-        }
-
-        // Closure type
-        if (filters.closureType !== "all") {
-          filtered = filtered.filter(
-            (c) => c.closureType === filters.closureType,
-          );
-        }
-
-        // Status
-        if (filters.status !== "all") {
-          filtered = filtered.filter((c) => c.status === filters.status);
-        }
-
-        // Sort by date (newest first)
-        filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const result = await fetchClinicClosures({
+          page,
+          pageSize,
+          search: filters.search,
+          branchId: filters.branch,
+          closureType: filters.closureType,
+          status: filters.status,
+        });
 
         if (isMounted) {
-          setClosures(filtered);
-          setLoading(false);
-          setError(null);
+          const mapped = (result.data || []).map((c) => {
+            const start = dayjs(c.start_date);
+            const end = dayjs(c.end_date);
+            let dateDisplay = start.format("MMMM D, YYYY");
+            if (!start.isSame(end, "day")) {
+              dateDisplay = `${start.format("MMMM D")} – ${end.format("MMMM D, YYYY")}`;
+            }
+            let timeRange = "All day";
+            if (!c.is_all_day && c.start_time && c.end_time) {
+              const st = dayjs(c.start_time, "HH:mm:ss").format("h:mm A");
+              const et = dayjs(c.end_time, "HH:mm:ss").format("h:mm A");
+              timeRange = `${st} - ${et}`;
+            }
+            return {
+              ...c,
+              date: dateDisplay,
+              dayOfWeek: start.format("dddd"),
+              timeRange,
+              closureType: c.closure_type, // ✅ map database field to display field
+              status: c.computed_status || "scheduled", // ✅ use computed status
+            };
+          });
+
+          setClosures(mapped);
+          setTotalCount(mapped.length);
         }
       } catch (err) {
         if (isMounted) {
           setError(err.message || "Failed to load closures");
+          setClosures([]);
+          setTotalCount(0);
+        }
+      } finally {
+        if (isMounted) {
           setLoading(false);
         }
       }
-    }, 300);
+    };
+
+    loadClosures();
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
-  }, [filters, refetchKey]);
-
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return closures.slice(start, start + pageSize);
-  }, [closures, page, pageSize]);
+  }, [page, pageSize, filters, refetchKey]);
 
   return {
-    closures: paginatedData,
+    closures,
     loading,
     error,
     pagination: {
       page,
       pageSize,
-      total: closures.length,
+      total: totalCount,
     },
     filters,
     setFilters,

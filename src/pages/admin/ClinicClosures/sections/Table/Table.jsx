@@ -43,13 +43,13 @@ const ClosureTypeBadge = memo(({ type }) => {
 ClosureTypeBadge.displayName = 'ClosureTypeBadge';
 
 // ── Actions ──
-const Actions = memo(() => (
+const Actions = memo(({ closure, onEdit, onDelete }) => (
   <S.Actions>
-    <S.ActionBtn $variant="secondary" aria-label="Edit closure">
-      <span>Edit</span>
+    <S.ActionBtn $variant="secondary" onClick={() => onEdit(closure)}>
+      Edit
     </S.ActionBtn>
-    <S.ActionBtn $variant="danger" aria-label="Delete closure">
-      <span>Delete</span>
+    <S.ActionBtn $variant="danger" onClick={() => onDelete(closure.id)}>
+      Delete
     </S.ActionBtn>
   </S.Actions>
 ));
@@ -68,6 +68,8 @@ const ClosureTable = ({
   pageSize,
   onPageChange,
   onSizeChange,
+  onEdit,    // <-- ADDED
+  onDelete,  // <-- ADDED
 }) => {
   const handleSelectAll = (e) => onSelectAll(e.target.checked);
 
@@ -131,7 +133,11 @@ const ClosureTable = ({
                     <StatusBadge status={closure.status} />
                   </S.TD>
                   <S.TD $center>
-                    <Actions closure={closure} />
+                    <Actions
+                      closure={closure}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
                   </S.TD>
                 </S.TR>
               ))
