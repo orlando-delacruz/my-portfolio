@@ -55,17 +55,16 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   }, [open, user, form]);
 
   const handleUpload = async (file) => {
-    setAvatarLoading(true);
     setAvatarError(null);
     try {
       const reader = new FileReader();
-      reader.onloadend = () => setAvatarPreview(reader.result);
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
       reader.readAsDataURL(file);
       setAvatarFile(file);
     } catch (err) {
       setAvatarError(err.message || 'Failed to process image.');
-    } finally {
-      setAvatarLoading(false);
     }
     return false;
   };
@@ -74,15 +73,29 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     setAvatarFile(null);
     setAvatarPreview(null);
     form.setFieldsValue({ avatar_url: null });
+    setAvatarError(null);
   };
 
   const handleFinish = async (values) => {
     setSubmitting(true);
+    setAvatarError(null);
+
     try {
       let avatarUrl = values.avatar_url || null;
+
       if (avatarFile) {
-        const userId = user?.id || 'new-user';
-        avatarUrl = await uploadAvatar(avatarFile, userId);
+        setAvatarLoading(true);
+        try {
+          const userId = user?.id || 'new-user';
+          avatarUrl = await uploadAvatar(avatarFile, userId);
+        } catch (uploadErr) {
+          setAvatarError(uploadErr.message || 'Avatar upload failed');
+          setAvatarLoading(false);
+          setSubmitting(false);
+          return;
+        } finally {
+          setAvatarLoading(false);
+        }
       }
 
       const payload = {
@@ -121,7 +134,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       }
     } catch (err) {
       console.error('Save error:', err);
-      setAvatarError(err.message);
+      setAvatarError(err.message || 'An unexpected error occurred.');
     } finally {
       setSubmitting(false);
     }
@@ -135,6 +148,9 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     showUploadList: false,
     accept: 'image/*',
   };
+
+  const isAvatarUploading = avatarLoading;
+  const isFormSubmitting = submitting || loading;
 
   return (
     <Modal
@@ -152,7 +168,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
         <Row gutter={16}>
-          <Col xs={24} sm={24}>
+          <Col xs={24}>
             <Form.Item label="Avatar">
               <S.AvatarUploadWrapper>
                 <S.AvatarPreview>
@@ -163,20 +179,29 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
                   )}
                 </S.AvatarPreview>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Upload {...uploadProps}>
-                    <Button icon={<UploadOutlined />} loading={avatarLoading}>
-                      Upload
+                  <Upload {...uploadProps} disabled={isAvatarUploading}>
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={isAvatarUploading}
+                      disabled={isAvatarUploading}
+                    >
+                      {isAvatarUploading ? 'Uploading...' : 'Upload'}
                     </Button>
                   </Upload>
                   {avatarPreview && (
-                    <Button icon={<DeleteOutlined />} danger onClick={handleRemoveAvatar}>
+                    <Button
+                      icon={<DeleteOutlined />}
+                      danger
+                      onClick={handleRemoveAvatar}
+                      disabled={isAvatarUploading}
+                    >
                       Remove
                     </Button>
                   )}
                 </div>
                 {avatarError && <Alert type="error" title={avatarError} style={{ marginTop: 8 }} />}
                 <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                  Supported: JPG, PNG, WebP, GIF (Max 2MB)
+                  Supported: JPG, PNG, WebP, GIF (Max 10MB)
                 </div>
               </S.AvatarUploadWrapper>
             </Form.Item>
@@ -184,7 +209,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <Row gutter={16}>
-          <Col xs={24} sm={24}>
+          <Col xs={24}>
             <Form.Item
               name="email"
               label="Email"
@@ -377,13 +402,15 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         </Row>
 
         <S.FooterRow>
-          <S.CancelBtn onClick={onClose}>Cancel</S.CancelBtn>
+          <S.CancelBtn onClick={onClose} disabled={isFormSubmitting || isAvatarUploading}>
+            Cancel
+          </S.CancelBtn>
           <Button
             type="primary"
             htmlType="submit"
-            loading={submitting || loading}
+            loading={isFormSubmitting || isAvatarUploading}
             size="large"
-            disabled={submitting || loading}
+            disabled={isFormSubmitting || isAvatarUploading}
             style={{ borderRadius: '8px' }}
           >
             {user ? 'Update' : 'Create'}

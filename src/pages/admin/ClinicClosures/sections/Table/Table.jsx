@@ -1,6 +1,6 @@
 // src/pages/admin/ClinicClosures/sections/Table/Table.jsx
 import { memo } from 'react';
-import { Checkbox } from 'antd';
+import { Checkbox, Spin, Empty } from 'antd';
 import Pagination from '../../../../../components/admin/Pagination/Pagination';
 import {
   CLOSURE_TYPE_CONFIG,
@@ -92,41 +92,37 @@ const ClosureTable = ({
 
   return (
     <S.TableCard>
-      <S.ScrollWrapper>
-        <S.StyledTable role="table" aria-label="Clinic closures">
-          <S.THead>
-            <S.TR>
-              <S.TH $checkbox>
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={selected.size > 0 && !allSelected}
-                  onChange={handleSelectAll}
-                  aria-label="Select all closures"
-                />
-              </S.TH>
-              {TABLE_COLUMNS.map((col) => (
-                <S.TH key={col.key} $center={col.center} scope="col">
-                  {col.label}
+      <S.TableWrapper>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+            <Spin size="large" />
+          </div>
+        ) : closures.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>
+            <Empty description="No closures found" />
+          </div>
+        ) : (
+          <S.StyledTable role="table" aria-label="Clinic closures">
+            <S.THead>
+              <S.TR>
+                <S.TH $checkbox>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={selected.size > 0 && !allSelected}
+                    onChange={handleSelectAll}
+                    aria-label="Select all closures"
+                  />
                 </S.TH>
-              ))}
-            </S.TR>
-          </S.THead>
+                {TABLE_COLUMNS.map((col) => (
+                  <S.TH key={col.key} $center={col.center} scope="col">
+                    {col.label}
+                  </S.TH>
+                ))}
+              </S.TR>
+            </S.THead>
 
-          <S.TBody>
-            {loading ? (
-              <S.TR>
-                <S.TD colSpan={TABLE_COLUMNS.length + 1} $center>
-                  <S.LoadingText>Loading closures...</S.LoadingText>
-                </S.TD>
-              </S.TR>
-            ) : closures.length === 0 ? (
-              <S.TR>
-                <S.TD colSpan={TABLE_COLUMNS.length + 1} $center>
-                  <S.EmptyText>No closures found.</S.EmptyText>
-                </S.TD>
-              </S.TR>
-            ) : (
-              closures.map((closure) => (
+            <S.TBody>
+              {closures.map((closure) => (
                 <S.TR
                   key={closure.id}
                   $selected={selected.has(closure.id)}
@@ -155,19 +151,14 @@ const ClosureTable = ({
                     <StatusBadge status={closure.status} />
                   </S.TD>
                   <S.TD $center>
-                    <Actions
-                      closure={closure}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onRowClick={onRowClick}
-                    />
+                    <Actions closure={closure} onEdit={onEdit} onDelete={onDelete} />
                   </S.TD>
                 </S.TR>
-              ))
-            )}
-          </S.TBody>
-        </S.StyledTable>
-      </S.ScrollWrapper>
+              ))}
+            </S.TBody>
+          </S.StyledTable>
+        )}
+      </S.TableWrapper>
 
       <Pagination
         currentPage={currentPage}

@@ -1,6 +1,6 @@
 // src/pages/admin/ClinicClosures/ClinicClosures.jsx
 import { memo, useState, useCallback } from 'react';
-import { Modal, message } from 'antd';
+import { Modal, message, Spin } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import PageTitle from './sections/PageTitle';
@@ -18,6 +18,7 @@ const ClinicClosures = () => {
   const {
     closures,
     loading,
+    error,
     pagination,
     filters,
     setFilters,
@@ -30,8 +31,6 @@ const ClinicClosures = () => {
   const [editingClosure, setEditingClosure] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [selected, setSelected] = useState(new Set());
-
-  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedClosure, setSelectedClosure] = useState(null);
 
@@ -147,7 +146,6 @@ const ClinicClosures = () => {
     });
   }, []);
 
-  // ── Row click → details modal ──
   const handleRowClick = useCallback((closure) => {
     setSelectedClosure(closure);
     setDetailsModalOpen(true);
@@ -159,6 +157,33 @@ const ClinicClosures = () => {
   }, []);
 
   const allSelected = closures.length > 0 && selected.size === closures.length;
+
+  if (loading && closures.length === 0) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" description="Loading closures..." />
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#dc2626' }}>
+            <p>{error}</p>
+            <button onClick={refetch} style={{ marginTop: 8, padding: '8px 16px', cursor: 'pointer' }}>
+              Retry
+            </button>
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

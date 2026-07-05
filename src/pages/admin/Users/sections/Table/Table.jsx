@@ -1,6 +1,6 @@
 // src/pages/admin/Users/sections/Table/Table.jsx
 import { memo } from 'react';
-import { Checkbox, Avatar, Dropdown, Tooltip } from 'antd';
+import { Checkbox, Avatar, Dropdown, Tooltip, Spin, Empty } from 'antd';
 import { MoreOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import Pagination from '../../../../../components/admin/Pagination/Pagination';
 import { formatDate } from '../../../../../utils/dateFormatter';
@@ -68,7 +68,6 @@ const Actions = memo(({ user, onEdit, onDelete }) => {
     },
   ];
 
-  // Stop event propagation to prevent row click when clicking dropdown
   const handleClick = (e) => e.stopPropagation();
 
   return (
@@ -100,9 +99,7 @@ const UserTable = ({
 }) => {
   const handleSelectAll = (e) => onSelectAll(e.target.checked);
 
-  // Handle row click – ignore if clicking on checkbox, action buttons, or dropdown
   const handleRowClick = (e, user) => {
-    // Ignore clicks on interactive elements
     const target = e.target;
     if (
       target.closest('input[type="checkbox"]') ||
@@ -118,46 +115,38 @@ const UserTable = ({
 
   return (
     <S.TableCard>
-      <S.ScrollWrapper>
-        <S.StyledTable role="table" aria-label="Users">
-          <S.THead>
-            <S.TR>
-              <S.TH $checkbox>
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={selected.size > 0 && !allSelected}
-                  onChange={handleSelectAll}
-                />
-              </S.TH>
-              <S.TH>User</S.TH>
-              <S.TH>Name & Role</S.TH>
-              <S.TH>Email</S.TH>
-              <S.TH>Login Method</S.TH>
-              <S.TH>Status</S.TH>
-              <S.TH>Last Login</S.TH>
-              <S.TH $center>Actions</S.TH>
-            </S.TR>
-          </S.THead>
+      <S.TableWrapper>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+            <Spin size="large" />
+          </div>
+        ) : users.length === 0 ? (
+          <div style={{ padding: '40px 0', textAlign: 'center' }}>
+            <Empty description="No users found" />
+          </div>
+        ) : (
+          <S.StyledTable role="table" aria-label="Users">
+            <S.THead>
+              <S.TR>
+                <S.TH $checkbox>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={selected.size > 0 && !allSelected}
+                    onChange={handleSelectAll}
+                  />
+                </S.TH>
+                <S.TH>User</S.TH>
+                <S.TH>Name & Role</S.TH>
+                <S.TH>Email</S.TH>
+                <S.TH>Login Method</S.TH>
+                <S.TH>Status</S.TH>
+                <S.TH>Last Login</S.TH>
+                <S.TH $center>Actions</S.TH>
+              </S.TR>
+            </S.THead>
 
-          <S.TBody>
-            {loading ? (
-              <S.TR>
-                <S.TD colSpan={8} $center>
-                  <S.LoadingText>Loading users…</S.LoadingText>
-                </S.TD>
-              </S.TR>
-            ) : users.length === 0 ? (
-              <S.TR>
-                <S.TD colSpan={8} $center>
-                  <S.EmptyText>
-                    <UserOutlined style={{ fontSize: 32, color: '#ccc' }} />
-                    <p>No users found</p>
-                    <span style={{ fontSize: 12, color: '#888' }}>Try adjusting your search</span>
-                  </S.EmptyText>
-                </S.TD>
-              </S.TR>
-            ) : (
-              users.map((user) => (
+            <S.TBody>
+              {users.map((user) => (
                 <S.TR
                   key={user.id}
                   $selected={selected.has(user.id)}
@@ -205,19 +194,14 @@ const UserTable = ({
                     )}
                   </S.TD>
                   <S.TD $center>
-                    <Actions
-                      user={user}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onRowClick={onRowClick}
-                    />
+                    <Actions user={user} onEdit={onEdit} onDelete={onDelete} />
                   </S.TD>
                 </S.TR>
-              ))
-            )}
-          </S.TBody>
-        </S.StyledTable>
-      </S.ScrollWrapper>
+              ))}
+            </S.TBody>
+          </S.StyledTable>
+        )}
+      </S.TableWrapper>
 
       <S.PaginationWrapper>
         <Pagination

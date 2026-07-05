@@ -11,12 +11,20 @@ export const TableCard = styled.div`
   overflow: hidden;
 `;
 
-export const ScrollWrapper = styled.div`
+export const TableWrapper = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  padding: 4px 0;
+  scrollbar-width: thin;
   &::-webkit-scrollbar {
-    display: none;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${champagne};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
 `;
 
@@ -25,6 +33,7 @@ export const StyledTable = styled.table`
   border-collapse: collapse;
   min-width: 900px;
   table-layout: auto;
+  font-size: 14px;
 `;
 
 export const THead = styled.thead`
@@ -43,11 +52,15 @@ export const TR = styled.tr`
   &:last-child {
     border-bottom: none;
   }
+  &:hover {
+    background: ${({ $selected }) =>
+      $selected ? "rgba(136,98,23,0.08)" : "rgba(0,0,0,0.02)"};
+  }
 `;
 
 export const TH = styled.th`
   padding: 10px 14px;
-  font-size: 14px; /* increased to 14px */
+  font-size: 14px;
   font-weight: 600;
   color: ${adminTheme.colors.black};
   text-align: ${({ $center }) => ($center ? "center" : "left")};
@@ -58,7 +71,7 @@ export const TH = styled.th`
 
 export const TD = styled.td`
   padding: 10px 14px;
-  font-size: 14px; /* increased to 14px */
+  font-size: 14px;
   color: ${adminTheme.colors.black};
   vertical-align: middle;
   text-align: ${({ $center }) => ($center ? "center" : "left")};
@@ -73,7 +86,7 @@ export const DateCell = styled.div`
 `;
 
 export const DayOfWeek = styled.span`
-  font-size: 12px; /* slightly smaller for day of week */
+  font-size: 12px;
   color: ${adminTheme.colors.gray};
   font-weight: 400;
 `;
@@ -86,7 +99,7 @@ export const StatusBadge = styled.span`
   border-radius: 5px;
   background: ${({ $bg }) => $bg};
   color: ${({ $color }) => $color};
-  font-size: 12px; /* slightly smaller for badge */
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   border: 1px solid ${({ $color }) => $color};
@@ -104,7 +117,7 @@ export const TypeBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px; /* slightly smaller for badge */
+  font-size: 12px;
   color: ${adminTheme.colors.black};
   line-height: 15px;
 
@@ -128,7 +141,7 @@ export const ActionBtn = styled.button`
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  font-size: 12px; /* slightly smaller for button text */
+  font-size: 12px;
   font-weight: 500;
   font-family: inherit;
   white-space: nowrap;

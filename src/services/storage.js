@@ -2,7 +2,7 @@
 import { supabase } from "./supabase/supabase";
 
 const AVATAR_BUCKET = "avatars";
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 /**

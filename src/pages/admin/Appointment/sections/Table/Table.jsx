@@ -1,24 +1,21 @@
 // src/pages/admin/Appointment/sections/Table/Table.jsx
-import { memo, useCallback } from "react";
-import { Checkbox, Dropdown } from "antd";
-import {
-  IoSettingsOutline,
-  IoCalendarOutline,
-} from "react-icons/io5";
-import Pagination from "../../../../../components/admin/Pagination/Pagination";
+import { memo, useCallback } from 'react';
+import { Checkbox, Dropdown } from 'antd';
+import { IoSettingsOutline, IoCalendarOutline } from 'react-icons/io5';
+import Pagination from '../../../../../components/admin/Pagination/Pagination';
 import {
   STATUS_CONFIG,
   TABLE_COLUMNS,
-} from "../../../../../data/admin/appointment";
-import { formatPhoneDisplay } from "../../../../../utils/phoneFormatter";
-import * as S from "./Table.styled";
+} from '../../../../../data/admin/appointment';
+import { formatPhoneDisplay } from '../../../../../utils/phoneFormatter';
+import * as S from './Table.styled';
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ──
 const StatusBadge = memo(({ status }) => {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
-    color: "#686868",
-    bg: "rgba(104,104,104,0.2)",
+    color: '#686868',
+    bg: 'rgba(104,104,104,0.2)',
   };
   return (
     <S.StatusBadge $color={cfg.color} $bg={cfg.bg}>
@@ -27,25 +24,25 @@ const StatusBadge = memo(({ status }) => {
     </S.StatusBadge>
   );
 });
-StatusBadge.displayName = "StatusBadge";
+StatusBadge.displayName = 'StatusBadge';
 
 const BRANCH_COLOR_MAP = {
-  "san juan branch": {
-    color: "#E963C8",
-    bg: "rgba(233,99,200,0.2)",
-    border: "rgba(233,99,200,0.5)",
+  'san juan branch': {
+    color: '#E963C8',
+    bg: 'rgba(233,99,200,0.2)',
+    border: 'rgba(233,99,200,0.5)',
   },
-  "rosario branch": {
-    color: "#B388FF",
-    bg: "rgba(179,136,255,0.2)",
-    border: "rgba(179,136,255,0.5)",
+  'rosario branch': {
+    color: '#B388FF',
+    bg: 'rgba(179,136,255,0.2)',
+    border: 'rgba(179,136,255,0.5)',
   },
 };
 
 const DEFAULT_BRANCH_COLOR = {
-  color: "#686868",
-  bg: "rgba(104,104,104,0.2)",
-  border: "rgba(104,104,104,0.5)",
+  color: '#686868',
+  bg: 'rgba(104,104,104,0.2)',
+  border: 'rgba(104,104,104,0.5)',
 };
 
 const BranchBadge = memo(({ branchName }) => {
@@ -53,18 +50,18 @@ const BranchBadge = memo(({ branchName }) => {
     BRANCH_COLOR_MAP[branchName?.toLowerCase()] ?? DEFAULT_BRANCH_COLOR;
   return (
     <S.BranchBadge $color={cfg.color} $bg={cfg.bg} $border={cfg.border}>
-      {branchName ?? "—"}
+      {branchName ?? '—'}
     </S.BranchBadge>
   );
 });
-BranchBadge.displayName = "BranchBadge";
+BranchBadge.displayName = 'BranchBadge';
 
 const ActionButtons = memo(({ appointment, onSetStatus, onReschedule }) => {
   const statusItems = [
-    { key: "completed", label: "Completed" },
-    { key: "confirmed", label: "Confirmed" },
-    { key: "pending", label: "Pending" },
-    { key: "cancelled", label: "Cancelled" },
+    { key: 'completed', label: 'Completed' },
+    { key: 'confirmed', label: 'Confirmed' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'cancelled', label: 'Cancelled' },
   ];
 
   const menuProps = {
@@ -75,9 +72,11 @@ const ActionButtons = memo(({ appointment, onSetStatus, onReschedule }) => {
     })),
   };
 
+  const handleClick = (e) => e.stopPropagation();
+
   return (
-    <S.Actions>
-      <Dropdown menu={menuProps} trigger={["click"]}>
+    <S.Actions onClick={handleClick}>
+      <Dropdown menu={menuProps} trigger={['click']}>
         <S.ActionBtn $variant="primary" aria-label="Set appointment status">
           <IoSettingsOutline size={18} color="#ffffff" aria-hidden="true" />
           <span>Set Status</span>
@@ -95,9 +94,9 @@ const ActionButtons = memo(({ appointment, onSetStatus, onReschedule }) => {
     </S.Actions>
   );
 });
-ActionButtons.displayName = "ActionButtons";
+ActionButtons.displayName = 'ActionButtons';
 
-// ── Main Table ────────────────────────────────────────────────────────────────
+// ── Main Table ──
 const AppointmentTable = ({
   appointments,
   selected,
@@ -138,9 +137,8 @@ const AppointmentTable = ({
 
   return (
     <S.TableCard>
-      <S.ScrollWrapper>
+      <S.TableWrapper>
         <S.StyledTable role="table" aria-label="Appointments">
-          {/* ── Head ── */}
           <S.THead>
             <S.TR>
               <S.TH $checkbox>
@@ -159,7 +157,6 @@ const AppointmentTable = ({
             </S.TR>
           </S.THead>
 
-          {/* ── Body ── */}
           <S.TBody>
             {loading ? (
               <S.TR>
@@ -175,31 +172,45 @@ const AppointmentTable = ({
               </S.TR>
             ) : (
               appointments.map((apt) => (
-                // ✅ Fix whitespace warning: all TD elements on one line with no whitespace between them
                 <S.TR
                   key={apt.id}
                   $selected={selected.has(apt.id)}
                   onClick={(e) => handleRowClick(e, apt)}
-                  style={{ cursor: onRowClick ? "pointer" : "default" }}
+                  style={{ cursor: onRowClick ? 'pointer' : 'default' }}
                 >
-                  <S.TD $checkbox><Checkbox checked={selected.has(apt.id)} onChange={() => onSelectRow(apt.id)} aria-label={`Select appointment ${apt.referenceNo}`} /></S.TD>
+                  <S.TD $checkbox>
+                    <Checkbox
+                      checked={selected.has(apt.id)}
+                      onChange={() => onSelectRow(apt.id)}
+                      aria-label={`Select appointment ${apt.referenceNo}`}
+                    />
+                  </S.TD>
                   <S.TD>{apt.referenceNo}</S.TD>
                   <S.TD>{apt.patientName}</S.TD>
                   <S.TD>{formatPhoneDisplay(apt.contactNumber)}</S.TD>
-                  <S.TD><BranchBadge branchName={apt.branchName} /></S.TD>
+                  <S.TD>
+                    <BranchBadge branchName={apt.branchName} />
+                  </S.TD>
                   <S.TD>{apt.date}</S.TD>
                   <S.TD>{apt.time}</S.TD>
                   <S.TD>{apt.reason}</S.TD>
-                  <S.TD><StatusBadge status={apt.status} /></S.TD>
-                  <S.TD $center><ActionButtons appointment={apt} onSetStatus={onSetStatus} onReschedule={onReschedule} /></S.TD>
+                  <S.TD>
+                    <StatusBadge status={apt.status} />
+                  </S.TD>
+                  <S.TD $center>
+                    <ActionButtons
+                      appointment={apt}
+                      onSetStatus={onSetStatus}
+                      onReschedule={onReschedule}
+                    />
+                  </S.TD>
                 </S.TR>
               ))
             )}
           </S.TBody>
         </S.StyledTable>
-      </S.ScrollWrapper>
+      </S.TableWrapper>
 
-      {/* ── Pagination ── */}
       <Pagination
         currentPage={currentPage}
         totalEntries={totalEntries}

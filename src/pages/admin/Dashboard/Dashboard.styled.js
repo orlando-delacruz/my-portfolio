@@ -144,7 +144,6 @@ export const StatCard = styled.div`
   @media (max-width: 360px) {
     padding: 12px 8px;
     gap: 8px;
-    height: 75px;
   }
 `;
 

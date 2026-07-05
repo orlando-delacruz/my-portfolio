@@ -1,6 +1,6 @@
 // src/pages/admin/Users/Users.jsx
 import { memo, useState, useCallback } from 'react';
-import { Modal, message } from 'antd';
+import { Modal, message, Spin } from 'antd';
 import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { useUsers } from '../../../hooks/useUsers';
@@ -29,7 +29,6 @@ const Users = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [selected, setSelected] = useState(new Set());
 
-  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -91,7 +90,6 @@ const Users = () => {
   }, [refetch]);
 
   const handleBulkDelete = useCallback(() => {
-    // ... (same as before)
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     confirm({
@@ -134,7 +132,6 @@ const Users = () => {
     });
   }, []);
 
-  // ── Click row → open details modal ──
   const handleRowClick = useCallback((user) => {
     setSelectedUser(user);
     setDetailsModalOpen(true);
@@ -146,6 +143,18 @@ const Users = () => {
   }, []);
 
   const allSelected = users.length > 0 && selected.size === users.length;
+
+  if (loading && users.length === 0) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" description="Loading users..." />
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

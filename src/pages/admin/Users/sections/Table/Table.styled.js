@@ -10,15 +10,12 @@ export const TableCard = styled.div`
   border-radius: 20px;
   box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-
-  @media (max-width: 768px) {
-    border-radius: 16px;
-  }
 `;
 
-export const ScrollWrapper = styled.div`
+export const TableWrapper = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
   scrollbar-width: thin;
   &::-webkit-scrollbar {
     height: 6px;
@@ -30,11 +27,6 @@ export const ScrollWrapper = styled.div`
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-
-  @media (max-width: 768px) {
-    margin: 0 -4px;
-    padding: 0 4px;
-  }
 `;
 
 export const StyledTable = styled.table`
@@ -42,10 +34,6 @@ export const StyledTable = styled.table`
   border-collapse: collapse;
   min-width: 800px;
   font-size: 14px;
-
-  @media (max-width: 768px) {
-    min-width: 700px;
-  }
 `;
 
 export const THead = styled.thead`
@@ -59,7 +47,7 @@ export const TR = styled.tr`
   background: ${({ $selected }) =>
     $selected ? "rgba(136,98,23,0.05)" : "transparent"};
   transition: background 0.15s;
-  cursor: ${({ $selected }) => ($selected ? "pointer" : "pointer")};
+  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
@@ -85,11 +73,6 @@ export const TH = styled.th`
   &:last-child {
     padding-right: 20px;
   }
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    padding: 10px 10px;
-  }
 `;
 
 export const TD = styled.td`
@@ -104,11 +87,6 @@ export const TD = styled.td`
   }
   &:last-child {
     padding-right: 20px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-    padding: 10px 10px;
   }
 `;
 
@@ -129,11 +107,6 @@ export const StatusBadge = styled.span`
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-
-  @media (max-width: 480px) {
-    padding: 2px 8px;
-    font-size: 11px;
-  }
 `;
 
 export const StatusDot = styled.span`
@@ -174,39 +147,6 @@ export const ActionButton = styled(Button)`
   &:focus-visible {
     outline: 2px solid ${adminTheme.colors.primary};
     outline-offset: 2px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 8px 12px;
-  }
-`;
-
-export const LoadingText = styled.div`
-  text-align: center;
-  padding: 40px 0;
-  color: ${adminTheme.colors.gray};
-  font-size: 14px;
-`;
-
-export const EmptyText = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 48px 0;
-  color: ${adminTheme.colors.gray};
-  svg {
-    font-size: 48px !important;
-    color: ${adminTheme.colors.champagne};
-  }
-  p {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 500;
-  }
-  span {
-    font-size: 13px;
-    color: #aaa;
   }
 `;
 

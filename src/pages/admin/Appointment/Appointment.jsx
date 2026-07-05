@@ -1,28 +1,28 @@
 // src/pages/admin/Appointment/Appointment.jsx
-import { memo, useState, useMemo, useCallback } from "react";
-import dayjs from "dayjs";
-import { Modal, message } from "antd";
-import { IoTrashBinOutline } from "react-icons/io5";
+import { memo, useState, useMemo, useCallback } from 'react';
+import dayjs from 'dayjs';
+import { Modal, message, Spin } from 'antd';
+import { IoTrashBinOutline } from 'react-icons/io5';
 
-import AdminLayout from "../../../components/admin/AdminLayout";
-import PageTitle from "./sections/PageTitle/PageTitle";
-import Filter from "./sections/Filter/Filter";
-import AppointmentTable from "./sections/Table/Table";
+import AdminLayout from '../../../components/admin/AdminLayout';
+import PageTitle from './sections/PageTitle/PageTitle';
+import Filter from './sections/Filter/Filter';
+import AppointmentTable from './sections/Table/Table';
 import {
   AddAppointmentModal,
   RescheduleModal,
   useAppointmentModal,
-} from "../../../components/admin/Modal/AppointmentModal";
-import AppointmentDetailsModal from "../../../components/admin/Modal/AppointmentDetailsModal";
+} from '../../../components/admin/Modal/AppointmentModal';
+import AppointmentDetailsModal from '../../../components/admin/Modal/AppointmentDetailsModal';
 
-import { useAppointments } from "../../../hooks/useAppointments";
-import { mapAppointmentRow } from "../../../utils/mapAppointmentRow";
+import { useAppointments } from '../../../hooks/useAppointments';
+import { mapAppointmentRow } from '../../../utils/mapAppointmentRow';
 import {
   adminUpdateAppointmentStatus,
   adminBulkDeleteAppointments,
-} from "../../../services/appointments";
-import { useAuthStore } from "../../../store/authStore";
-import * as S from "./Appointment.styled";
+} from '../../../services/appointments';
+import { useAuthStore } from '../../../store/authStore';
+import * as S from './Appointment.styled';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -59,9 +59,9 @@ const Appointment = () => {
 
   const [filters, setFilters] = useState({
     dateRange: null,
-    branch: "all",
-    status: "all",
-    search: "",
+    branch: 'all',
+    status: 'all',
+    search: '',
   });
 
   const [selected, setSelected] = useState(new Set());
@@ -69,7 +69,6 @@ const Appointment = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
@@ -85,11 +84,11 @@ const Appointment = () => {
   const filtered = useMemo(() => {
     let result = [...sortedAppointments];
 
-    if (filters.branch !== "all") {
+    if (filters.branch !== 'all') {
       result = result.filter((apt) => apt.branch === filters.branch);
     }
 
-    if (filters.status !== "all") {
+    if (filters.status !== 'all') {
       result = result.filter((apt) => apt.status === filters.status);
     }
 
@@ -107,11 +106,11 @@ const Appointment = () => {
     if (filters.dateRange?.[0] && filters.dateRange?.[1]) {
       const [start, end] = filters.dateRange;
       result = result.filter((apt) => {
-        const d = dayjs(apt.date, "MMM D, YYYY");
+        const d = dayjs(apt.date, 'MMM D, YYYY');
         return (
           d.isValid() &&
-          !d.isBefore(start, "day") &&
-          !d.isAfter(end, "day")
+          !d.isBefore(start, 'day') &&
+          !d.isAfter(end, 'day')
         );
       });
     }
@@ -163,7 +162,7 @@ const Appointment = () => {
         }
       } catch (err) {
         console.error(err);
-        message.error("Failed to update status. Please try again.");
+        message.error('Failed to update status. Please try again.');
       }
     },
     [profile, refetch, detailsModalOpen, selectedAppointmentId]
@@ -188,15 +187,14 @@ const Appointment = () => {
   const handleResetFilters = useCallback(() => {
     setFilters({
       dateRange: null,
-      branch: "all",
-      status: "all",
-      search: "",
+      branch: 'all',
+      status: 'all',
+      search: '',
     });
     setSelected(new Set());
     setCurrentPage(1);
   }, []);
 
-  // ── Bulk Delete ──
   const handleBulkDelete = useCallback(() => {
     const count = selected.size;
     if (count === 0) return;
@@ -215,9 +213,9 @@ const Appointment = () => {
           await refetch();
           setSelected(new Set());
         } catch (err) {
-          console.error("Bulk delete error:", err);
+          console.error('Bulk delete error:', err);
           message.error(
-            err.message || "Failed to delete appointments. Please try again."
+            err.message || 'Failed to delete appointments. Please try again.'
           );
         } finally {
           setIsDeleting(false);
@@ -226,7 +224,6 @@ const Appointment = () => {
     });
   }, [selected, profile, refetch]);
 
-  // ── Row click handler ──
   const handleRowClick = useCallback((appointment) => {
     setSelectedAppointmentId(appointment.id);
     setDetailsModalOpen(true);
@@ -242,6 +239,18 @@ const Appointment = () => {
 
   const hasSelected = selected.size > 0;
   const selectedCount = selected.size;
+
+  if (loading && rawAppointments.length === 0) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" description="Loading appointments..." />
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -270,7 +279,6 @@ const Appointment = () => {
         />
       </S.PageContainer>
 
-      {/* ── Floating Delete Button ── */}
       {hasSelected && (
         <S.FloatingDeleteButton
           onClick={handleBulkDelete}

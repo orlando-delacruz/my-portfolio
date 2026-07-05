@@ -1,3 +1,4 @@
+// src/pages/admin/Appointment/sections/Table/Table.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../../styles/adminTheme";
 
@@ -11,14 +12,20 @@ export const TableCard = styled.div`
   margin-top: 16px;
 `;
 
-export const ScrollWrapper = styled.div`
+export const TableWrapper = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-
-  /* Hide scrollbar on all browsers */
-  scrollbar-width: none;
+  padding: 4px 0;
+  scrollbar-width: thin;
   &::-webkit-scrollbar {
-    display: none;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${champagne};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
 `;
 
@@ -27,6 +34,7 @@ export const StyledTable = styled.table`
   border-collapse: collapse;
   min-width: 1000px;
   table-layout: auto;
+  font-size: 14px;
 `;
 
 export const THead = styled.thead`
@@ -40,15 +48,20 @@ export const TR = styled.tr`
   background: ${({ $selected }) =>
     $selected ? "rgba(136, 98, 23, 0.06)" : "transparent"};
   transition: background 0.15s;
+  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
+  }
+  &:hover {
+    background: ${({ $selected }) =>
+      $selected ? "rgba(136,98,23,0.08)" : "rgba(0,0,0,0.02)"};
   }
 `;
 
 export const TH = styled.th`
   padding: 14px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: ${adminTheme.colors.black};
   text-align: ${({ $center }) => ($center ? "center" : "left")};

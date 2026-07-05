@@ -1,6 +1,6 @@
 // src/pages/admin/Patients/Patients.jsx
 import { memo, useState, useCallback, useMemo } from 'react';
-import { Table, Input, Select, Button, Empty, message, Modal } from 'antd';
+import { Table, Input, Select, Button, Empty, message, Modal, Spin } from 'antd';
 import { SearchOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import { usePatients } from '../../../hooks/usePatients';
@@ -21,8 +21,6 @@ const Patients = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-
-  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedPatientForDetails, setSelectedPatientForDetails] = useState(null);
 
@@ -144,7 +142,6 @@ const Patients = () => {
     setPageSize(pagination.pageSize);
   };
 
-  // ── Row click handler for details modal ──
   const handleRowClick = useCallback((record) => {
     setSelectedPatientForDetails(record);
     setDetailsModalOpen(true);
@@ -155,7 +152,6 @@ const Patients = () => {
     setSelectedPatientForDetails(null);
   }, []);
 
-  // ── Table row selection ──
   const rowSelection = {
     selectedRowKeys,
     onChange: setSelectedRowKeys,
@@ -164,7 +160,6 @@ const Patients = () => {
     }),
   };
 
-  // ── Columns definition ──
   const columns = useMemo(() => [
     {
       title: 'Name',
@@ -235,8 +230,18 @@ const Patients = () => {
   ], [handleEdit, handleDeleteSingle, deletingId]);
 
   const dataSource = patients.map((p) => ({ ...p, key: p.id }));
-  const hasSelected = selectedRowKeys.length > 0;
-  const selectedCount = selectedRowKeys.length;
+
+  if (loading && patients.length === 0) {
+    return (
+      <AdminLayout>
+        <S.PageContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Spin size="large" description="Loading patients..." />
+          </div>
+        </S.PageContainer>
+      </AdminLayout>
+    );
+  }
 
   if (error) {
     return (
@@ -305,8 +310,7 @@ const Patients = () => {
           />
         </S.TableWrapper>
 
-        {/* Floating Delete Button */}
-        {hasSelected && (
+        {selectedRowKeys.length > 0 && (
           <S.FloatingDeleteButton
             onClick={handleBulkDelete}
             loading={bulkDeleting}
@@ -315,7 +319,7 @@ const Patients = () => {
             danger
             icon={<DeleteOutlined />}
           >
-            Delete {selectedCount}
+            Delete {selectedRowKeys.length}
           </S.FloatingDeleteButton>
         )}
 

@@ -36,7 +36,6 @@ export const ActionRow = styled.div`
   border-bottom: 1px solid ${adminTheme.colors.champagne};
 
   @media (max-width: 480px) {
-    flex-direction: column;
     gap: 8px;
     button {
       width: 100%;
