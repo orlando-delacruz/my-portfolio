@@ -5,10 +5,9 @@ import adminTheme from "../../../../../styles/adminTheme";
 export const FilterCard = styled.aside`
   background: #ffffff;
   border-radius: 20px;
-  box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 
-  /* Responsive grid: 4 columns desktop, 2 columns tablet, 1 column mobile */
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 
@@ -16,9 +15,11 @@ export const FilterCard = styled.aside`
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 576px) {
+  @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    /* Remove borders between stacked items */
+    margin-top: 12px;
+    animation: slideDown 0.25s ease-out;
+
     & > * {
       border-right: none;
       border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -28,7 +29,17 @@ export const FilterCard = styled.aside`
     }
   }
 
-  /* Divider between columns */
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   & > * {
     border-right: 1px solid rgba(0, 0, 0, 0.06);
   }
@@ -36,15 +47,13 @@ export const FilterCard = styled.aside`
     border-right: none;
   }
 
-  /* On tablet hide the right border of every 2nd item */
-  @media (max-width: 992px) and (min-width: 577px) {
+  @media (max-width: 992px) and (min-width: 769px) {
     & > *:nth-child(2n) {
       border-right: none;
     }
   }
 `;
 
-// ── Reset row ────────────────────────────────────────────────────────────────
 export const ResetRow = styled.div`
   grid-column: 1 / -1;
   display: flex;
@@ -53,7 +62,7 @@ export const ResetRow = styled.div`
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   background: #fafafa;
 
-  @media (max-width: 576px) {
+  @media (max-width: 768px) {
     padding: 10px 16px;
     justify-content: center;
     border-top: none;
@@ -93,7 +102,7 @@ export const ResetButton = styled.button`
     outline-offset: 2px;
   }
 
-  @media (max-width: 576px) {
+  @media (max-width: 768px) {
     width: 100%;
     justify-content: center;
     padding: 10px 16px;
