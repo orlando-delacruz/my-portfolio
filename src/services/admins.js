@@ -1,10 +1,6 @@
 // src/services/admins.js
 import { supabase } from "./supabase/supabase";
 
-const EDGE_FUNCTION_URL =
-  import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "") +
-  "/functions/v1/admin-users";
-
 export async function fetchAdmins({
   page = 1,
   pageSize = 10,
@@ -29,7 +25,7 @@ export async function fetchAdmins({
 }
 
 export async function createAdminUser(data) {
-  const res = await fetch(`${EDGE_FUNCTION_URL}?action=create`, {
+  const res = await fetch("/api/admin/users?action=create", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -55,7 +51,7 @@ export async function updateAdmin(id, data) {
 export async function updateAdminPassword(userId, password) {
   if (!userId)
     throw new Error("Missing auth_user_id – admin not linked to auth user.");
-  const res = await fetch(`${EDGE_FUNCTION_URL}?action=update-password`, {
+  const res = await fetch("/api/admin/users?action=update-password", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, password }),

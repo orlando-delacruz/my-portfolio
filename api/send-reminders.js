@@ -7,10 +7,20 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_ANON_KEY,
 );
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
 const PUBLIC_APP_URL =
   process.env.PUBLIC_APP_URL || "https://leidibuddentals.vercel.app";
+
+// ── Helper: determine reminder type based on minutes until appointment ──
+function getReminderType(diffMinutes) {
+  if (diffMinutes >= 24 * 60 && diffMinutes < 25 * 60) return "reminder_24h";
+  if (diffMinutes >= 2 * 60 && diffMinutes < 3 * 60) return "reminder_2h";
+  if (diffMinutes >= 30 && diffMinutes < 45) return "reminder_30min";
+  if (diffMinutes > 0 && diffMinutes < 30) return "reminder_30min";
+  return null;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -23,7 +33,6 @@ export default async function handler(req, res) {
   const twoDaysLater = new Date(now);
   twoDaysLater.setDate(now.getDate() + 2);
 
-  // Fetch approved, scheduled appointments within next 2 days
   const { data: appointments, error } = await supabase
     .from("appointments")
     .select(
@@ -53,15 +62,8 @@ export default async function handler(req, res) {
     const aptDate = new Date(`${apt.preferred_date}T${apt.preferred_time}`);
     const diffMinutes = (aptDate.getTime() - now.getTime()) / (1000 * 60);
 
-    // Determine reminder type
-    let reminderType = null;
-    if (diffMinutes >= 24 * 60 && diffMinutes < 25 * 60)
-      reminderType = "reminder_24h";
-    else if (diffMinutes >= 2 * 60 && diffMinutes < 3 * 60)
-      reminderType = "reminder_2h";
-    else if (diffMinutes >= 30 && diffMinutes < 45)
-      reminderType = "reminder_30min";
-    else continue;
+    const reminderType = getReminderType(diffMinutes);
+    if (!reminderType) continue;
 
     // Check if already sent
     const { count } = await supabase
@@ -96,7 +98,6 @@ export default async function handler(req, res) {
       continue;
     }
 
-    // Build reminder email
     const html = buildReminderEmail({
       patientName: `${patient.first_name} ${patient.last_name}`.trim(),
       appointmentDate: aptDate.toLocaleDateString("en-PH", {
