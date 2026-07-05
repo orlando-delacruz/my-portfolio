@@ -20,7 +20,7 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
-// ── Module‑level lock to prevent double submission ──
+// ── 🛡️ Module‑level lock (global to this module) ──
 let isProcessing = false;
 
 const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
@@ -33,10 +33,12 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   const [changePassword, setChangePassword] = useState(false);
   const isSubmittingRef = useRef(false);
 
+  // Reset locks when modal opens or closes
   useEffect(() => {
     if (open) {
       isProcessing = false;
       isSubmittingRef.current = false;
+      setSubmitting(false);
     }
   }, [open]);
 
@@ -86,18 +88,13 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const handleFinish = async (values) => {
-    // ── 🛡️ Global lock ──
-    if (isProcessing) {
-      console.warn('⏳ A submission is already in progress – ignoring.');
-      return;
-    }
-
-    // ── 🛡️ Local lock ──
-    if (isSubmittingRef.current) {
+    // ── 🛡️ Check all locks ──
+    if (isProcessing || isSubmittingRef.current || submitting) {
       console.warn('⏳ Submission already in progress – ignoring duplicate.');
       return;
     }
 
+    // ── Set all locks ──
     isProcessing = true;
     isSubmittingRef.current = true;
     setSubmitting(true);
@@ -157,7 +154,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         onSave(createPayload);
       }
 
-      // ── Success: release locks after a small delay ──
+      // ── Success: release locks after a delay ──
       setTimeout(() => {
         isProcessing = false;
         isSubmittingRef.current = false;
@@ -182,7 +179,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const isAvatarUploading = avatarLoading;
-  const isFormSubmitting = submitting || loading;
+  const isFormSubmitting = submitting || loading || isSubmittingRef.current || isProcessing;
 
   return (
     <Modal
