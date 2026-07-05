@@ -1,54 +1,59 @@
-// src\hooks\useCalendarAppointments.js
-import { useState, useEffect, useMemo } from "react";
-import mockCalendarAppointments from "../data/admin/mockCalendarAppointments";
+// src/hooks/useCalendarAppointments.js
+import { useState, useEffect, useCallback, useRef } from "react";
+import { fetchCalendarAppointments } from "../services/calendar";
 import { groupAppointmentsByDate } from "../utils/calendarGrid";
 
-const SIMULATED_LATENCY_MS = 300;
+export default function useCalendarAppointments(
+  month,
+  branchId = null,
+  statusFilter = "all",
+) {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const isMounted = useRef(true);
 
-/**
- * Front-end-only data hook for the Calendar page.
- * Simulates an async fetch (so loading/error states are exercised now and the
- * eventual Supabase-backed hook is a drop-in swap), then filters by branch
- * and groups results by date for fast day-cell lookups.
- *
- * @param {string} branchId — "" for all branches
- * @returns {{ appointmentsByDate: Map, loading: boolean, error: string|null }}
- */
-export default function useCalendarAppointments(branchId) {
-  const [allAppointments, setAllAppointments] = useState([]);
-  const [loading, setLoading] = useState(true); // start as true
-  const [error, setError] = useState(null); // start as null
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      try {
-        setAllAppointments(mockCalendarAppointments);
-        setLoading(false); // update after success
-        setError(null);
-      } catch (err) {
-        setError(err.message ?? "Failed to load appointments.");
+  const loadAppointments = useCallback(async () => {
+    console.log(
+      "🔄 loadAppointments called with branchId:",
+      branchId,
+      "statusFilter:",
+      statusFilter,
+    );
+    if (!isMounted.current) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchCalendarAppointments(
+        month,
+        branchId,
+        statusFilter,
+      );
+      if (isMounted.current) {
+        setAppointments(data);
+      }
+    } catch (err) {
+      console.error("Error loading calendar appointments:", err);
+      if (isMounted.current) {
+        setError(err.message || "Failed to load appointments");
+      }
+    } finally {
+      if (isMounted.current) {
         setLoading(false);
       }
-    }, SIMULATED_LATENCY_MS);
+    }
+  }, [branchId, statusFilter, month]);
 
+  useEffect(() => {
+    isMounted.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAppointments();
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      isMounted.current = false;
     };
-  }, []); // empty deps – run once on mount
+  }, [loadAppointments]);
 
-  const filtered = useMemo(() => {
-    if (!branchId) return allAppointments;
-    return allAppointments.filter((a) => a.branchId === branchId);
-  }, [allAppointments, branchId]);
+  const appointmentsByDate = groupAppointmentsByDate(appointments);
 
-  const appointmentsByDate = useMemo(
-    () => groupAppointmentsByDate(filtered),
-    [filtered],
-  );
-
-  return { appointmentsByDate, loading, error };
+  return { appointmentsByDate, loading, error, refetch: loadAppointments };
 }

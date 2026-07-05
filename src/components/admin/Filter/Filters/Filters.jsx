@@ -1,38 +1,58 @@
-// src\components\admin\Filter\Filters\Filters.jsx
-import { memo, useCallback } from "react";
-import { Select } from "antd";
-import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import { CALENDAR_BRANCHES } from "../../../../constants/calendarConstants";
-import * as S from "./Filters.styled";
+// src/components/admin/Filter/Filters/Filters.jsx
+import { memo, useCallback } from 'react';
+import { Select } from 'antd';
+import { HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2';
+import { useBranches } from '../../../../hooks/useBranches';
+import * as S from './Filters.styled';
 
 const { Option } = Select;
 
-/**
- * Toolbar filters: branch selector + a "Filters" toggle button reserved
- * for a future advanced-filter panel (status, date range, etc).
- *
- * @param {string}   branchId
- * @param {function} onBranchChange
- * @param {function} [onToggleFilters] — opens an advanced filter panel
- */
-const Filters = ({ branchId, onBranchChange, onToggleFilters }) => {
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const Filters = memo(({
+  branchId,
+  onBranchChange,
+  status,
+  onStatusChange,
+  onToggleFilters, // optional, for mobile
+}) => {
+  const { branches, loading: branchesLoading } = useBranches();
+
   const handleBranchChange = useCallback(
-    (val) => onBranchChange(val),
+    (val) => {
+      console.log('🔄 Branch filter changed to:', val);
+      onBranchChange(val);
+    },
     [onBranchChange]
+  );
+
+  const handleStatusChange = useCallback(
+    (val) => {
+      console.log('🔄 Status filter changed to:', val);
+      onStatusChange(val);
+    },
+    [onStatusChange]
   );
 
   return (
     <S.FiltersRow>
       <S.BranchSelectWrapper>
         <Select
-          value={branchId}
+          value={branchId || ''}
           onChange={handleBranchChange}
-          aria-label="Filter calendar by branch"
+          aria-label="Filter by branch"
           variant="borderless"
           style={{ minWidth: 140 }}
+          loading={branchesLoading}
         >
           <Option value="">All Branches</Option>
-          {CALENDAR_BRANCHES.map((b) => (
+          {branches.map((b) => (
             <Option key={b.id} value={b.id}>
               {b.name}
             </Option>
@@ -40,16 +60,35 @@ const Filters = ({ branchId, onBranchChange, onToggleFilters }) => {
         </Select>
       </S.BranchSelectWrapper>
 
-      <S.FilterToggleButton
-        type="button"
-        onClick={onToggleFilters}
-        aria-label="Open additional filters"
-      >
-        <HiOutlineAdjustmentsHorizontal aria-hidden="true" />
-        <span>Filters</span>
-      </S.FilterToggleButton>
+      <S.BranchSelectWrapper>
+        <Select
+          value={status || 'all'}
+          onChange={handleStatusChange}
+          aria-label="Filter by appointment status"
+          variant="borderless"
+          style={{ minWidth: 140 }}
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <Option key={opt.value} value={opt.value}>
+              {opt.label}
+            </Option>
+          ))}
+        </Select>
+      </S.BranchSelectWrapper>
+
+      {onToggleFilters && (
+        <S.FilterToggleButton
+          type="button"
+          onClick={onToggleFilters}
+          aria-label="Open additional filters"
+        >
+          <HiOutlineAdjustmentsHorizontal aria-hidden="true" />
+          <span>Filters</span>
+        </S.FilterToggleButton>
+      )}
     </S.FiltersRow>
   );
-};
+});
 
-export default memo(Filters);
+Filters.displayName = 'Filters';
+export default Filters;
