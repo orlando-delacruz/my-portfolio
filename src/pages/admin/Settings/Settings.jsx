@@ -13,7 +13,7 @@ import ClinicInformation from "./sections/ClinicInformation";
 import MyProfile from "./sections/MyProfile";
 import BranchManagement from "./sections/BranchManagement";
 import AppointmentSettings from "./sections/AppointmentSettings";
-import Notification from "./sections/Notification";
+import ServiceManagement from "./sections/ServiceManagement";
 
 const Settings = () => {
   const loading = useSettingsStore((state) => state.loading);
@@ -69,7 +69,7 @@ const Settings = () => {
             <MyProfile />
             <BranchManagement />
             <AppointmentSettings />
-            <Notification />
+            <ServiceManagement />
           </S.ContentGrid>
         )}
       </S.PageContainer>

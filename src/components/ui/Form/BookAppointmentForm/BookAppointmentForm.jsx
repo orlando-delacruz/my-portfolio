@@ -18,7 +18,7 @@ const BookAppointmentForm = () => {
   const {
     fields,
     errors,
-    isSubmitting,  // ✅ use submission state for button
+    loading,
     submitted,
     branches,
     services,
@@ -248,6 +248,7 @@ const BookAppointmentForm = () => {
                   />
                 </Form.Item>
 
+                {/* ── Conditional Time Selection ── */}
                 {fields.date && isDateUnavailable ? (
                   <S.FullWidth>
                     <AvailabilityMessage
@@ -284,7 +285,9 @@ const BookAppointmentForm = () => {
                   size="large"
                 >
                   {services.map((s) => (
-                    <Option key={s.service_branch_id} value={s.service_branch_id}>{s.name}</Option>
+                    <Option key={s.service_branch_id} value={s.service_branch_id}>
+                      {s.name || "Unnamed"}
+                    </Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -301,9 +304,9 @@ const BookAppointmentForm = () => {
             <Button
               type="primary"
               htmlType="submit"
-              loading={isSubmitting}          // ✅ use submission state
-              disabled={isSubmitting || (fields.date && isDateUnavailable)}
-              icon={!isSubmitting && <AiOutlineSend />}
+              loading={loading}
+              disabled={loading || (fields.date && isDateUnavailable)}
+              icon={!loading && <AiOutlineSend />}
               size="large"
               style={{
                 background: "#886217",
@@ -313,7 +316,7 @@ const BookAppointmentForm = () => {
                 padding: "0 32px",
               }}
             >
-              {isSubmitting ? "Submitting…" : "Book Appointment"}
+              {loading ? "Submitting…" : "Book Appointment"}
             </Button>
           </S.ButtonWrapper>
         </Form>

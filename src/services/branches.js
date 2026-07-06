@@ -16,7 +16,7 @@ export async function fetchActiveBranches() {
   try {
     const { data, error } = await supabase
       .from("branches")
-      .select("id, name, address, status") // ✅ include address
+      .select("id, name, address, status")
       .eq("status", "active")
       .order("name");
 

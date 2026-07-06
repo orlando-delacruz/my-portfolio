@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { fetchSettings, updateSettings, uploadLogo } from "../services/settings";
 import { fetchOperatingHours, updateOperatingHours } from "../services/operatingHours";
 import { fetchActiveBranches } from "../services/branches";
+import { fetchServices, createService, updateService, deleteService } from "../services/services";
 import { supabase } from "../services/supabase/supabase";
 
 const useSettingsStore = create((set, get) => ({
@@ -19,23 +20,19 @@ const useSettingsStore = create((set, get) => ({
   appointmentSettings: null,
   notifications: null,
 
+  services: {}, // keyed by branchId
+  loadingServices: false,
+  savingService: false,
+
   // ── Actions ──
 
-  /**
-   * Fetch all settings data from Supabase
-   */
   fetchSettings: async () => {
     if (get().loading) return;
     set({ loading: true, error: null });
 
     try {
-      // 1. Fetch clinic settings
       const settings = await fetchSettings();
-
-      // 2. Fetch active branches
       const branches = await fetchActiveBranches();
-
-      // 3. Fetch operating hours for each branch
       const hoursMap = {};
       for (const branch of branches) {
         try {
@@ -43,7 +40,6 @@ const useSettingsStore = create((set, get) => ({
           hoursMap[branch.id] = hours;
         } catch (err) {
           console.warn(`Failed to fetch hours for branch ${branch.id}:`, err);
-          // Fallback only if fetch fails (should not happen with seeded data)
           hoursMap[branch.id] = [
             { id: null, dayOfWeek: 0, openTime: null, closeTime: null, breakStartTime: null, breakEndTime: null, isClosed: true, branchId: branch.id },
             { id: null, dayOfWeek: 1, openTime: null, closeTime: null, breakStartTime: null, breakEndTime: null, isClosed: true, branchId: branch.id },
@@ -56,7 +52,17 @@ const useSettingsStore = create((set, get) => ({
         }
       }
 
-      // 4. Get current user profile
+      const servicesMap = {};
+      for (const branch of branches) {
+        try {
+          const services = await fetchServices(branch.id);
+          servicesMap[branch.id] = services;
+        } catch (err) {
+          console.warn(`Failed to fetch services for branch ${branch.id}:`, err);
+          servicesMap[branch.id] = [];
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       let profile = null;
       if (user) {
@@ -67,7 +73,6 @@ const useSettingsStore = create((set, get) => ({
           .single();
         profile = adminData;
       }
-
       const googleConnected = user?.app_metadata?.provider === "google" || false;
 
       set({
@@ -80,6 +85,7 @@ const useSettingsStore = create((set, get) => ({
         },
         branches,
         operatingHours: hoursMap,
+        services: servicesMap,
         profile: profile ? {
           id: profile.id,
           fullName: profile.full_name || "",
@@ -111,7 +117,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Update clinic information ──
+  // ── Clinic Information ──
   updateClinicInfo: async (values) => {
     set({ isSaving: true, error: null });
     try {
@@ -138,7 +144,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Update profile ──
+  // ── Profile ──
   updateProfile: async (values) => {
     const state = get();
     if (!state.profile?.id) throw new Error("No profile found");
@@ -177,7 +183,6 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Upload avatar ──
   uploadAvatar: async (file) => {
     const state = get();
     if (!state.profile?.id) throw new Error("No profile found");
@@ -203,7 +208,6 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Toggle Google login ──
   toggleGoogleLogin: () => {
     set((state) => ({
       googleLogin: {
@@ -213,7 +217,7 @@ const useSettingsStore = create((set, get) => ({
     }));
   },
 
-  // ── Branch CRUD ──
+  // ── Branches ──
   addBranch: async (branch) => {
     set({ isSaving: true, error: null });
     try {
@@ -287,7 +291,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Operating hours ──
+  // ── Operating Hours ──
   updateBranchHours: async (branchId, hours) => {
     set({ isSaving: true, error: null });
     try {
@@ -315,7 +319,106 @@ const useSettingsStore = create((set, get) => ({
       return { operatingHours: hours };
     }),
 
-  // ── Appointment settings ──
+  // ── Services ──
+  fetchBranchServices: async (branchId) => {
+    if (!branchId) return;
+    set({ loadingServices: true });
+    try {
+      const data = await fetchServices(branchId);
+      set((state) => ({
+        services: {
+          ...state.services,
+          [branchId]: data,
+        },
+        loadingServices: false,
+      }));
+    } catch (err) {
+      console.error("Error fetching services:", err);
+      set({ loadingServices: false, error: err.message });
+    }
+  },
+
+  createService: async (serviceData) => {
+    set({ savingService: true, error: null });
+    try {
+      const newService = await createService(serviceData);
+      const branchId = serviceData.branch_id;
+      set((state) => ({
+        services: {
+          ...state.services,
+          [branchId]: [...(state.services[branchId] || []), newService],
+        },
+        savingService: false,
+      }));
+      return newService;
+    } catch (err) {
+      set({ savingService: false, error: err.message });
+      throw err;
+    }
+  },
+
+  updateService: async (serviceId, updates) => {
+    set({ savingService: true, error: null });
+    try {
+      const updated = await updateService(serviceId, updates);
+      const state = get();
+      let branchId = null;
+      for (const [bId, services] of Object.entries(state.services)) {
+        if (services.some((s) => s.id === serviceId)) {
+          branchId = bId;
+          break;
+        }
+      }
+      if (branchId) {
+        set((state) => ({
+          services: {
+            ...state.services,
+            [branchId]: state.services[branchId].map((s) =>
+              s.id === serviceId ? updated : s
+            ),
+          },
+          savingService: false,
+        }));
+      } else {
+        set({ savingService: false });
+      }
+      return updated;
+    } catch (err) {
+      set({ savingService: false, error: err.message });
+      throw err;
+    }
+  },
+
+  deleteService: async (serviceId) => {
+    set({ savingService: true, error: null });
+    try {
+      await deleteService(serviceId);
+      const state = get();
+      let branchId = null;
+      for (const [bId, services] of Object.entries(state.services)) {
+        if (services.some((s) => s.id === serviceId)) {
+          branchId = bId;
+          break;
+        }
+      }
+      if (branchId) {
+        set((state) => ({
+          services: {
+            ...state.services,
+            [branchId]: state.services[branchId].filter((s) => s.id !== serviceId),
+          },
+          savingService: false,
+        }));
+      } else {
+        set({ savingService: false });
+      }
+    } catch (err) {
+      set({ savingService: false, error: err.message });
+      throw err;
+    }
+  },
+
+  // ── Appointment Settings ──
   updateAppointmentSettings: async (values) => {
     set({ isSaving: true, error: null });
     try {
@@ -361,7 +464,7 @@ const useSettingsStore = create((set, get) => ({
         reminder_minutes: values.reminders ? 60 : 0,
       };
       const updated = await updateSettings(dbUpdates);
-      set(() => ({
+      set((state) => ({
         notifications: {
           email: updated.email_notifications_enabled !== false,
           sms: updated.sms_notifications_enabled !== false,
@@ -385,7 +488,7 @@ const useSettingsStore = create((set, get) => ({
       },
     })),
 
-  // ── Upload logo ──
+  // ── Logo Upload ──
   uploadLogo: async (file) => {
     const state = get();
     set({ isSaving: true, error: null });
@@ -404,7 +507,6 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // ── Reset ──
   reset: () => {
     set({
       loading: false,
@@ -417,6 +519,9 @@ const useSettingsStore = create((set, get) => ({
       googleLogin: { connected: false, email: null },
       appointmentSettings: null,
       notifications: null,
+      services: {},
+      loadingServices: false,
+      savingService: false,
     });
   },
 }));
