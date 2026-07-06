@@ -1,29 +1,17 @@
 // src/components/admin/TopBar/TopBar.jsx
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdMenu, MdNotifications } from "react-icons/md";
 import { Dropdown, Avatar, Spin } from "antd";
 import { LogoutOutlined, SettingOutlined } from "@ant-design/icons";
-import { supabase } from "../../../services/supabase/supabase";
-import { useAuthStore } from "../../../store/authStore";
+import { useLogoutStore } from "../../../store/useLogoutStore";
 import useAdminStore from "../../../store/useAdminStore";
 import * as S from "./TopBar.styled";
 
 const TopBar = memo(({ user, loading, onMenuClick }) => {
   const navigate = useNavigate();
   const toggleSidebar = useAdminStore((s) => s.toggleSidebar);
-  const clearAuth = useAuthStore((s) => s.clear);
-
-  const handleLogout = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.warn("Logout error:", err);
-    } finally {
-      clearAuth();
-      navigate("/login", { replace: true });
-    }
-  }, [navigate, clearAuth]);
+  const openLogoutModal = useLogoutStore((s) => s.openLogoutModal);
 
   const menuItems = [
     {
@@ -36,7 +24,7 @@ const TopBar = memo(({ user, loading, onMenuClick }) => {
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Logout",
-      onClick: handleLogout,
+      onClick: openLogoutModal,
       danger: true,
     },
   ];
