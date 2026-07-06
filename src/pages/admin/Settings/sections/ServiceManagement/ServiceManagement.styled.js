@@ -17,7 +17,7 @@ export const Toolbar = styled.div`
 `;
 
 export const ServiceListWrapper = styled.div`
-  max-height: 500px;
+  max-height: 200px;
   overflow-y: auto;
   padding-right: 8px;
   scrollbar-width: thin;

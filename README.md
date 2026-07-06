@@ -122,6 +122,19 @@ leidi-bud-dentals
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ Pagination.jsx
 │  │  │  │  └─ Pagination.styled.js
+│  │  │  ├─ Settings
+│  │  │  │  ├─ SettingsCard
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ SettingsCard.jsx
+│  │  │  │  │  └─ SettingsCard.styled.js
+│  │  │  │  ├─ SettingsField
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ SettingsField.jsx
+│  │  │  │  │  └─ SettingsField.styled.js
+│  │  │  │  └─ ToggleSwitch
+│  │  │  │     ├─ index.js
+│  │  │  │     ├─ ToggleSwitch.jsx
+│  │  │  │     └─ ToggleSwitch.styled.js
 │  │  │  ├─ SideBar
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ SideBar.jsx
@@ -155,6 +168,10 @@ leidi-bud-dentals
 │  │     │     ├─ FaqAccordion.jsx
 │  │     │     ├─ FaqAccordion.styled.js
 │  │     │     └─ index.js
+│  │     ├─ AvailabilityMessage
+│  │     │  ├─ AvailabilityMessage.jsx
+│  │     │  ├─ AvailabilityMessage.styled.js
+│  │     │  └─ index.js
 │  │     ├─ Button
 │  │     │  ├─ Button.jsx
 │  │     │  ├─ Button.styled.js
@@ -218,6 +235,7 @@ leidi-bud-dentals
 │  │  │  ├─ clinicClosures.js
 │  │  │  ├─ dashboard.js
 │  │  │  ├─ mockCalendarAppointments.js
+│  │  │  ├─ settings.js
 │  │  │  └─ sidebar.js
 │  │  ├─ callToAction.js
 │  │  ├─ footer.js
@@ -311,6 +329,42 @@ leidi-bud-dentals
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ Patients.jsx
 │  │  │  │  └─ Patients.styled.js
+│  │  │  ├─ Settings
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ sections
+│  │  │  │  │  ├─ AppointmentSettings
+│  │  │  │  │  │  ├─ AppointmentSettings.jsx
+│  │  │  │  │  │  ├─ AppointmentSettings.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ BranchManagement
+│  │  │  │  │  │  ├─ BranchManagement.jsx
+│  │  │  │  │  │  ├─ BranchManagement.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ ClinicInformation
+│  │  │  │  │  │  ├─ ClinicInformation.jsx
+│  │  │  │  │  │  ├─ ClinicInformation.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ MyProfile
+│  │  │  │  │  │  ├─ index.js
+│  │  │  │  │  │  ├─ MyProfile.jsx
+│  │  │  │  │  │  └─ MyProfile.styled.js
+│  │  │  │  │  ├─ OperatingHours
+│  │  │  │  │  │  ├─ BranchTabs.jsx
+│  │  │  │  │  │  ├─ BranchTabs.styled.js
+│  │  │  │  │  │  ├─ index.js
+│  │  │  │  │  │  ├─ OperatingHours.jsx
+│  │  │  │  │  │  ├─ OperatingHours.styled.js
+│  │  │  │  │  │  ├─ TimeTable.jsx
+│  │  │  │  │  │  └─ TimeTable.styled.js
+│  │  │  │  │  └─ ServiceManagement
+│  │  │  │  │     ├─ index.js
+│  │  │  │  │     ├─ ServiceManagement.jsx
+│  │  │  │  │     └─ ServiceManagement.styled.js
+│  │  │  │  ├─ Settings.jsx
+│  │  │  │  ├─ Settings.styled.js
+│  │  │  │  ├─ SettingsSkeleton.jsx
+│  │  │  │  └─ SettingsSkeleton.styled.js
 │  │  │  └─ Users
 │  │  │     ├─ index.js
 │  │  │     ├─ sections
@@ -384,18 +438,24 @@ leidi-bud-dentals
 │  │  ├─ calendar.js
 │  │  ├─ clinicClosures.js
 │  │  ├─ dashboard.js
+│  │  ├─ operatingHours.js
 │  │  ├─ patients.js
 │  │  ├─ publicBooking.js
 │  │  ├─ scheduling.js
 │  │  ├─ serviceBranches.js
+│  │  ├─ services.js
+│  │  ├─ settings.js
 │  │  ├─ storage.js
-│  │  └─ supabase
-│  │     ├─ auth.js
-│  │     └─ supabase.js
+│  │  ├─ supabase
+│  │  │  ├─ auth.js
+│  │  │  └─ supabase.js
+│  │  └─ __tests__
+│  │     └─ settings.test.js
 │  ├─ store
 │  │  ├─ authStore.js
 │  │  ├─ useAdminStore.js
-│  │  └─ useCalendarStore.js
+│  │  ├─ useCalendarStore.js
+│  │  └─ useSettingsStore.js
 │  ├─ styles
 │  │  ├─ adminTheme.js
 │  │  ├─ fonts.css

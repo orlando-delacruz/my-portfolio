@@ -1,10 +1,10 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import React, { memo, useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Spin, Alert, Tooltip, message } from 'antd';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import updateLocale from 'dayjs/plugin/updateLocale';
+import React, { memo, useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Spin, Alert, Tooltip, message } from "antd";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import updateLocale from "dayjs/plugin/updateLocale";
 import {
   MdCalendarToday,
   MdUpcoming,
@@ -13,27 +13,27 @@ import {
   MdBookOnline,
   MdAssessment,
   MdSchedule,
-} from 'react-icons/md';
-import { BsCalendar2Check } from 'react-icons/bs';
-import { FiXCircle } from 'react-icons/fi';
+} from "react-icons/md";
+import { BsCalendar2Check } from "react-icons/bs";
+import { FiXCircle } from "react-icons/fi";
 
-import AdminLayout from '../../../components/admin/AdminLayout';
-import useDashboard from './useDashboard';
-import { useDashboardData } from '../../../hooks/useDashboardData';
-import { useRealtimeAppointments } from '../../../hooks/useRealtimeAppointments';
-import { quickActions } from '../../../data/admin/dashboard';
+import AdminLayout from "../../../components/admin/AdminLayout";
+import { useAuthStore } from "../../../store/authStore";
+import useDashboard from "./useDashboard";
+import { useDashboardData } from "../../../hooks/useDashboardData";
+import { useRealtimeAppointments } from "../../../hooks/useRealtimeAppointments";
+import { quickActions } from "../../../data/admin/dashboard";
 import {
   AddAppointmentModal,
   RescheduleModal,
   useAppointmentModal,
-} from '../../../components/admin/Modal/AppointmentModal';
-import AppointmentDetailsModal from '../../../components/admin/Modal/AppointmentDetailsModal';
-import { STATUS_CONFIG } from '../../../data/admin/appointment';
-import { adminUpdateAppointmentStatus } from '../../../services/appointments';
-import { useAuthStore } from '../../../store/authStore';
-import * as S from './Dashboard.styled';
+} from "../../../components/admin/Modal/AppointmentModal";
+import AppointmentDetailsModal from "../../../components/admin/Modal/AppointmentDetailsModal";
+import { STATUS_CONFIG } from "../../../data/admin/appointment";
+import { adminUpdateAppointmentStatus } from "../../../services/appointments";
+import * as S from "./Dashboard.styled";
 
-// ── Extend dayjs with relative time plugins ──────────────────
+// ── Extend dayjs with relative time plugins ──
 dayjs.extend(relativeTime);
 dayjs.extend(updateLocale);
 dayjs.updateLocale('en', {
@@ -54,7 +54,7 @@ dayjs.updateLocale('en', {
   },
 });
 
-// ── Constants ────────────────────────────────────────────
+// ── Constants ──
 const ACTIVITY_ICONS = {
   created: BsCalendar2Check,
   status_changed: MdCheckCircle,
@@ -63,7 +63,7 @@ const ACTIVITY_ICONS = {
   default: BsCalendar2Check,
 };
 
-// ── Status Badge Component ──────────────────────────────
+// ── Status Badge Component ──
 const StatusBadge = memo(({ status }) => {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
@@ -79,7 +79,7 @@ const StatusBadge = memo(({ status }) => {
 });
 StatusBadge.displayName = 'StatusBadge';
 
-// ── Stats Card Component ─────────────────────────────────
+// ── Stats Card Component ──
 const StatCard = memo(({ stat, value }) => {
   const Icon = stat.icon;
   return (
@@ -97,21 +97,25 @@ const StatCard = memo(({ stat, value }) => {
 });
 StatCard.displayName = 'StatCard';
 
-// ── Main Dashboard ────────────────────────────────────────
+// ── Main Dashboard ──
 const Dashboard = () => {
   const navigate = useNavigate();
-  const profile = useAuthStore((s) => s.profile);
-  const { greeting, formattedDate, dayName } = useDashboard('DOCTOR YENYEN');
+  const profile = useAuthStore((state) => state.profile);
+  const authLoading = useAuthStore((state) => state.loading);
+  const user = useAuthStore((state) => state.user);
 
-  // ── Fetch real dashboard data ──────────────────────────
-  const { data, loading, error, refetch } = useDashboardData();
+  // ── Use dynamic greeting hook with profile and auth user ──
+  const { greeting, formattedDate, dayName } = useDashboard(profile, user);
 
-  // ── Realtime updates ────────────────────────────────────
+  // ── Fetch real dashboard data ──
+  const { data, loading: dashboardLoading, error, refetch } = useDashboardData();
+
+  // ── Realtime updates ──
   useRealtimeAppointments(() => {
     refetch();
   });
 
-  // ── Modal hook ──────────────────────────────────────────
+  // ── Modal hook ──
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
     rescheduleOpen, rescheduleLoading, rescheduleTargetId,
@@ -121,25 +125,25 @@ const Dashboard = () => {
     onRescheduleSuccess: () => refetch(),
   });
 
-  // ── Details Modal state ────────────────────────────────
+  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
-  // ── Navigation helpers ──────────────────────────────────
+  // ── Navigation helpers ──
   const goTo = useCallback((path) => navigate(path), [navigate]);
 
-  // ── Handle quick action clicks ──────────────────────────
+  // ── Handle quick action clicks ──
   const handleQuickAction = useCallback((action) => {
     if (action.id === 'qa1') {
-      openAdd(); // Book Appointment
+      openAdd();
     } else if (action.id === 'qa4') {
-      goTo('/admin/appointments'); // Appointment List
+      goTo('/admin/appointments');
     } else {
-      goTo('/admin/dashboard'); // placeholder
+      goTo('/admin/dashboard');
     }
   }, [openAdd, goTo]);
 
-  // ── Stats mapping ───────────────────────────────────────
+  // ── Stats mapping ──
   const statsConfig = useMemo(
     () => [
       {
@@ -182,7 +186,7 @@ const Dashboard = () => {
     [data]
   );
 
-  // ── Handlers for Details Modal ──────────────────────────
+  // ── Handlers for Details Modal ──
   const handleViewAppointment = useCallback(() => {
     const nextAppt = data?.nextAppointment;
     if (nextAppt?.id) {
@@ -223,8 +227,11 @@ const Dashboard = () => {
     [handleCloseDetails, openReschedule]
   );
 
-  // ── Loading / Error states ─────────────────────────────
-  if (loading) {
+  // ── Combined loading state ──
+  const isLoading = authLoading || dashboardLoading;
+
+  // ── Loading / Error states ──
+  if (isLoading) {
     return (
       <AdminLayout>
         <S.Page>
@@ -251,7 +258,7 @@ const Dashboard = () => {
     );
   }
 
-  // ── Extract data with fallbacks ────────────────────────
+  // ── Extract data with fallbacks ──
   const schedule = data?.schedule ?? [];
   const upcoming = data?.upcoming ?? [];
   const activity = data?.activity ?? [];
@@ -264,11 +271,11 @@ const Dashboard = () => {
     id: null,
   };
 
-  // ── Render ──────────────────────────────────────────────
+  // ── Render ──
   return (
     <AdminLayout>
       <S.Page>
-        {/* ── Welcome bar ─────────────────────────────────── */}
+        {/* ── Welcome bar ── */}
         <S.WelcomeBar>
           <S.WelcomeText>
             <S.WelcomeHeading>{greeting}</S.WelcomeHeading>
@@ -286,16 +293,15 @@ const Dashboard = () => {
           </S.DateBadge>
         </S.WelcomeBar>
 
-        {/* ── Stat cards ───────────────────────────────────── */}
+        {/* ── Stat cards ── */}
         <S.StatsGrid role="list" aria-label="Clinic statistics">
           {statsConfig.map((stat) => (
             <StatCard key={stat.id} stat={stat} value={stat.value} />
           ))}
         </S.StatsGrid>
 
-        {/* ── Next Appt + Schedule ────────────────────────── */}
+        {/* ── Next Appt + Schedule ── */}
         <S.TwoColGrid>
-          {/* Next appointment */}
           <S.NextApptCard aria-label="Next appointment details">
             <S.NextApptLabel>
               <BsCalendar2Check aria-hidden="true" />
@@ -373,7 +379,7 @@ const Dashboard = () => {
           </S.ScheduleCard>
         </S.TwoColGrid>
 
-        {/* ── 3-col grid ────────────────────────────────────── */}
+        {/* ── 3-col grid ── */}
         <S.ThreeColGrid>
           {/* Upcoming appointments */}
           <S.Panel>
@@ -510,7 +516,7 @@ const Dashboard = () => {
         </S.ThreeColGrid>
       </S.Page>
 
-      {/* ── Add Appointment Modal ────────────────────────────── */}
+      {/* ── Add Appointment Modal ── */}
       <AddAppointmentModal
         open={addOpen}
         loading={addLoading}
@@ -518,7 +524,7 @@ const Dashboard = () => {
         onSubmit={handleAdd}
       />
 
-      {/* ── Reschedule Modal ─────────────────────────────────── */}
+      {/* ── Reschedule Modal ── */}
       <RescheduleModal
         open={rescheduleOpen}
         appointmentId={rescheduleTargetId}
@@ -527,7 +533,7 @@ const Dashboard = () => {
         onSubmit={handleReschedule}
       />
 
-      {/* ── Appointment Details Modal ───────────────────────── */}
+      {/* ── Appointment Details Modal ── */}
       <AppointmentDetailsModal
         open={detailsModalOpen}
         appointmentId={selectedAppointmentId}

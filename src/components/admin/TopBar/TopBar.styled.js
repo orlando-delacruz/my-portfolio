@@ -18,7 +18,6 @@ export const LeftGroup = styled.div`
   gap: 12px;
 `;
 
-// Base button style shared by desktop and mobile toggles
 const baseHamburger = css`
   display: flex;
   align-items: center;
@@ -42,20 +41,16 @@ const baseHamburger = css`
   }
 `;
 
-// Desktop toggle (visible above 1024px)
 export const DesktopHamburgerBtn = styled.button`
   ${baseHamburger}
-
   @media (max-width: 1024px) {
     display: none;
   }
 `;
 
-// Mobile toggle (visible at 1024px and below)
 export const MobileHamburgerBtn = styled.button`
   ${baseHamburger}
   display: none;
-
   @media (max-width: 1024px) {
     display: flex;
   }
@@ -96,18 +91,42 @@ export const NotifBadge = styled.span`
   border: 1.5px solid ${adminTheme.colors.ivory};
 `;
 
+// ── User block (clickable) ──
 export const UserBlock = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
 `;
 
-export const UserAvatar = styled.img`
+// ── Avatar wrapper for fallback initials ──
+export const AvatarWrapper = styled.div`
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  object-fit: cover;
+  background: ${adminTheme.colors.primary};
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
   flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 export const UserInfo = styled.div`
@@ -121,14 +140,14 @@ export const UserInfo = styled.div`
 
 export const UserName = styled.span`
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   color: ${adminTheme.colors.black};
   line-height: 1.5;
   white-space: nowrap;
 `;
 
 export const UserRole = styled.span`
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   color: ${adminTheme.colors.black};
   line-height: 1.5;

@@ -8,9 +8,9 @@ import SettingsSkeleton from "./SettingsSkeleton";
 import * as S from "./Settings.styled";
 
 // ── Sections ──
+import MyProfile from "./sections/MyProfile";               // ✅ first
 import OperatingHours from "./sections/OperatingHours";
 import ClinicInformation from "./sections/ClinicInformation";
-import MyProfile from "./sections/MyProfile";
 import BranchManagement from "./sections/BranchManagement";
 import AppointmentSettings from "./sections/AppointmentSettings";
 import ServiceManagement from "./sections/ServiceManagement";
@@ -64,9 +64,10 @@ const Settings = () => {
 
         {!loading && !error && (
           <S.ContentGrid>
+            {/* ✅ My Profile is now first */}
+            <MyProfile />
             <OperatingHours />
             <ClinicInformation />
-            <MyProfile />
             <BranchManagement />
             <AppointmentSettings />
             <ServiceManagement />
