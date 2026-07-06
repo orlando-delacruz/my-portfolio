@@ -277,3 +277,22 @@ export const MobileNavLink = styled.a`
 export const MobileBookButton = styled.div`
   margin-top: 16px;
 `;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @media (max-width: 1024px) {
+    display: none; // hidden on tablet/mobile, as they appear in the drawer
+  }
+`;
+
+export const MobileActionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid ${theme.colors.gray};
+  margin-top: 8px;
+`;

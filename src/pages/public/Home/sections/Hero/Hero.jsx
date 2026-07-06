@@ -90,7 +90,7 @@ const Hero = () => {
           src={image.src}
           alt={image.alt}
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
           decoding="async"
           width={800}
           height={600}

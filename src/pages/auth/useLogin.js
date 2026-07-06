@@ -1,5 +1,6 @@
 // src/pages/auth/useLogin.js
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabase/supabase";
 import { useAuthStore } from "../../store/authStore";
 
@@ -61,6 +62,7 @@ function validate(fields) {
 }
 
 export function useLogin() {
+  const navigate = useNavigate(); // used for redirect
   const setUser = useAuthStore((state) => state.setUser);
   const setProfile = useAuthStore((state) => state.setProfile);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -199,7 +201,8 @@ export function useLogin() {
         setUser(user);
         setLoading(false);
 
-        // ✅ Navigation removed – GuestRoute will automatically redirect to /admin
+        // ✅ Redirect to admin dashboard after successful login
+        navigate("/admin", { replace: true });
       } catch (err) {
         console.error("Login error:", err);
         setGlobalError("An unexpected error occurred. Please try again.");
@@ -208,7 +211,7 @@ export function useLogin() {
         submitting.current = false;
       }
     },
-    [fields, setUser, setProfile, setLoading],
+    [fields, setUser, setProfile, setLoading, navigate],
   );
 
   const handleGoogleLogin = useCallback(async () => {

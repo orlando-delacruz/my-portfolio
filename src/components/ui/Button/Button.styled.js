@@ -73,8 +73,8 @@ export const StyledButton = styled.button`
   justify-content: center;
   gap: 5px;
 
-  ${({ variant }) => variants[variant]}
-  ${({ size }) => sizes[size]}
+  ${({ $variant }) => variants[$variant]}   // ✅ use $variant
+  ${({ $size }) => sizes[$size]}            // ✅ use $size
 
   &:disabled {
     opacity: 0.5;
