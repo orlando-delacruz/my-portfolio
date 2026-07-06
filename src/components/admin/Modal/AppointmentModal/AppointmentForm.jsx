@@ -2,12 +2,12 @@
 import { memo, useEffect, useCallback, useRef, useMemo } from "react";
 import { Form, Input, Select, DatePicker, TimePicker, Switch, Radio } from "antd";
 import dayjs from "dayjs";
-import { MdEventBusy, MdOutlineEventBusy } from "react-icons/md";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
 import { useAppointmentAvailability } from "../../../../hooks/useAppointmentAvailability";
 import { formatPhoneDisplay, getRawPhoneDigits, isValidPhilippinePhone } from "../../../../utils/phoneFormatter";
+import AvailabilityMessage from "../../../ui/AvailabilityMessage";
 import * as S from "./AppointmentModal.styled";
 
 const { Option } = Select;
@@ -57,7 +57,6 @@ const AppointmentForm = memo(({
   const { branches, loading: branchesLoading } = useBranches();
   const selectedBranch = Form.useWatch("branchId", form);
 
-  // Stabilize date keys (strings) to avoid re-renders
   const selectedDateRaw = Form.useWatch("date", form);
   const selectedDateKey = useMemo(() => {
     return selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null;
@@ -104,7 +103,6 @@ const AppointmentForm = memo(({
     prevBranchRef.current = selectedBranch;
   }, [selectedBranch, form]);
 
-  // Only disable past dates
   const disabledDate = useCallback(
     (current) => {
       if (!selectedBranch) return true;
@@ -114,7 +112,6 @@ const AppointmentForm = memo(({
     [selectedBranch]
   );
 
-  // ── Patient type change handler ──
   const handlePatientTypeChange = (e) => {
     const value = e.target.value;
     onPatientTypeChange?.(value);
@@ -134,7 +131,6 @@ const AppointmentForm = memo(({
     form.setFieldValue('serviceBranchId', undefined);
   };
 
-  // ── Orthodontic patient selection ──
   const handleOrthoPatientSelect = (patientId) => {
     if (!patientId) {
       onOrthodonticPatientSelect?.(null);
@@ -160,8 +156,6 @@ const AppointmentForm = memo(({
 
   const isOrthoSelected = patientType === 'ortho' && selectedOrthodonticPatient !== null;
   const isNewPatient = patientType === 'new';
-
-  // Determine if the selected date is unavailable
   const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
 
   return (
@@ -211,63 +205,22 @@ const AppointmentForm = memo(({
         )}
 
         {/* ── Patient Information ── */}
-        <Form.Item
-          name="firstName"
-          label="First Name"
-          rules={[{ required: true, message: "First name is required." }]}
-        >
-          <Input
-            placeholder="Enter first name"
-            maxLength={80}
-            disabled={isOrthoSelected}
-          />
+        <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "First name is required." }]}>
+          <Input placeholder="Enter first name" maxLength={80} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item
-          name="middleName"
-          label="Middle Name"
-          rules={[{ required: false }]}
-        >
+        <Form.Item name="middleName" label="Middle Name" rules={[{ required: false }]}>
           <Input placeholder="(Optional)" maxLength={80} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item
-          name="lastName"
-          label="Last Name"
-          rules={[{ required: true, message: "Last name is required." }]}
-        >
-          <Input
-            placeholder="Enter last name"
-            maxLength={80}
-            disabled={isOrthoSelected}
-          />
+        <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Last name is required." }]}>
+          <Input placeholder="Enter last name" maxLength={80} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item
-          name="phoneNumber"
-          label="Contact Number"
-          rules={[{ validator: validatePhone }]}
-        >
-          <Input
-            placeholder="0912 345 6789"
-            maxLength={16}
-            onChange={handlePhoneChange}
-            disabled={isOrthoSelected}
-          />
+        <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]}>
+          <Input placeholder="0912 345 6789" maxLength={16} onChange={handlePhoneChange} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[{ validator: validateEmail }]}
-        >
-          <Input
-            placeholder="Enter email (optional)"
-            maxLength={256}
-            disabled={isOrthoSelected}
-          />
+        <Form.Item name="email" label="Email" rules={[{ validator: validateEmail }]}>
+          <Input placeholder="Enter email (optional)" maxLength={256} disabled={isOrthoSelected} />
         </Form.Item>
-        <Form.Item
-          name="birthDate"
-          label="Birthdate"
-          rules={[{ validator: validateBirthDate }]}
-        >
+        <Form.Item name="birthDate" label="Birthdate" rules={[{ validator: validateBirthDate }]}>
           <DatePicker
             style={{ width: "100%" }}
             format="MMM D, YYYY"
@@ -276,11 +229,7 @@ const AppointmentForm = memo(({
             disabled={isOrthoSelected}
           />
         </Form.Item>
-        <Form.Item
-          name="gender"
-          label="Gender"
-          rules={[{ required: true, message: "Please select gender." }]}
-        >
+        <Form.Item name="gender" label="Gender" rules={[{ required: true, message: "Please select gender." }]}>
           <Select placeholder="Select gender" disabled={isOrthoSelected}>
             <Option value="male">Male</Option>
             <Option value="female">Female</Option>
@@ -288,15 +237,8 @@ const AppointmentForm = memo(({
             <Option value="prefer-not-to-say">Prefer not to say</Option>
           </Select>
         </Form.Item>
-        <Form.Item
-          name="address"
-          label="Complete Address"
-          rules={[{ required: false }]}
-        >
-          <Input
-            placeholder="Enter complete address (optional)"
-            disabled={isOrthoSelected}
-          />
+        <Form.Item name="address" label="Complete Address" rules={[{ required: false }]}>
+          <Input placeholder="Enter complete address (optional)" disabled={isOrthoSelected} />
         </Form.Item>
 
         {/* ── Mark as Orthodontic (only for new patients) ── */}
@@ -309,26 +251,15 @@ const AppointmentForm = memo(({
         )}
 
         {/* ── Appointment Information ── */}
-        <Form.Item
-          name="branchId"
-          label="Branch"
-          rules={[{ required: true, message: "Please select a branch." }]}
-        >
-          <Select
-            placeholder="Select branch"
-            loading={branchesLoading}
-          >
+        <Form.Item name="branchId" label="Branch" rules={[{ required: true, message: "Please select a branch." }]}>
+          <Select placeholder="Select branch" loading={branchesLoading}>
             {branches.map((b) => (
               <Option key={b.id} value={b.id}>{b.name}</Option>
             ))}
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="serviceBranchId"
-          label="Service"
-          rules={[{ required: true, message: "Please select a service." }]}
-        >
+        <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
           <Select
             placeholder={selectedBranch ? "Select service" : "Select a branch first"}
             loading={servicesLoading}
@@ -342,11 +273,7 @@ const AppointmentForm = memo(({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="date"
-          label="Preferred Date"
-          rules={[{ required: true, message: "Please pick a date." }]}
-        >
+        <Form.Item name="date" label="Preferred Date" rules={[{ required: true, message: "Please pick a date." }]}>
           <DatePicker
             style={{ width: "100%" }}
             format="MMM D, YYYY"
@@ -356,33 +283,12 @@ const AppointmentForm = memo(({
           />
         </Form.Item>
 
-        {/* ── Clean Warning Cards ── */}
-        {selectedDate && isSelectedDateClosed && (
-          <S.WarningCard>
-            <S.CardIcon>
-              <MdEventBusy size={20} />
-            </S.CardIcon>
-            <S.CardContent>
-              <S.CardTitle>Selected date is closed.</S.CardTitle>
-              <S.CardDescription>
-                The clinic is not accepting appointments on this day. Please choose another date.
-              </S.CardDescription>
-            </S.CardContent>
-          </S.WarningCard>
-        )}
-
-        {selectedDate && isDateFullyBooked && !isSelectedDateClosed && (
-          <S.WarningCard>
-            <S.CardIcon>
-              <MdOutlineEventBusy size={20} />
-            </S.CardIcon>
-            <S.CardContent>
-              <S.CardTitle>Selected date is fully booked.</S.CardTitle>
-              <S.CardDescription>
-                There are no remaining appointment slots for this date. Please choose another date.
-              </S.CardDescription>
-            </S.CardContent>
-          </S.WarningCard>
+        {/* ── Shared Availability Message ── */}
+        {selectedDate && (
+          <AvailabilityMessage
+            isClosed={isSelectedDateClosed}
+            isFullyBooked={isDateFullyBooked}
+          />
         )}
 
         {/* ── TimePicker: only shown when date is available ── */}
@@ -408,21 +314,13 @@ const AppointmentForm = memo(({
           </Form.Item>
         )}
 
-        <Form.Item
-          name="notes"
-          label="Notes / Remarks"
-          rules={[{ required: false }]}
-        >
+        <Form.Item name="notes" label="Notes / Remarks" rules={[{ required: false }]}>
           <Input.TextArea placeholder="Additional notes (optional)" rows={3} />
         </Form.Item>
 
         {showStatus && (
           <S.FullWidth>
-            <Form.Item
-              name="status"
-              label="Status"
-              rules={[{ required: true, message: "Please select a status." }]}
-            >
+            <Form.Item name="status" label="Status" rules={[{ required: true, message: "Please select a status." }]}>
               <Select placeholder="Select status">
                 {STATUS_OPTIONS_FORM.map((o) => (
                   <Option key={o.value} value={o.value}>{o.label}</Option>

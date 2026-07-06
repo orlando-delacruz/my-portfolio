@@ -30,7 +30,7 @@ const INITIAL_STATE = {
 export function useBookAppointmentForm(form) {
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ separate submission state
   const [submitted, setSubmitted] = useState(false);
   const isMounted = useRef(true);
 
@@ -38,7 +38,6 @@ export function useBookAppointmentForm(form) {
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
-  // ✅ Stabilize date keys (strings)
   const selectedDateRaw = fields.date;
   const selectedDateKey = useMemo(() => {
     return selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null;
@@ -56,7 +55,6 @@ export function useBookAppointmentForm(form) {
     error: availabilityError,
   } = useAppointmentAvailability(fields.branchId, selectedDateKey, monthKey);
 
-
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -64,7 +62,6 @@ export function useBookAppointmentForm(form) {
     };
   }, []);
 
-  // disabledDate: only block past dates
   const disabledDate = useCallback(
     (current) => {
       if (!fields.branchId) return true;
@@ -104,7 +101,7 @@ export function useBookAppointmentForm(form) {
         return;
       }
 
-      setLoading(true);
+      setIsSubmitting(true); // ✅ only submission loading
       setErrors({});
       try {
         const appointment = await bookPublicAppointment({
@@ -137,7 +134,7 @@ export function useBookAppointmentForm(form) {
         console.error("Booking error:", err);
         setErrors({ form: err.message || "Failed to book." });
       } finally {
-        setLoading(false);
+        setIsSubmitting(false); // ✅ always reset
       }
     },
     []
@@ -150,10 +147,14 @@ export function useBookAppointmentForm(form) {
     form?.resetFields();
   }, [form]);
 
+  // Combined loading for other parts (like disabling form while fetching)
+  const loading = isSubmitting || availabilityLoading || branchesLoading || servicesLoading;
+
   return {
     fields,
     errors,
-    loading: loading || availabilityLoading || branchesLoading || servicesLoading,
+    loading,                 // still available for other uses
+    isSubmitting,            // ✅ specific for button
     submitted,
     branches,
     services,

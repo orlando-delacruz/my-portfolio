@@ -1,11 +1,12 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button, Alert } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
 import SuccessView from "../../SuccessView";
 import { useBookAppointmentForm } from "./useBookAppointmentForm";
+import AvailabilityMessage from "../../AvailabilityMessage";
 import Logo from "../../../../assets/images/logo.webp";
 
 const { TextArea } = Input;
@@ -17,7 +18,7 @@ const BookAppointmentForm = () => {
   const {
     fields,
     errors,
-    loading,
+    isSubmitting,  // ✅ use submission state for button
     submitted,
     branches,
     services,
@@ -27,7 +28,6 @@ const BookAppointmentForm = () => {
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
-    availabilityError,
     handleSubmit,
     handleReset,
     updateFields,
@@ -60,8 +60,8 @@ const BookAppointmentForm = () => {
       newFields.time = "";
     }
     if (changedValues.date !== undefined) {
-      const newDate = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
-      newFields.date = newDate;
+      newFields.date = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
+      newFields.time = "";
     }
     if (changedValues.time !== undefined) {
       newFields.time = changedValues.time ? changedValues.time.format("HH:mm:ss") : "";
@@ -243,55 +243,38 @@ const BookAppointmentForm = () => {
                     style={{ width: "100%" }}
                     format="MMM D, YYYY"
                     placeholder="Select your preferred date"
-                    disabledDate={disabledDate}   // only past dates
+                    disabledDate={disabledDate}
                     disabled={!fields.branchId}
                   />
                 </Form.Item>
-                <Form.Item
-                  name="time"
-                  label="Preferred Time"
-                  rules={[{ validator: validatePreferredTime }]}
-                >
-                  <TimePicker
-                    style={{ width: "100%" }}
-                    format="h:mm A"
-                    use12Hours
-                    placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
-                    disabledTime={disabledTime}
-                    hideDisabledOptions={true}
-                    disabled={!fields.branchId || !fields.date || isDateUnavailable}
-                    popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    popupClassName="time-picker-no-scrollbar"
-                  />
-                </Form.Item>
-              </S.FieldRow>
 
-              {/* Alerts for unavailable dates */}
-              {fields.date && isSelectedDateClosed && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="The selected date is unavailable because the clinic is closed."
-                  style={{ marginBottom: 8 }}
-                />
-              )}
-              {fields.date && isDateFullyBooked && !isSelectedDateClosed && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="The selected date is fully booked. Please choose another date."
-                  style={{ marginBottom: 8 }}
-                />
-              )}
-              {availabilityError && (
-                <Alert
-                  type="error"
-                  showIcon
-                  message="Error loading availability"
-                  description={availabilityError}
-                  style={{ marginBottom: 8 }}
-                />
-              )}
+                {fields.date && isDateUnavailable ? (
+                  <S.FullWidth>
+                    <AvailabilityMessage
+                      isClosed={isSelectedDateClosed}
+                      isFullyBooked={isDateFullyBooked}
+                    />
+                  </S.FullWidth>
+                ) : (
+                  <Form.Item
+                    name="time"
+                    label="Preferred Time"
+                    rules={[{ validator: validatePreferredTime }]}
+                  >
+                    <TimePicker
+                      style={{ width: "100%" }}
+                      format="h:mm A"
+                      use12Hours
+                      placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
+                      disabledTime={disabledTime}
+                      hideDisabledOptions={true}
+                      disabled={!fields.branchId || !fields.date}
+                      popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      popupClassName="time-picker-no-scrollbar"
+                    />
+                  </Form.Item>
+                )}
+              </S.FieldRow>
 
               <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
                 <Select
@@ -318,9 +301,9 @@ const BookAppointmentForm = () => {
             <Button
               type="primary"
               htmlType="submit"
-              loading={loading}
-              disabled={loading || (fields.date && isDateUnavailable)}
-              icon={!loading && <AiOutlineSend />}
+              loading={isSubmitting}          // ✅ use submission state
+              disabled={isSubmitting || (fields.date && isDateUnavailable)}
+              icon={!isSubmitting && <AiOutlineSend />}
               size="large"
               style={{
                 background: "#886217",
@@ -330,7 +313,7 @@ const BookAppointmentForm = () => {
                 padding: "0 32px",
               }}
             >
-              {loading ? "Submitting…" : "Book Appointment"}
+              {isSubmitting ? "Submitting…" : "Book Appointment"}
             </Button>
           </S.ButtonWrapper>
         </Form>

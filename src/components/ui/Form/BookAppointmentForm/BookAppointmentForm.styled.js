@@ -7,6 +7,10 @@ const fadeIn = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
+export const FullWidth = styled.div`
+  width: 100%;
+`;
+
 export const FormCard = styled.div`
   width: 100%;
   max-width: 900px;
