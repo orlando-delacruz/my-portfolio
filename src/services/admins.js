@@ -8,18 +8,29 @@ async function callAdminAPI(action, body) {
     body: JSON.stringify(body),
   });
 
-  const contentType = res.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await res.text();
+  // Log for debugging
+  console.log(`📡 API response status: ${res.status} for action ${action}`);
+
+  // Get the response text first
+  const text = await res.text();
+  console.log(`📡 Response body:`, text);
+
+  // Try to parse JSON
+  let result;
+  try {
+    result = JSON.parse(text);
+  } catch (e) {
     throw new Error(
       `Unexpected response from API: ${text || "empty response"}`,
     );
   }
 
-  const result = await res.json();
   if (!res.ok) {
-    throw new Error(result.error || "API request failed");
+    // Use the `error` field from our API, fallback to `message` or generic
+    const errorMsg = result?.error || result?.message || "API request failed";
+    throw new Error(errorMsg);
   }
+
   return result;
 }
 

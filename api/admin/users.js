@@ -20,7 +20,7 @@ function errorResponse(res, step, message, status = 500, details = null) {
   return res.status(status).json({
     success: false,
     step,
-    message,
+    error: message,
     details: details || undefined,
   });
 }
@@ -98,7 +98,6 @@ export default async function handler(req, res) {
       }
 
       if (existingAdmin) {
-        // If admin already exists, return success (idempotent)
         console.log(
           `ℹ️ Admin already exists for email ${email}, returning existing.`,
         );
@@ -247,7 +246,6 @@ export default async function handler(req, res) {
             email,
           });
         if (authUpdateError) {
-          // Log warning but don't fail the whole operation
           console.warn("⚠️ Failed to update auth email:", authUpdateError);
           return res.status(200).json({
             success: true,
@@ -279,7 +277,6 @@ export default async function handler(req, res) {
         const { error: deleteAuthError } =
           await supabase.auth.admin.deleteUser(authUserId);
         if (deleteAuthError) {
-          // Log error but continue deleting admin
           console.error("⚠️ Auth deletion failed:", deleteAuthError);
           // Continue to delete admin, but return a warning
           const { error: deleteAdminError } = await supabase
@@ -360,7 +357,7 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       step: "unhandled",
-      message: err.message || "Unknown error",
+      error: err.message || "Unknown error",
       stack: err.stack,
     });
   }
