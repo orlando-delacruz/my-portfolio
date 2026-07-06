@@ -1,41 +1,30 @@
 // src/pages/admin/Settings/sections/OperatingHours/TimeTable.styled.js
 import styled from "styled-components";
+import adminTheme from "../../../../../styles/adminTheme";
 
 export const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-
-  &::-webkit-scrollbar {
-    height: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #d8c6a5;
-    border-radius: 3px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  padding: 0 5px;
 `;
 
-export const Table = styled.table`
+export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   font-size: 10px;
-  font-family: "Inter", sans-serif;
-
-  @media (max-width: 768px) {
-    min-width: 500px;
-  }
+  min-width: 500px;
 `;
 
-export const Thead = styled.thead``;
+export const Thead = styled.thead`
+  background: ${adminTheme.colors.champagne};
+`;
 
-export const Tbody = styled.tbody``;
+export const Tbody = styled.tbody`
+  // any styles
+`;
 
 export const Tr = styled.tr`
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
 
   &:last-child {
     border-bottom: none;
@@ -45,41 +34,50 @@ export const Tr = styled.tr`
 export const Th = styled.th`
   padding: 8px 6px;
   text-align: left;
-  font-weight: 500;
-  color: #222222;
-  font-size: 10px;
-  white-space: nowrap;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
 `;
 
 export const Td = styled.td`
-  padding: 6px 6px;
-  text-align: left;
+  padding: 6px 4px;
   vertical-align: middle;
-  color: #222222;
-`;
+  color: ${adminTheme.colors.black};
 
-export const TimeSelect = styled.select`
-  padding: 4px 6px;
-  border-radius: 5px;
-  border: 1px solid rgba(0, 0, 0, 0.20);
-  background: #ffffff;
-  font-size: 10px;
-  font-family: "Inter", sans-serif;
-  color: #222222;
-  outline: none;
-  width: 80px;
-
-  &:focus {
-    border-color: #886217;
+  .ant-select {
+    width: 90px !important;
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .ant-select-selector {
+    border-radius: 4px !important;
+    border-color: rgba(0,0,0,0.15) !important;
+    height: 28px !important;
+    padding: 0 6px !important;
+    font-size: 10px !important;
   }
 
-  @media (max-width: 768px) {
-    width: 100%;
-    min-width: 70px;
+  .ant-select-selection-item {
+    font-size: 10px !important;
+    line-height: 26px !important;
+  }
+
+  .ant-switch {
+    min-width: 28px;
+    height: 16px;
+    line-height: 16px;
+
+    .ant-switch-handle {
+      width: 12px;
+      height: 12px;
+      top: 2px;
+      left: 2px;
+
+      &::before {
+        border-radius: 50%;
+      }
+    }
+
+    &.ant-switch-checked {
+      background-color: ${adminTheme.colors.primary};
+    }
   }
 `;

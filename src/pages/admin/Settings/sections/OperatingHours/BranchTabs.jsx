@@ -1,25 +1,21 @@
 // src/pages/admin/Settings/sections/OperatingHours/BranchTabs.jsx
 import { memo } from "react";
-import { BRANCH_OPTIONS } from "../../../../../data/admin/settings";
 import * as S from "./BranchTabs.styled";
 
-const BranchTabs = memo(({ activeBranch, onBranchChange }) => {
+const BranchTabs = memo(({ branches, activeBranch, onBranchChange }) => {
+  if (!branches || branches.length === 0) return null;
+
   return (
-    <S.TabsContainer role="tablist" aria-label="Select branch for operating hours">
-      {BRANCH_OPTIONS.map((branch) => {
-        const isActive = activeBranch === branch.id;
-        return (
-          <S.Tab
-            key={branch.id}
-            role="tab"
-            aria-selected={isActive}
-            $active={isActive}
-            onClick={() => onBranchChange(branch.id)}
-          >
-            {branch.label}
-          </S.Tab>
-        );
-      })}
+    <S.TabsContainer>
+      {branches.map((branch) => (
+        <S.TabButton
+          key={branch.id} // ✅ branch.id is UUID, stable
+          $active={activeBranch === branch.id}
+          onClick={() => onBranchChange(branch.id)}
+        >
+          {branch.name}
+        </S.TabButton>
+      ))}
     </S.TabsContainer>
   );
 });

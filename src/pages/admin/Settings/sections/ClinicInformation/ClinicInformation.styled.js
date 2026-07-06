@@ -9,6 +9,66 @@ export const Container = styled.div`
   gap: 16px;
 `;
 
+export const LogoSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+`;
+
+export const LogoPreview = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+`;
+
+export const LogoPlaceholder = styled.span`
+  font-size: 10px;
+  color: #aaa;
+`;
+
+export const LogoActions = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+export const LogoDisplay = styled.div`
+  width: 100%;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    padding: 4px;
+  }
+
+  span {
+    font-size: 12px;
+    color: #888;
+  }
+`;
+
 export const FieldGroup = styled.div`
   width: 100%;
   display: flex;

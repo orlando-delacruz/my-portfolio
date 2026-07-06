@@ -19,26 +19,30 @@ const AppointmentSettings = () => {
   const icon = SETTINGS_SECTION_ICONS.appointment;
   const [saving, setSaving] = useState(false);
 
-  // ✅ Individual selectors - stable references
   const settings = useSettingsStore((state) => state.appointmentSettings);
   const loading = useSettingsStore((state) => state.loading);
-  const updateAppointmentSetting = useSettingsStore((state) => state.updateAppointmentSetting);
-
-  const handleChange = useCallback((field, value) => {
-    updateAppointmentSetting(field, value);
-  }, [updateAppointmentSetting]);
+  const updateAppointmentSettings = useSettingsStore((state) => state.updateAppointmentSettings);
+  const isSaving = useSettingsStore((state) => state.isSaving);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await updateAppointmentSettings({
+        intervalMinutes: settings.intervalMinutes,
+        advanceBookingDays: settings.advanceBookingDays,
+        cancellationHours: settings.cancellationHours,
+        defaultDurationMinutes: settings.defaultDurationMinutes,
+      });
       message.success("Appointment settings saved successfully!");
-    } catch {
-      message.error("Failed to save settings.");
+    } catch (err) {
+      message.error(err?.message || "Failed to save settings.");
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [settings, updateAppointmentSettings]);
+
+  // Use the store's updateAppointmentSetting for immediate changes
+  const updateSetting = useSettingsStore((state) => state.updateAppointmentSetting);
 
   if (loading) {
     return (
@@ -55,7 +59,12 @@ const AppointmentSettings = () => {
       <S.Container>
         <S.FieldGroup>
           <S.FieldLabel>Appointment Interval</S.FieldLabel>
-          <Select value={settings.intervalMinutes} onChange={(val) => handleChange("intervalMinutes", val)} style={{ width: "100%" }} size="small">
+          <Select
+            value={settings?.intervalMinutes || 30}
+            onChange={(val) => updateSetting("intervalMinutes", val)}
+            style={{ width: "100%" }}
+            size="small"
+          >
             {INTERVAL_OPTIONS.map((opt) => (
               <Option key={opt.value} value={opt.value}>{opt.label}</Option>
             ))}
@@ -64,7 +73,12 @@ const AppointmentSettings = () => {
 
         <S.FieldGroup>
           <S.FieldLabel>Advance Booking</S.FieldLabel>
-          <Select value={settings.advanceBookingDays} onChange={(val) => handleChange("advanceBookingDays", val)} style={{ width: "100%" }} size="small">
+          <Select
+            value={settings?.advanceBookingDays || 60}
+            onChange={(val) => updateSetting("advanceBookingDays", val)}
+            style={{ width: "100%" }}
+            size="small"
+          >
             {ADVANCE_BOOKING_OPTIONS.map((opt) => (
               <Option key={opt.value} value={opt.value}>{opt.label}</Option>
             ))}
@@ -73,7 +87,12 @@ const AppointmentSettings = () => {
 
         <S.FieldGroup>
           <S.FieldLabel>Cancellation Notice</S.FieldLabel>
-          <Select value={settings.cancellationHours} onChange={(val) => handleChange("cancellationHours", val)} style={{ width: "100%" }} size="small">
+          <Select
+            value={settings?.cancellationHours || 24}
+            onChange={(val) => updateSetting("cancellationHours", val)}
+            style={{ width: "100%" }}
+            size="small"
+          >
             {CANCELLATION_OPTIONS.map((opt) => (
               <Option key={opt.value} value={opt.value}>{opt.label}</Option>
             ))}
@@ -82,7 +101,12 @@ const AppointmentSettings = () => {
 
         <S.FieldGroup>
           <S.FieldLabel>Default Appointment Duration</S.FieldLabel>
-          <Select value={settings.defaultDurationMinutes} onChange={(val) => handleChange("defaultDurationMinutes", val)} style={{ width: "100%" }} size="small">
+          <Select
+            value={settings?.defaultDurationMinutes || 30}
+            onChange={(val) => updateSetting("defaultDurationMinutes", val)}
+            style={{ width: "100%" }}
+            size="small"
+          >
             {DURATION_OPTIONS.map((opt) => (
               <Option key={opt.value} value={opt.value}>{opt.label}</Option>
             ))}
@@ -94,7 +118,7 @@ const AppointmentSettings = () => {
             type="primary"
             icon={<SaveOutlined />}
             onClick={handleSave}
-            loading={saving}
+            loading={saving || isSaving}
             style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
           >
             Save Settings

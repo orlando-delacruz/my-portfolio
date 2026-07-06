@@ -87,12 +87,6 @@ export const MOCK_NOTIFICATIONS = {
   marketing: false,
 };
 
-// ── Branch Options ──
-export const BRANCH_OPTIONS = [
-  { id: "rosario", label: "Rosario Branch" },
-  { id: "sanjuan", label: "San Juan Branch" },
-];
-
 // ── Time options (for select fields) ──
 export const TIME_OPTIONS = [
   "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",

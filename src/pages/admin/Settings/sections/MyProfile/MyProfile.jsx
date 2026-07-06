@@ -15,18 +15,19 @@ const MyProfile = () => {
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
 
-  // ✅ Individual selectors - stable references
   const profile = useSettingsStore((state) => state.profile);
   const loading = useSettingsStore((state) => state.loading);
   const updateProfile = useSettingsStore((state) => state.updateProfile);
+  const uploadAvatar = useSettingsStore((state) => state.uploadAvatar);
   const googleLogin = useSettingsStore((state) => state.googleLogin);
   const toggleGoogleLogin = useSettingsStore((state) => state.toggleGoogleLogin);
+  const isSaving = useSettingsStore((state) => state.isSaving);
 
   const handleEdit = useCallback(() => {
     form.setFieldsValue({
-      fullName: profile.fullName,
-      email: profile.email,
-      phone: profile.phone,
+      fullName: profile?.fullName || "",
+      email: profile?.email || "",
+      phone: profile?.phone || "",
     });
     setIsEditing(true);
   }, [profile, form]);
@@ -41,22 +42,27 @@ const MyProfile = () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      updateProfile("fullName", values.fullName);
-      updateProfile("email", values.email);
-      updateProfile("phone", values.phone);
+
+      await updateProfile({
+        fullName: values.fullName,
+        email: values.email,
+        phone: values.phone,
+      });
+
       if (avatarFile) {
-        updateProfile("avatarUrl", URL.createObjectURL(avatarFile));
+        await uploadAvatar(avatarFile);
       }
+
       message.success("Profile updated successfully!");
       setIsEditing(false);
       setAvatarFile(null);
-    } catch {
-      // Validation error
+    } catch (err) {
+      if (err?.errorFields) return;
+      message.error(err?.message || "Failed to update profile");
     } finally {
       setSaving(false);
     }
-  }, [form, updateProfile, avatarFile]);
+  }, [form, updateProfile, uploadAvatar, avatarFile]);
 
   const handleAvatarChange = useCallback((file) => {
     setAvatarFile(file);
@@ -68,7 +74,7 @@ const MyProfile = () => {
     message.info("Google account disconnected.");
   }, [toggleGoogleLogin]);
 
-  if (loading) {
+  if (loading && !profile) {
     return (
       <SettingsCard icon={icon} title="My Profile" subtitle="Manage your personal information and account" variant="highlighted">
         <S.Container>
@@ -85,7 +91,7 @@ const MyProfile = () => {
           <S.AvatarWrapper>
             <Avatar
               size={100}
-              src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatarUrl}
+              src={avatarFile ? URL.createObjectURL(avatarFile) : profile?.avatarUrl}
               icon={<UserOutlined />}
               style={{ background: "#D8C6A5", width: 100, height: 100 }}
             />
@@ -156,10 +162,16 @@ const MyProfile = () => {
             </S.FieldGroup>
 
             <S.ActionRow>
-              <Button icon={<CloseOutlined />} onClick={handleCancel} disabled={saving}>
+              <Button icon={<CloseOutlined />} onClick={handleCancel} disabled={saving || isSaving}>
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SaveOutlined />}
+                loading={saving || isSaving}
+                style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
+              >
                 Save Profile
               </Button>
             </S.ActionRow>
@@ -168,12 +180,20 @@ const MyProfile = () => {
           <>
             <S.FieldGroup>
               <S.FieldRow>
-                <S.FieldItem><SettingsField label="Full Name" value={profile.fullName} /></S.FieldItem>
-                <S.FieldItem><SettingsField label="Email" value={profile.email} /></S.FieldItem>
+                <S.FieldItem>
+                  <SettingsField label="Full Name" value={profile?.fullName || "—"} />
+                </S.FieldItem>
+                <S.FieldItem>
+                  <SettingsField label="Email" value={profile?.email || "—"} />
+                </S.FieldItem>
               </S.FieldRow>
               <S.FieldRow>
-                <S.FieldItem><SettingsField label="Phone Number" value={profile.phone} /></S.FieldItem>
-                <S.FieldItem><SettingsField label="Password" value="••••••" /></S.FieldItem>
+                <S.FieldItem>
+                  <SettingsField label="Phone Number" value={profile?.phone || "—"} />
+                </S.FieldItem>
+                <S.FieldItem>
+                  <SettingsField label="Password" value="••••••" />
+                </S.FieldItem>
               </S.FieldRow>
             </S.FieldGroup>
 
@@ -212,7 +232,12 @@ const MyProfile = () => {
             </S.GoogleSection>
 
             <S.ActionRow>
-              <Button type="primary" icon={<EditOutlined />} onClick={handleEdit} style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={handleEdit}
+                style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
+              >
                 Edit Profile
               </Button>
             </S.ActionRow>

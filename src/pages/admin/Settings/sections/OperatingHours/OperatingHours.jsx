@@ -1,7 +1,7 @@
 // src/pages/admin/Settings/sections/OperatingHours/OperatingHours.jsx
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useMemo } from "react";
 import { Button, message, Skeleton } from "antd";
-import { SETTINGS_SECTION_ICONS, BRANCH_OPTIONS } from "../../../../../data/admin/settings";
+import { SETTINGS_SECTION_ICONS } from "../../../../../data/admin/settings";
 import SettingsCard from "../../../../../components/admin/Settings/SettingsCard";
 import BranchTabs from "./BranchTabs";
 import TimeTable from "./TimeTable";
@@ -10,31 +10,61 @@ import * as S from "./OperatingHours.styled";
 
 const OperatingHours = () => {
   const icon = SETTINGS_SECTION_ICONS.operatingHours;
-  const [activeBranch, setActiveBranch] = useState(BRANCH_OPTIONS[0].id);
+
+  const branches = useSettingsStore((state) => state.branches);
+  const loading = useSettingsStore((state) => state.loading);
+  const operatingHours = useSettingsStore((state) => state.operatingHours);
+  const updateBranchHours = useSettingsStore((state) => state.updateBranchHours);
+  const isSaving = useSettingsStore((state) => state.isSaving);
+
+  // Store only the user's selection. Initially null.
+  const [selectedBranchId, setSelectedBranchId] = useState(null);
+
+  // Derive the active branch: use selected if valid, otherwise fallback to first branch.
+  const activeBranch = useMemo(() => {
+    if (!branches || branches.length === 0) return null;
+    if (selectedBranchId && branches.some((b) => b.id === selectedBranchId)) {
+      return selectedBranchId;
+    }
+    return branches[0].id;
+  }, [branches, selectedBranchId]);
+
   const [saving, setSaving] = useState(false);
 
-  // ✅ Individual selectors - stable references
-  const operatingHours = useSettingsStore((state) => state.operatingHours);
-  const loading = useSettingsStore((state) => state.loading);
-  const updateOperatingHours = useSettingsStore((state) => state.updateOperatingHours);
+  const currentBranchHours = useMemo(() => {
+    if (!activeBranch) return [];
+    return operatingHours[activeBranch] || [];
+  }, [operatingHours, activeBranch]);
 
-  const currentBranchHours = operatingHours[activeBranch] || [];
+  const handleBranchChange = useCallback((branchId) => {
+    setSelectedBranchId(branchId);
+  }, []);
 
   const handleSave = useCallback(async () => {
+    if (!activeBranch) return;
     setSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await updateBranchHours(activeBranch, currentBranchHours);
       message.success("Operating hours saved successfully!");
-    } catch {
-      message.error("Failed to save operating hours.");
+    } catch (err) {
+      message.error(err?.message || "Failed to save operating hours.");
     } finally {
       setSaving(false);
     }
+  }, [activeBranch, currentBranchHours, updateBranchHours]);
+
+  const handleUpdateHour = useCallback((branchId, dayIndex, field, value) => {
+    const updateLocal = useSettingsStore.getState().updateOperatingHoursLocal;
+    updateLocal(branchId, dayIndex, field, value);
   }, []);
 
   if (loading) {
     return (
-      <SettingsCard icon={icon} title="Operating Hours" subtitle="Set your clinic's operating hours for each branch">
+      <SettingsCard
+        icon={icon}
+        title="Operating Hours"
+        subtitle="Set your clinic's operating hours for each branch"
+      >
         <S.Container>
           <Skeleton active paragraph={{ rows: 6 }} />
         </S.Container>
@@ -42,20 +72,44 @@ const OperatingHours = () => {
     );
   }
 
+  if (branches.length === 0) {
+    return (
+      <SettingsCard
+        icon={icon}
+        title="Operating Hours"
+        subtitle="Set your clinic's operating hours for each branch"
+      >
+        <S.Container>
+          <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>
+            No branches found. Please add a branch first.
+          </div>
+        </S.Container>
+      </SettingsCard>
+    );
+  }
+
   return (
-    <SettingsCard icon={icon} title="Operating Hours" subtitle="Set your clinic's operating hours for each branch">
+    <SettingsCard
+      icon={icon}
+      title="Operating Hours"
+      subtitle="Set your clinic's operating hours for each branch"
+    >
       <S.Container>
-        <BranchTabs activeBranch={activeBranch} onBranchChange={setActiveBranch} />
+        <BranchTabs
+          branches={branches}
+          activeBranch={activeBranch}
+          onBranchChange={handleBranchChange}
+        />
         <TimeTable
           branchId={activeBranch}
           hours={currentBranchHours}
-          onUpdateHour={updateOperatingHours}
+          onUpdateHour={handleUpdateHour}
         />
         <S.Footer>
           <Button
             type="primary"
             onClick={handleSave}
-            loading={saving}
+            loading={saving || isSaving}
             style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
           >
             Save Hours

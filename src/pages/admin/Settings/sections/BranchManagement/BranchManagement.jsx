@@ -16,12 +16,12 @@ const BranchManagement = () => {
   const [editingBranch, setEditingBranch] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // ✅ Individual selectors - stable references
   const branches = useSettingsStore((state) => state.branches);
   const loading = useSettingsStore((state) => state.loading);
   const addBranch = useSettingsStore((state) => state.addBranch);
   const updateBranch = useSettingsStore((state) => state.updateBranch);
   const deleteBranch = useSettingsStore((state) => state.deleteBranch);
+  const isSaving = useSettingsStore((state) => state.isSaving);
 
   const handleAddNew = useCallback(() => {
     setEditingBranch(null);
@@ -47,8 +47,12 @@ const BranchManagement = () => {
       okType: "danger",
       cancelText: "Cancel",
       onOk: async () => {
-        deleteBranch(branch.id);
-        message.success("Branch deleted successfully.");
+        try {
+          await deleteBranch(branch.id);
+          message.success("Branch deleted successfully.");
+        } catch (err) {
+          message.error(err?.message || "Failed to delete branch.");
+        }
       },
     });
   }, [deleteBranch]);
@@ -63,20 +67,20 @@ const BranchManagement = () => {
     try {
       const values = await form.validateFields();
       setSaving(true);
-      await new Promise((resolve) => setTimeout(resolve, 600));
 
       if (editingBranch) {
-        updateBranch(editingBranch.id, values);
+        await updateBranch(editingBranch.id, values);
         message.success("Branch updated successfully!");
       } else {
-        addBranch(values);
+        await addBranch(values);
         message.success("Branch added successfully!");
       }
       setModalOpen(false);
       setEditingBranch(null);
       form.resetFields();
-    } catch {
-      // Validation error
+    } catch (err) {
+      if (err?.errorFields) return;
+      message.error(err?.message || "Failed to save branch.");
     } finally {
       setSaving(false);
     }
@@ -104,7 +108,7 @@ const BranchManagement = () => {
                 <S.BranchItem key={branch.id}>
                   <S.BranchInfo>
                     <S.BranchName>{branch.name}</S.BranchName>
-                    <S.BranchAddress>{branch.address}</S.BranchAddress>
+                    <S.BranchAddress>{branch.address || "—"}</S.BranchAddress>
                   </S.BranchInfo>
                   <S.BranchActions>
                     <Button
@@ -165,14 +169,14 @@ const BranchManagement = () => {
         title={editingBranch ? "Edit Branch" : "Add New Branch"}
         onCancel={handleModalCancel}
         footer={[
-          <Button key="cancel" onClick={handleModalCancel} disabled={saving}>
+          <Button key="cancel" onClick={handleModalCancel} disabled={saving || isSaving}>
             Cancel
           </Button>,
           <Button
             key="save"
             type="primary"
             onClick={handleModalSave}
-            loading={saving}
+            loading={saving || isSaving}
             style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
           >
             {editingBranch ? "Update" : "Add"}

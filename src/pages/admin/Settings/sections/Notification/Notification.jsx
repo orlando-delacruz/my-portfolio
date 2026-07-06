@@ -12,26 +12,25 @@ const Notification = () => {
   const icon = SETTINGS_SECTION_ICONS.notification;
   const [saving, setSaving] = useState(false);
 
-  // ✅ Individual selectors - stable references
   const notifications = useSettingsStore((state) => state.notifications);
   const loading = useSettingsStore((state) => state.loading);
-  const toggleNotification = useSettingsStore((state) => state.toggleNotification);
+  const updateNotifications = useSettingsStore((state) => state.updateNotifications);
+  const isSaving = useSettingsStore((state) => state.isSaving);
 
-  const handleToggle = useCallback((key) => {
-    toggleNotification(key);
-  }, [toggleNotification]);
+  // Local toggle (optimistic)
+  const toggleNotification = useSettingsStore((state) => state.toggleNotification);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await updateNotifications(notifications);
       message.success("Notification preferences saved successfully!");
-    } catch {
-      message.error("Failed to save preferences.");
+    } catch (err) {
+      message.error(err?.message || "Failed to save preferences.");
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [notifications, updateNotifications]);
 
   if (loading) {
     return (
@@ -47,29 +46,29 @@ const Notification = () => {
     <SettingsCard icon={icon} title="Notification" subtitle="Manage your notification preferences">
       <S.Container>
         <ToggleSwitch
-          checked={notifications.email}
-          onChange={() => handleToggle("email")}
+          checked={notifications?.email !== false}
+          onChange={() => toggleNotification("email")}
           label="Email Notification"
           description="Receive email notifications for appointments and updates"
         />
 
         <ToggleSwitch
-          checked={notifications.sms}
-          onChange={() => handleToggle("sms")}
+          checked={notifications?.sms !== false}
+          onChange={() => toggleNotification("sms")}
           label="SMS Notification"
           description="Receive SMS reminders for appointments and updates"
         />
 
         <ToggleSwitch
-          checked={notifications.reminders}
-          onChange={() => handleToggle("reminders")}
+          checked={notifications?.reminders !== false}
+          onChange={() => toggleNotification("reminders")}
           label="Appointment Reminders"
           description="Receive reminders before appointments"
         />
 
         <ToggleSwitch
-          checked={notifications.marketing}
-          onChange={() => handleToggle("marketing")}
+          checked={notifications?.marketing === true}
+          onChange={() => toggleNotification("marketing")}
           label="Marketing Updates"
           description="Receive updates about offers and promotions"
         />
@@ -79,7 +78,7 @@ const Notification = () => {
             type="primary"
             icon={<SaveOutlined />}
             onClick={handleSave}
-            loading={saving}
+            loading={saving || isSaving}
             style={{ background: "#886217", borderColor: "#886217", borderRadius: "5px" }}
           >
             Save Preferences

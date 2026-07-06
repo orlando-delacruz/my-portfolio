@@ -16,11 +16,9 @@ import AppointmentSettings from "./sections/AppointmentSettings";
 import Notification from "./sections/Notification";
 
 const Settings = () => {
-  // ✅ Individual selectors - no object creation
   const loading = useSettingsStore((state) => state.loading);
   const error = useSettingsStore((state) => state.error);
   const fetchSettings = useSettingsStore((state) => state.fetchSettings);
-
   const fetched = useRef(false);
 
   useEffect(() => {
@@ -30,9 +28,7 @@ const Settings = () => {
     }
   }, [fetchSettings]);
 
-  const handleRetry = () => {
-    fetchSettings();
-  };
+  const handleRetry = () => fetchSettings();
 
   return (
     <AdminLayout>
@@ -48,7 +44,7 @@ const Settings = () => {
           <S.ErrorContainer>
             <Alert
               type="error"
-              message="Failed to load settings"
+              title="Failed to load settings"  // ✅ changed from message to title
               description={error}
               showIcon
               action={
