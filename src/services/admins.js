@@ -19,16 +19,21 @@ async function callAdminAPI(action, body) {
   let result;
   try {
     result = JSON.parse(text);
-  } catch (e) {
-    throw new Error(
+  } catch (parseError) {
+    const error = new Error(
       `Unexpected response from API: ${text || "empty response"}`,
     );
+    error.cause = parseError;
+    throw error;
   }
 
   if (!res.ok) {
     // Use the `error` field from our API, fallback to `message` or generic
     const errorMsg = result?.error || result?.message || "API request failed";
-    throw new Error(errorMsg);
+    const error = new Error(errorMsg);
+    // Attach the result as cause if available
+    if (result) error.cause = result;
+    throw error;
   }
 
   return result;

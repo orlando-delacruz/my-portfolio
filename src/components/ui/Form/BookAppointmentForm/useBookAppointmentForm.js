@@ -2,12 +2,16 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { message } from "antd";
 import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween"; // <-- Add this
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
 import { useAppointmentAvailability } from "../../../../hooks/useAppointmentAvailability";
 import { bookPublicAppointment } from "../../../../services/publicBooking";
 import { supabase } from "../../../../services/supabase/supabase";
 import { getRawPhoneDigits } from "../../../../utils/phoneFormatter";
+
+// ── Extend dayjs with isBetween plugin ──
+dayjs.extend(isBetween);
 
 const INITIAL_STATE = {
   firstName: "",
@@ -78,6 +82,7 @@ export function useBookAppointmentForm(form) {
       if (!fields.branchId) return true;
       if (!current) return false;
       const dateStr = dayjs(current).format("YYYY-MM-DD");
+      // Now isBetween is available because we extended dayjs
       const isClosure = closures.some((c) => {
         const start = dayjs(c.start_date);
         const end = dayjs(c.end_date);
@@ -125,21 +130,14 @@ export function useBookAppointmentForm(form) {
 
       message.success("Appointment booked successfully!");
       setSubmitted(true);
-      // ── Send confirmation email ──
+
+      // ── Send confirmation email (fire and forget) ──
       if (appointment?.id) {
         fetch("/api/send-confirmation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ appointmentId: appointment.id }),
         }).catch((err) => console.error("Confirmation email failed:", err));
-      }
-      // ── Trigger confirmation email via Trigger.dev ──
-      if (appointment?.id) {
-        fetch("/api/trigger-confirmation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appointmentId: appointment.id }),
-        }).catch((err) => console.error("Trigger confirmation failed:", err));
       }
     } catch (err) {
       console.error("Booking error:", err);
