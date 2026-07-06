@@ -104,9 +104,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, admin: existingAdmin });
       }
 
-      // ── Check if auth user already exists (idempotent) ──
+      // ── Check if auth user already exists (using auth schema) ──
       const { data: existingAuthUser, error: authCheckError } = await supabase
-        .from("auth.users")
+        .schema("auth")
+        .from("users")
         .select("id")
         .eq("email", email)
         .maybeSingle();
