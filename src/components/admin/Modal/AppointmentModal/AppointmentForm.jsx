@@ -1,7 +1,8 @@
 // src/components/admin/Modal/AppointmentModal/AppointmentForm.jsx
-import { memo, useEffect, useCallback, useRef } from "react";
+import { memo, useEffect, useCallback, useRef, useMemo } from "react";
 import { Form, Input, Select, DatePicker, TimePicker, Switch, Radio } from "antd";
 import dayjs from "dayjs";
+import { MdEventBusy, MdOutlineEventBusy } from "react-icons/md";
 import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
@@ -55,13 +56,32 @@ const AppointmentForm = memo(({
 }) => {
   const { branches, loading: branchesLoading } = useBranches();
   const selectedBranch = Form.useWatch("branchId", form);
-  const selectedDate = Form.useWatch("date", form);
-  const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
 
-  const { disabledTime, isDateFullyBooked, isDateDisabled } = useAppointmentAvailability(
+  // Stabilize date keys (strings) to avoid re-renders
+  const selectedDateRaw = Form.useWatch("date", form);
+  const selectedDateKey = useMemo(() => {
+    return selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null;
+  }, [selectedDateRaw]);
+
+  const monthKey = useMemo(() => {
+    return selectedDateKey ? selectedDateKey.slice(0, 7) : null;
+  }, [selectedDateKey]);
+
+  const selectedDate = useMemo(() => {
+    return selectedDateKey ? dayjs(selectedDateKey) : null;
+  }, [selectedDateKey]);
+
+  const {
+    disabledTime,
+    isDateFullyBooked,
+    isSelectedDateClosed,
+  } = useAppointmentAvailability(
     selectedBranch,
-    selectedDate
+    selectedDateKey,
+    monthKey
   );
+
+  const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
 
   const handlePhoneChange = useCallback(
     (e) => {
@@ -84,16 +104,17 @@ const AppointmentForm = memo(({
     prevBranchRef.current = selectedBranch;
   }, [selectedBranch, form]);
 
+  // Only disable past dates
   const disabledDate = useCallback(
     (current) => {
       if (!selectedBranch) return true;
       if (!current) return false;
-      return isDateDisabled(current);
+      return current.startOf("day").isBefore(dayjs().startOf("day"));
     },
-    [selectedBranch, isDateDisabled]
+    [selectedBranch]
   );
 
-  // ── Patient type change handler (tabs) ──
+  // ── Patient type change handler ──
   const handlePatientTypeChange = (e) => {
     const value = e.target.value;
     onPatientTypeChange?.(value);
@@ -113,7 +134,7 @@ const AppointmentForm = memo(({
     form.setFieldValue('serviceBranchId', undefined);
   };
 
-  // ── Orthodontic patient selection handler ──
+  // ── Orthodontic patient selection ──
   const handleOrthoPatientSelect = (patientId) => {
     if (!patientId) {
       onOrthodonticPatientSelect?.(null);
@@ -122,7 +143,6 @@ const AppointmentForm = memo(({
     const patient = orthodonticPatients.find(p => p.id === patientId);
     if (patient) {
       onOrthodonticPatientSelect?.(patient);
-      // ✅ Auto-populate branch and all patient fields
       form.setFieldsValue({
         firstName: patient.first_name,
         middleName: patient.middle_name || '',
@@ -132,15 +152,17 @@ const AppointmentForm = memo(({
         birthDate: patient.birth_date ? dayjs(patient.birth_date) : null,
         gender: patient.gender || '',
         address: patient.address || '',
-        branchId: patient.branch_id || undefined, // ✅ Restored automatic branch selection
+        branchId: patient.branch_id || undefined,
       });
-      // Clear any previous service selection
       form.setFieldValue('serviceBranchId', undefined);
     }
   };
 
   const isOrthoSelected = patientType === 'ortho' && selectedOrthodonticPatient !== null;
   const isNewPatient = patientType === 'new';
+
+  // Determine if the selected date is unavailable
+  const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
 
   return (
     <Form form={form} layout="vertical" requiredMark={false}>
@@ -310,7 +332,7 @@ const AppointmentForm = memo(({
           <Select
             placeholder={selectedBranch ? "Select service" : "Select a branch first"}
             loading={servicesLoading}
-            disabled={!selectedBranch}
+            disabled={!selectedBranch || isDateUnavailable}
           >
             {serviceBranches.map((sb) => (
               <Option key={sb.service_branch_id} value={sb.service_branch_id}>
@@ -334,29 +356,57 @@ const AppointmentForm = memo(({
           />
         </Form.Item>
 
-        {selectedDate && isDateFullyBooked && (
-          <S.WarningText>This date is fully booked. Please select another date.</S.WarningText>
+        {/* ── Clean Warning Cards ── */}
+        {selectedDate && isSelectedDateClosed && (
+          <S.WarningCard>
+            <S.CardIcon>
+              <MdEventBusy size={20} />
+            </S.CardIcon>
+            <S.CardContent>
+              <S.CardTitle>Selected date is closed.</S.CardTitle>
+              <S.CardDescription>
+                The clinic is not accepting appointments on this day. Please choose another date.
+              </S.CardDescription>
+            </S.CardContent>
+          </S.WarningCard>
         )}
 
-        <Form.Item
-          name="time"
-          label="Preferred Time"
-          extra={selectedDate && dayjs(selectedDate).day() === 5 ? "Friday hours: 10:30 AM – 4:00 PM" : "Clinic hours: 10:30 AM – 5:00 PM"}
-          rules={[{ required: true, message: "Please pick a time." }]}
-        >
-          <TimePicker
-            key={`time-${selectedBranch}-${selectedDate?.format('YYYY-MM-DD')}`}
-            style={{ width: "100%" }}
-            format="h:mm A"
-            use12Hours
-            placeholder="Select time"
-            disabledTime={disabledTime}
-            hideDisabledOptions={true}
-            disabled={!selectedBranch || !selectedDate}
-            popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            popupClassName="time-picker-no-scrollbar"
-          />
-        </Form.Item>
+        {selectedDate && isDateFullyBooked && !isSelectedDateClosed && (
+          <S.WarningCard>
+            <S.CardIcon>
+              <MdOutlineEventBusy size={20} />
+            </S.CardIcon>
+            <S.CardContent>
+              <S.CardTitle>Selected date is fully booked.</S.CardTitle>
+              <S.CardDescription>
+                There are no remaining appointment slots for this date. Please choose another date.
+              </S.CardDescription>
+            </S.CardContent>
+          </S.WarningCard>
+        )}
+
+        {/* ── TimePicker: only shown when date is available ── */}
+        {selectedDate && !isSelectedDateClosed && !isDateFullyBooked && (
+          <Form.Item
+            name="time"
+            label="Preferred Time"
+            extra={selectedDate && dayjs(selectedDate).day() === 5 ? "Friday hours: 10:30 AM – 4:00 PM" : "Clinic hours: 10:30 AM – 5:00 PM"}
+            rules={[{ required: true, message: "Please pick a time." }]}
+          >
+            <TimePicker
+              key={`time-${selectedBranch}-${selectedDate?.format('YYYY-MM-DD')}`}
+              style={{ width: "100%" }}
+              format="h:mm A"
+              use12Hours
+              placeholder="Select time"
+              disabledTime={disabledTime}
+              hideDisabledOptions={true}
+              disabled={!selectedBranch || !selectedDate}
+              popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              popupClassName="time-picker-no-scrollbar"
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="notes"
@@ -387,4 +437,4 @@ const AppointmentForm = memo(({
 });
 
 AppointmentForm.displayName = "AppointmentForm";
-export default AppointmentForm;
+export default memo(AppointmentForm);

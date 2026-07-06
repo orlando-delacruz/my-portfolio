@@ -17,10 +17,9 @@ const OperatingHours = () => {
   const updateBranchHours = useSettingsStore((state) => state.updateBranchHours);
   const isSaving = useSettingsStore((state) => state.isSaving);
 
-  // Store only the user's selection. Initially null.
   const [selectedBranchId, setSelectedBranchId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  // Derive the active branch: use selected if valid, otherwise fallback to first branch.
   const activeBranch = useMemo(() => {
     if (!branches || branches.length === 0) return null;
     if (selectedBranchId && branches.some((b) => b.id === selectedBranchId)) {
@@ -28,8 +27,6 @@ const OperatingHours = () => {
     }
     return branches[0].id;
   }, [branches, selectedBranchId]);
-
-  const [saving, setSaving] = useState(false);
 
   const currentBranchHours = useMemo(() => {
     if (!activeBranch) return [];
@@ -60,11 +57,7 @@ const OperatingHours = () => {
 
   if (loading) {
     return (
-      <SettingsCard
-        icon={icon}
-        title="Operating Hours"
-        subtitle="Set your clinic's operating hours for each branch"
-      >
+      <SettingsCard icon={icon} title="Operating Hours" subtitle="Set your clinic's operating hours for each branch">
         <S.Container>
           <Skeleton active paragraph={{ rows: 6 }} />
         </S.Container>
@@ -74,11 +67,7 @@ const OperatingHours = () => {
 
   if (branches.length === 0) {
     return (
-      <SettingsCard
-        icon={icon}
-        title="Operating Hours"
-        subtitle="Set your clinic's operating hours for each branch"
-      >
+      <SettingsCard icon={icon} title="Operating Hours" subtitle="Set your clinic's operating hours for each branch">
         <S.Container>
           <div style={{ padding: "20px", textAlign: "center", color: "#888" }}>
             No branches found. Please add a branch first.
@@ -89,11 +78,7 @@ const OperatingHours = () => {
   }
 
   return (
-    <SettingsCard
-      icon={icon}
-      title="Operating Hours"
-      subtitle="Set your clinic's operating hours for each branch"
-    >
+    <SettingsCard icon={icon} title="Operating Hours" subtitle="Set your clinic's operating hours for each branch">
       <S.Container>
         <BranchTabs
           branches={branches}

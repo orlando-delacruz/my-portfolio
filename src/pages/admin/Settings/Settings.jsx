@@ -44,7 +44,7 @@ const Settings = () => {
           <S.ErrorContainer>
             <Alert
               type="error"
-              title="Failed to load settings"  // ✅ changed from message to title
+              title="Failed to load settings"
               description={error}
               showIcon
               action={

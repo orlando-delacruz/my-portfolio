@@ -6,9 +6,11 @@ import { fetchActiveBranches } from "../services/branches";
 import { supabase } from "../services/supabase/supabase";
 
 const useSettingsStore = create((set, get) => ({
+  // ── State ──
   loading: false,
   error: null,
   isSaving: false,
+
   clinicInfo: null,
   operatingHours: {},
   branches: [],
@@ -17,12 +19,23 @@ const useSettingsStore = create((set, get) => ({
   appointmentSettings: null,
   notifications: null,
 
+  // ── Actions ──
+
+  /**
+   * Fetch all settings data from Supabase
+   */
   fetchSettings: async () => {
     if (get().loading) return;
     set({ loading: true, error: null });
+
     try {
+      // 1. Fetch clinic settings
       const settings = await fetchSettings();
+
+      // 2. Fetch active branches
       const branches = await fetchActiveBranches();
+
+      // 3. Fetch operating hours for each branch
       const hoursMap = {};
       for (const branch of branches) {
         try {
@@ -30,7 +43,7 @@ const useSettingsStore = create((set, get) => ({
           hoursMap[branch.id] = hours;
         } catch (err) {
           console.warn(`Failed to fetch hours for branch ${branch.id}:`, err);
-          // Default 7-day array (all closed)
+          // Fallback only if fetch fails (should not happen with seeded data)
           hoursMap[branch.id] = [
             { id: null, dayOfWeek: 0, openTime: null, closeTime: null, breakStartTime: null, breakEndTime: null, isClosed: true, branchId: branch.id },
             { id: null, dayOfWeek: 1, openTime: null, closeTime: null, breakStartTime: null, breakEndTime: null, isClosed: true, branchId: branch.id },
@@ -43,6 +56,7 @@ const useSettingsStore = create((set, get) => ({
         }
       }
 
+      // 4. Get current user profile
       const { data: { user } } = await supabase.auth.getUser();
       let profile = null;
       if (user) {
@@ -53,7 +67,9 @@ const useSettingsStore = create((set, get) => ({
           .single();
         profile = adminData;
       }
+
       const googleConnected = user?.app_metadata?.provider === "google" || false;
+
       set({
         clinicInfo: {
           name: settings.clinic_name || "",
@@ -95,6 +111,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // ── Update clinic information ──
   updateClinicInfo: async (values) => {
     set({ isSaving: true, error: null });
     try {
@@ -104,18 +121,16 @@ const useSettingsStore = create((set, get) => ({
         phone: values.phone,
         website: values.website,
       });
-      set((state) => {
-        return {
-          clinicInfo: {
-            ...state.clinicInfo,
-            name: updated.clinic_name,
-            email: updated.email,
-            phone: updated.phone,
-            website: updated.website,
-          },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        clinicInfo: {
+          ...state.clinicInfo,
+          name: updated.clinic_name,
+          email: updated.email,
+          phone: updated.phone,
+          website: updated.website,
+        },
+        isSaving: false,
+      }));
       return updated;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to update clinic information" });
@@ -123,6 +138,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // ── Update profile ──
   updateProfile: async (values) => {
     const state = get();
     if (!state.profile?.id) throw new Error("No profile found");
@@ -141,18 +157,16 @@ const useSettingsStore = create((set, get) => ({
         .select()
         .single();
       if (error) throw error;
-      set((state) => {
-        return {
-          profile: {
-            ...state.profile,
-            fullName: data.full_name,
-            email: data.email,
-            phone: data.phone_number,
-            avatarUrl: data.avatar_url,
-          },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        profile: {
+          ...state.profile,
+          fullName: data.full_name,
+          email: data.email,
+          phone: data.phone_number,
+          avatarUrl: data.avatar_url,
+        },
+        isSaving: false,
+      }));
       if (values.email && values.email !== state.profile.email) {
         await supabase.auth.updateUser({ email: values.email });
       }
@@ -163,6 +177,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // ── Upload avatar ──
   uploadAvatar: async (file) => {
     const state = get();
     if (!state.profile?.id) throw new Error("No profile found");
@@ -177,12 +192,10 @@ const useSettingsStore = create((set, get) => ({
         .select()
         .single();
       if (error) throw error;
-      set((state) => {
-        return {
-          profile: { ...state.profile, avatarUrl: data.avatar_url },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        profile: { ...state.profile, avatarUrl: data.avatar_url },
+        isSaving: false,
+      }));
       return avatarUrl;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to upload avatar" });
@@ -190,17 +203,17 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // ── Toggle Google login ──
   toggleGoogleLogin: () => {
-    set((state) => {
-      return {
-        googleLogin: {
-          ...state.googleLogin,
-          connected: !state.googleLogin.connected,
-        },
-      };
-    });
+    set((state) => ({
+      googleLogin: {
+        ...state.googleLogin,
+        connected: !state.googleLogin.connected,
+      },
+    }));
   },
 
+  // ── Branch CRUD ──
   addBranch: async (branch) => {
     set({ isSaving: true, error: null });
     try {
@@ -222,9 +235,10 @@ const useSettingsStore = create((set, get) => ({
       } catch (seedErr) {
         console.warn("Failed to seed operating hours:", seedErr);
       }
-      set((state) => {
-        return { branches: [...state.branches, data], isSaving: false };
-      });
+      set((state) => ({
+        branches: [...state.branches, data],
+        isSaving: false,
+      }));
       return data;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to add branch" });
@@ -242,9 +256,10 @@ const useSettingsStore = create((set, get) => ({
         .select()
         .single();
       if (error) throw error;
-      set((state) => {
-        return { branches: state.branches.map((b) => (b.id === id ? data : b)), isSaving: false };
-      });
+      set((state) => ({
+        branches: state.branches.map((b) => (b.id === id ? data : b)),
+        isSaving: false,
+      }));
       return data;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to update branch" });
@@ -262,25 +277,28 @@ const useSettingsStore = create((set, get) => ({
       if (hoursError) console.warn("Failed to delete operating hours:", hoursError);
       const { error } = await supabase.from("branches").delete().eq("id", id);
       if (error) throw error;
-      set((state) => {
-        return { branches: state.branches.filter((b) => b.id !== id), isSaving: false };
-      });
+      set((state) => ({
+        branches: state.branches.filter((b) => b.id !== id),
+        isSaving: false,
+      }));
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to delete branch" });
       throw err;
     }
   },
 
+  // ── Operating hours ──
   updateBranchHours: async (branchId, hours) => {
     set({ isSaving: true, error: null });
     try {
       const updated = await updateOperatingHours(branchId, hours);
-      set((state) => {
-        return {
-          operatingHours: { ...state.operatingHours, [branchId]: updated },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        operatingHours: {
+          ...state.operatingHours,
+          [branchId]: updated,
+        },
+        isSaving: false,
+      }));
       return updated;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to update operating hours" });
@@ -297,6 +315,7 @@ const useSettingsStore = create((set, get) => ({
       return { operatingHours: hours };
     }),
 
+  // ── Appointment settings ──
   updateAppointmentSettings: async (values) => {
     set({ isSaving: true, error: null });
     try {
@@ -306,18 +325,16 @@ const useSettingsStore = create((set, get) => ({
         cancellation_hours: values.cancellationHours,
         default_appointment_duration: values.defaultDurationMinutes,
       });
-      set((state) => {
-        return {
-          appointmentSettings: {
-            ...state.appointmentSettings,
-            intervalMinutes: updated.appointment_interval_minutes,
-            advanceBookingDays: updated.advance_booking_days,
-            cancellationHours: updated.cancellation_hours,
-            defaultDurationMinutes: updated.default_appointment_duration,
-          },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        appointmentSettings: {
+          ...state.appointmentSettings,
+          intervalMinutes: updated.appointment_interval_minutes,
+          advanceBookingDays: updated.advance_booking_days,
+          cancellationHours: updated.cancellation_hours,
+          defaultDurationMinutes: updated.default_appointment_duration,
+        },
+        isSaving: false,
+      }));
       return updated;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to update appointment settings" });
@@ -325,6 +342,15 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  updateAppointmentSetting: (field, value) =>
+    set((state) => ({
+      appointmentSettings: {
+        ...state.appointmentSettings,
+        [field]: value,
+      },
+    })),
+
+  // ── Notifications ──
   updateNotifications: async (values) => {
     set({ isSaving: true, error: null });
     try {
@@ -335,17 +361,15 @@ const useSettingsStore = create((set, get) => ({
         reminder_minutes: values.reminders ? 60 : 0,
       };
       const updated = await updateSettings(dbUpdates);
-      set(() => {
-        return {
-          notifications: {
-            email: updated.email_notifications_enabled !== false,
-            sms: updated.sms_notifications_enabled !== false,
-            reminders: updated.reminder_minutes ? updated.reminder_minutes > 0 : true,
-            marketing: updated.marketing_notifications_enabled === true,
-          },
-          isSaving: false,
-        };
-      });
+      set(() => ({
+        notifications: {
+          email: updated.email_notifications_enabled !== false,
+          sms: updated.sms_notifications_enabled !== false,
+          reminders: updated.reminder_minutes ? updated.reminder_minutes > 0 : true,
+          marketing: updated.marketing_notifications_enabled === true,
+        },
+        isSaving: false,
+      }));
       return updated;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to update notification preferences" });
@@ -353,26 +377,15 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  updateAppointmentSetting: (field, value) =>
-    set((state) => {
-      return {
-        appointmentSettings: {
-          ...state.appointmentSettings,
-          [field]: value,
-        },
-      };
-    }),
-
   toggleNotification: (key) =>
-    set((state) => {
-      return {
-        notifications: {
-          ...state.notifications,
-          [key]: !state.notifications[key],
-        },
-      };
-    }),
+    set((state) => ({
+      notifications: {
+        ...state.notifications,
+        [key]: !state.notifications[key],
+      },
+    })),
 
+  // ── Upload logo ──
   uploadLogo: async (file) => {
     const state = get();
     set({ isSaving: true, error: null });
@@ -380,12 +393,10 @@ const useSettingsStore = create((set, get) => ({
       const oldLogoUrl = state.clinicInfo?.logoUrl || null;
       const logoUrl = await uploadLogo(file, oldLogoUrl);
       await updateSettings({ logo_url: logoUrl });
-      set((state) => {
-        return {
-          clinicInfo: { ...state.clinicInfo, logoUrl },
-          isSaving: false,
-        };
-      });
+      set((state) => ({
+        clinicInfo: { ...state.clinicInfo, logoUrl },
+        isSaving: false,
+      }));
       return logoUrl;
     } catch (err) {
       set({ isSaving: false, error: err.message || "Failed to upload logo" });
@@ -393,6 +404,7 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
+  // ── Reset ──
   reset: () => {
     set({
       loading: false,

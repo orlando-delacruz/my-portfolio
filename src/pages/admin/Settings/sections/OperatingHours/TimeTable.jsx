@@ -13,10 +13,7 @@ const TIME_OPTIONS = [
   "19:00", "19:30", "20:00",
 ];
 
-const DAY_LABELS = [
-  "Sunday", "Monday", "Tuesday", "Wednesday",
-  "Thursday", "Friday", "Saturday"
-];
+const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const TimeTable = memo(({ branchId, hours, onUpdateHour }) => {
   const handleTimeChange = useCallback((dayIndex, field, value) => {
@@ -24,12 +21,12 @@ const TimeTable = memo(({ branchId, hours, onUpdateHour }) => {
     onUpdateHour(branchId, dayIndex, field, value);
   }, [branchId, onUpdateHour]);
 
+  // ✅ Correct: pass the switch's checked state directly
   const handleToggleClosed = useCallback((dayIndex, checked) => {
-    onUpdateHour(branchId, dayIndex, "isClosed", !checked);
+    onUpdateHour(branchId, dayIndex, "isClosed", checked);
   }, [branchId, onUpdateHour]);
 
-  // Ensure hours is an array of 7 items
-  const safeHours = hours && hours.length === 7 ? hours : [];
+  const safeHours = Array.isArray(hours) ? hours : [];
 
   return (
     <S.TableWrapper>
@@ -44,9 +41,7 @@ const TimeTable = memo(({ branchId, hours, onUpdateHour }) => {
         </S.Thead>
         <S.Tbody>
           {safeHours.map((hour, index) => {
-            // ✅ Stable key: use hour.id if exists, else composite
             const key = hour.id ? hour.id : `${branchId}-${hour.dayOfWeek}`;
-
             return (
               <S.Tr key={key}>
                 <S.Td>{DAY_LABELS[hour.dayOfWeek] || "—"}</S.Td>

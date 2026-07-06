@@ -1,6 +1,6 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Button, Alert } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
@@ -26,6 +26,8 @@ const BookAppointmentForm = () => {
     disabledTime,
     disabledDate,
     isDateFullyBooked,
+    isSelectedDateClosed,
+    availabilityError,
     handleSubmit,
     handleReset,
     updateFields,
@@ -58,8 +60,8 @@ const BookAppointmentForm = () => {
       newFields.time = "";
     }
     if (changedValues.date !== undefined) {
-      newFields.date = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
-      newFields.time = "";
+      const newDate = changedValues.date ? dayjs(changedValues.date).format("YYYY-MM-DD") : "";
+      newFields.date = newDate;
     }
     if (changedValues.time !== undefined) {
       newFields.time = changedValues.time ? changedValues.time.format("HH:mm:ss") : "";
@@ -112,7 +114,6 @@ const BookAppointmentForm = () => {
     return Promise.resolve();
   };
 
-  // ── Birthdate is now optional ──
   const validateBirthDate = (_, value) => {
     if (!value) return Promise.resolve();
     if (dayjs(value).isAfter(dayjs(), "day")) {
@@ -137,6 +138,8 @@ const BookAppointmentForm = () => {
     }
     return Promise.resolve();
   };
+
+  const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
 
   if (submitted) {
     return (
@@ -240,7 +243,7 @@ const BookAppointmentForm = () => {
                     style={{ width: "100%" }}
                     format="MMM D, YYYY"
                     placeholder="Select your preferred date"
-                    disabledDate={disabledDate}
+                    disabledDate={disabledDate}   // only past dates
                     disabled={!fields.branchId}
                   />
                 </Form.Item>
@@ -256,22 +259,45 @@ const BookAppointmentForm = () => {
                     placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
                     disabledTime={disabledTime}
                     hideDisabledOptions={true}
-                    disabled={!fields.branchId || !fields.date}
+                    disabled={!fields.branchId || !fields.date || isDateUnavailable}
                     popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     popupClassName="time-picker-no-scrollbar"
                   />
                 </Form.Item>
               </S.FieldRow>
 
-              {fields.date && isDateFullyBooked && (
-                <S.WarningText>This date is fully booked. Please select another date.</S.WarningText>
+              {/* Alerts for unavailable dates */}
+              {fields.date && isSelectedDateClosed && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="The selected date is unavailable because the clinic is closed."
+                  style={{ marginBottom: 8 }}
+                />
+              )}
+              {fields.date && isDateFullyBooked && !isSelectedDateClosed && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="The selected date is fully booked. Please choose another date."
+                  style={{ marginBottom: 8 }}
+                />
+              )}
+              {availabilityError && (
+                <Alert
+                  type="error"
+                  showIcon
+                  message="Error loading availability"
+                  description={availabilityError}
+                  style={{ marginBottom: 8 }}
+                />
               )}
 
               <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
                 <Select
                   placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
                   loading={servicesLoading}
-                  disabled={!fields.branchId || services.length === 0}
+                  disabled={!fields.branchId || services.length === 0 || isDateUnavailable}
                   size="large"
                 >
                   {services.map((s) => (
@@ -293,7 +319,7 @@ const BookAppointmentForm = () => {
               type="primary"
               htmlType="submit"
               loading={loading}
-              disabled={loading || (fields.date && isDateFullyBooked)}
+              disabled={loading || (fields.date && isDateUnavailable)}
               icon={!loading && <AiOutlineSend />}
               size="large"
               style={{

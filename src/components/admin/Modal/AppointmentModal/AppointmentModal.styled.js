@@ -86,14 +86,49 @@ export const SubmitBtn = styled.button`
   }
 `;
 
-export const WarningText = styled.span`
+// ── Clean Warning Card ──
+export const WarningCard = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fefaf0;
+  border: 1px solid #fde8c8;
+  border-radius: 10px;
+  margin: 8px 0;
+  width: 100%;
+  transition: background 0.2s;
+`;
+
+export const CardIcon = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   color: #e67e22;
+  margin-top: 2px;
+`;
+
+export const CardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+`;
+
+export const CardTitle = styled.strong`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  margin: 0;
+  line-height: 1.4;
+`;
+
+export const CardDescription = styled.span`
   font-size: 13px;
-  margin-top: 4px;
-  display: block;
-  background: #fef9e7;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border-left: 3px solid #e67e22;
+  color: ${adminTheme.colors.gray};
   line-height: 1.5;
+  margin: 0;
 `;

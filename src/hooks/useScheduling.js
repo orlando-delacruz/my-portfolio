@@ -17,9 +17,11 @@ export function useScheduling(branchId, selectedDate) {
     };
   }, []);
 
+  const dateKey = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
+
   useEffect(() => {
     async function loadSchedule() {
-      if (!branchId || !selectedDate) {
+      if (!branchId || !dateKey) {
         if (isMounted.current) {
           setOperatingHours(null);
           setIsClosed(false);
@@ -35,8 +37,9 @@ export function useScheduling(branchId, selectedDate) {
       }
 
       try {
-        const hours = await getOperatingHoursForDay(branchId, selectedDate);
-        const closed = await isDateClosed(branchId, selectedDate);
+        const dateObj = dayjs(dateKey);
+        const hours = await getOperatingHoursForDay(branchId, dateObj);
+        const closed = await isDateClosed(branchId, dateObj);
 
         if (isMounted.current) {
           setOperatingHours(hours);
@@ -45,14 +48,13 @@ export function useScheduling(branchId, selectedDate) {
             hours,
             closed,
             branchId,
-            date: selectedDate,
+            date: dateKey,
           });
         }
       } catch (err) {
         console.error("❌ Error fetching schedule:", err);
         if (isMounted.current) {
           setError(err.message || "Failed to load schedule");
-          // ✅ FALLBACK: use default hours so UI works
           setOperatingHours({
             isClosed: false,
             openTime: "10:30:00",
@@ -68,10 +70,9 @@ export function useScheduling(branchId, selectedDate) {
     }
 
     loadSchedule();
-  }, [branchId, selectedDate]);
+  }, [branchId, dateKey]);
 
   const disabledTime = useCallback(() => {
-    // Use default hours if operatingHours is null (e.g., loading or no data)
     const hours = operatingHours || {
       isClosed: false,
       openTime: "10:30:00",
