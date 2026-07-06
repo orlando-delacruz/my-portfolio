@@ -4,13 +4,29 @@ import adminTheme from "../../../../../styles/adminTheme";
 
 export const TabsContainer = styled.div`
   display: flex;
+  flex-wrap: nowrap;               /* prevent wrapping */
+  overflow-x: auto;                /* enable horizontal scroll */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
   gap: 10px;
   padding: 5px 5px 0 5px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.20);
-  flex-wrap: wrap;
+
+  /* Hide scrollbar for cleaner look (optional) */
+  scrollbar-width: none;           /* Firefox */
+  &::-webkit-scrollbar {
+    display: none;                 /* Chrome, Safari, Edge */
+  }
+
+  /* Ensure scrollable area is visible on touch devices */
+  @media (max-width: 768px) {
+    padding: 5px 10px 0 10px;      /* more horizontal padding for touch */
+  }
 `;
 
 export const TabButton = styled.button`
+  flex-shrink: 0;                  /* prevent tab from shrinking */
+  white-space: nowrap;             /* keep label on one line */
   padding: 5px 15px;
   border-radius: 10px 10px 0 0;
   border: none;
