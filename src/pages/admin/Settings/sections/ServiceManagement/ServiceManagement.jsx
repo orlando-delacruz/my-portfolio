@@ -105,6 +105,7 @@ const ServiceManagement = () => {
     form.resetFields();
   }, [form]);
 
+  // ✅ Fixed: only show success after the update actually happens
   const handleModalSave = useCallback(async () => {
     try {
       const values = await form.validateFields();
@@ -247,13 +248,7 @@ const ServiceManagement = () => {
         onCancel={handleModalCancel}
         footer={[
           <Button key="cancel" onClick={handleModalCancel} disabled={savingService}>Cancel</Button>,
-          <Button
-            key="save"
-            type="primary"
-            onClick={handleModalSave}
-            loading={savingService}
-            style={{ background: "#886217", borderColor: "#886217" }}
-          >
+          <Button key="save" type="primary" onClick={handleModalSave} loading={savingService} style={{ background: "#886217", borderColor: "#886217" }}>
             {editingService ? "Update Service" : "Save Service"}
           </Button>
         ]}
