@@ -49,7 +49,7 @@ export const BranchInfo = styled.div`
 
 export const BranchName = styled.span`
   color: ${adminTheme.colors.black};
-  font-size: 12px;
+  font-size: 14px; /* ✅ was 12px */
   font-family: "Inter", sans-serif;
   font-weight: 500;
   word-wrap: break-word;
@@ -57,7 +57,7 @@ export const BranchName = styled.span`
 
 export const BranchAddress = styled.span`
   color: ${adminTheme.colors.black};
-  font-size: 10px;
+  font-size: 14px; /* ✅ was 10px */
   font-family: "Inter", sans-serif;
   font-weight: 400;
   word-wrap: break-word;

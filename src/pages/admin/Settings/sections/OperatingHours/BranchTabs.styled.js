@@ -4,34 +4,32 @@ import adminTheme from "../../../../../styles/adminTheme";
 
 export const TabsContainer = styled.div`
   display: flex;
-  flex-wrap: nowrap;               /* prevent wrapping */
-  overflow-x: auto;                /* enable horizontal scroll */
+  flex-wrap: nowrap;
+  overflow-x: auto;
   overflow-y: hidden;
-  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   gap: 10px;
   padding: 5px 5px 0 5px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.20);
 
-  /* Hide scrollbar for cleaner look (optional) */
-  scrollbar-width: none;           /* Firefox */
+  scrollbar-width: none;
   &::-webkit-scrollbar {
-    display: none;                 /* Chrome, Safari, Edge */
+    display: none;
   }
 
-  /* Ensure scrollable area is visible on touch devices */
   @media (max-width: 768px) {
-    padding: 5px 10px 0 10px;      /* more horizontal padding for touch */
+    padding: 5px 10px 0 10px;
   }
 `;
 
 export const TabButton = styled.button`
-  flex-shrink: 0;                  /* prevent tab from shrinking */
-  white-space: nowrap;             /* keep label on one line */
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 5px 15px;
   border-radius: 10px 10px 0 0;
   border: none;
   background: transparent;
-  font-size: 10px;
+  font-size: 14px; /* ✅ was 10px */
   font-family: "Inter", sans-serif;
   font-weight: 400;
   color: ${({ $active }) => ($active ? adminTheme.colors.primary : adminTheme.colors.black)};

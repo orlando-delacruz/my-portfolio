@@ -11,7 +11,7 @@ export const TableWrapper = styled.div`
 export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 14px; /* ✅ was 10px */
   min-width: 500px;
 `;
 
@@ -19,9 +19,7 @@ export const Thead = styled.thead`
   background: ${adminTheme.colors.champagne};
 `;
 
-export const Tbody = styled.tbody`
-  // any styles
-`;
+export const Tbody = styled.tbody``;
 
 export const Tr = styled.tr`
   border-bottom: 1px solid rgba(0, 0, 0, 0.10);
@@ -35,29 +33,31 @@ export const Th = styled.th`
   padding: 8px 6px;
   text-align: left;
   font-weight: 600;
+  font-size: 14px; /* ✅ was smaller */
   color: ${adminTheme.colors.black};
 `;
 
 export const Td = styled.td`
   padding: 6px 4px;
   vertical-align: middle;
+  font-size: 14px; /* ✅ was 10px */
   color: ${adminTheme.colors.black};
 
   .ant-select {
-    width: 90px !important;
+    width: 100px !important;
   }
 
   .ant-select-selector {
     border-radius: 4px !important;
-    border-color: rgba(0,0,0,0.15) !important;
-    height: 28px !important;
-    padding: 0 6px !important;
-    font-size: 10px !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    font-size: 14px !important;
   }
 
   .ant-select-selection-item {
-    font-size: 10px !important;
-    line-height: 26px !important;
+    font-size: 14px !important;
+    line-height: 30px !important;
   }
 
   .ant-switch {

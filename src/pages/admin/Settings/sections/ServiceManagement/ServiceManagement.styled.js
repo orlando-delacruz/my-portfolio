@@ -21,14 +21,8 @@ export const ServiceListWrapper = styled.div`
   overflow-y: auto;
   padding-right: 8px;
   scrollbar-width: thin;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: ${adminTheme.colors.champagne};
-    border-radius: 4px;
-  }
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: ${adminTheme.colors.champagne}; border-radius: 4px; }
 `;
 
 export const DetailsWrapper = styled.div`
@@ -46,10 +40,7 @@ export const BackButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-
-  &:hover {
-    text-decoration: underline;
-  }
+  &:hover { text-decoration: underline; }
 `;
 
 export const ServiceCard = styled.div`
@@ -60,7 +51,6 @@ export const ServiceCard = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   background: ${({ $selected }) => ($selected ? "rgba(136,98,23,0.06)" : "white")};
-
   &:hover {
     border-color: ${adminTheme.colors.primary};
     background: rgba(136,98,23,0.04);
@@ -83,7 +73,7 @@ export const ServiceName = styled.span`
 export const ServiceCardMeta = styled.div`
   display: flex;
   gap: 16px;
-  font-size: 12px;
+  font-size: 14px; /* ✅ was 12px */
   color: ${adminTheme.colors.gray};
 `;
 

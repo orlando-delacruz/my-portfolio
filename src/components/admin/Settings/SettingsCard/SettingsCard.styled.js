@@ -58,7 +58,7 @@ export const HeaderText = styled.div`
 
 export const Title = styled.div`
   color: ${adminTheme.colors.black};
-  font-size: 12px;
+  font-size: 14px; /* ✅ was 12px */
   font-family: "Inter", sans-serif;
   font-weight: 500;
   word-wrap: break-word;
@@ -66,8 +66,9 @@ export const Title = styled.div`
 
 export const Subtitle = styled.div`
   color: ${adminTheme.colors.black};
-  font-size: 10px;
+  font-size: 14px; /* ✅ was 10px */
   font-family: "Inter", sans-serif;
   font-weight: 400;
   word-wrap: break-word;
+  opacity: 0.7;
 `;

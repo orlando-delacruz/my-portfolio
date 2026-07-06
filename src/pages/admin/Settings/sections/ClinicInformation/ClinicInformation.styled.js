@@ -37,7 +37,7 @@ export const LogoPreview = styled.div`
 `;
 
 export const LogoPlaceholder = styled.span`
-  font-size: 10px;
+  font-size: 14px !important;
   color: #aaa;
 `;
 
@@ -64,7 +64,7 @@ export const LogoDisplay = styled.div`
   }
 
   span {
-    font-size: 12px;
+    font-size: 14px !important;
     color: #888;
   }
 `;
@@ -101,23 +101,81 @@ export const FieldItem = styled.div`
 
     label {
       color: rgba(0, 0, 0, 0.50);
-      font-size: 10px;
+      font-size: 14px !important;
       font-weight: 400;
       height: auto;
     }
   }
 
-  .ant-input {
+  .ant-input,
+  .ant-input-affix-wrapper .ant-input {
     border-radius: 5px;
     border-color: rgba(0, 0, 0, 0.20);
-    font-size: 10px;
+    font-size: 14px !important;
     padding: 4px 8px;
-    height: 28px;
+    height: 32px;
+    color: #222;
+
+    &::placeholder {
+      font-size: 14px !important;
+      color: #aaa;
+    }
 
     &:hover,
     &:focus {
       border-color: #886217;
       box-shadow: 0 0 0 2px rgba(136, 98, 23, 0.10);
+    }
+  }
+
+  .ant-input-affix-wrapper {
+    border-radius: 5px;
+    border-color: rgba(0, 0, 0, 0.20);
+    font-size: 14px !important;
+    height: 32px;
+    padding: 0 8px;
+    .ant-input {
+      height: 30px;
+    }
+  }
+
+  .ant-select {
+    .ant-select-selector {
+      border-radius: 5px;
+      border-color: rgba(0, 0, 0, 0.20);
+      font-size: 14px !important;
+      height: 32px !important;
+      padding: 0 8px !important;
+      box-shadow: none !important;
+    }
+
+    .ant-select-selection-item {
+      font-size: 14px !important;
+      line-height: 30px !important;
+      color: #222;
+    }
+
+    .ant-select-arrow {
+      font-size: 14px !important;
+    }
+  }
+
+  .ant-input-textarea textarea {
+    font-size: 14px !important;
+    border-radius: 5px;
+    border-color: rgba(0, 0, 0, 0.20);
+    &::placeholder {
+      font-size: 14px !important;
+    }
+  }
+
+  .ant-picker {
+    border-radius: 5px;
+    border-color: rgba(0, 0, 0, 0.20);
+    font-size: 14px !important;
+    height: 32px;
+    .ant-picker-input > input {
+      font-size: 14px !important;
     }
   }
 `;

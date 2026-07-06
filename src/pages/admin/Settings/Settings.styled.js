@@ -43,7 +43,7 @@ export const PageTitle = styled.h1`
 `;
 
 export const PageSubtitle = styled.p`
-  font-size: 12px;
+  font-size: 14px;
   color: ${adminTheme.colors.black};
   margin: 0;
   opacity: 0.7;
@@ -57,17 +57,14 @@ export const ErrorContainer = styled.div`
   }
 `;
 
-// ── 3-Column Grid Layout ──
+// ── 2-Column Grid Layout ──
 export const ContentGrid = styled.div`
   padding: 0 24px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* ✅ 2 columns on large screens */
   gap: 14px;
 
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
+  // Tablet / Mobile: 1 column
   @media (max-width: 768px) {
     padding: 0 16px;
     grid-template-columns: 1fr;

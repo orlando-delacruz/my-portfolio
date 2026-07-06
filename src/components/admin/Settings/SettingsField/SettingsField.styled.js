@@ -13,7 +13,7 @@ export const FieldWrapper = styled.div`
 
 export const Label = styled.span`
   color: rgba(0, 0, 0, 0.50);
-  font-size: 10px;
+  font-size: 16px;
   font-family: "Inter", sans-serif;
   font-weight: 400;
   word-wrap: break-word;
@@ -27,7 +27,7 @@ export const Value = styled.span`
   outline: 1px solid rgba(0, 0, 0, 0.20);
   outline-offset: -1px;
   color: ${adminTheme.colors.black};
-  font-size: 10px;
+  font-size: 14px;
   font-family: "Inter", sans-serif;
   font-weight: 400;
   word-wrap: break-word;
