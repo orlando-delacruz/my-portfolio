@@ -104,39 +104,50 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, admin: existingAdmin });
       }
 
-      // ── Check if auth user already exists (using auth schema) ──
-      const { data: existingAuthUser, error: authCheckError } = await supabase
-        .schema("auth")
-        .from("users")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (authCheckError) {
-        return errorResponse(
-          res,
-          "create_check_auth",
-          authCheckError.message,
-          500,
-          authCheckError,
-        );
-      }
-
       let authUserId;
-      if (existingAuthUser) {
-        authUserId = existingAuthUser.id;
-        console.log(`ℹ️ Auth user already exists for email ${email}, reusing.`);
-      } else {
-        // 1. Create auth user
-        const { data: authUser, error: authError } =
-          await supabase.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
-            user_metadata: { full_name, username },
-          });
 
-        if (authError) {
+      // ── Try to create auth user ──
+      const { data: authUser, error: authError } =
+        await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name, username },
+        });
+
+      if (authError) {
+        // If the email is already registered, find the existing user via listUsers
+        if (
+          authError.message &&
+          authError.message.toLowerCase().includes("already been registered")
+        ) {
+          console.log(
+            `ℹ️ Email ${email} already exists in auth. Fetching existing user...`,
+          );
+          const { data: users, error: listError } =
+            await supabase.auth.admin.listUsers();
+          if (listError) {
+            return errorResponse(
+              res,
+              "create_list_users",
+              listError.message,
+              500,
+              listError,
+            );
+          }
+          const existing = users.users.find((u) => u.email === email);
+          if (existing) {
+            authUserId = existing.id;
+            console.log(`✅ Found existing auth user: ${authUserId}`);
+          } else {
+            return errorResponse(
+              res,
+              "create_existing_user_not_found",
+              "Email exists but user not found in list.",
+              500,
+            );
+          }
+        } else {
           return errorResponse(
             res,
             "create_auth_user",
@@ -145,11 +156,12 @@ export default async function handler(req, res) {
             authError,
           );
         }
+      } else {
         authUserId = authUser.user.id;
         console.log(`✅ Auth user created: ${authUserId}`);
       }
 
-      // 2. Insert admin profile
+      // ── Insert admin profile ──
       const { data: admin, error: adminInsertError } = await supabase
         .from("admins")
         .insert({
@@ -166,8 +178,12 @@ export default async function handler(req, res) {
         .single();
 
       if (adminInsertError) {
-        // Rollback: delete the auth user if we just created it and admin insert fails
-        if (!existingAuthUser) {
+        // Rollback: delete the auth user if we created it and admin insert fails
+        if (
+          !authError ||
+          !authError.message.includes("already been registered")
+        ) {
+          // We created it, so delete it
           await supabase.auth.admin.deleteUser(authUserId);
         }
         return errorResponse(
