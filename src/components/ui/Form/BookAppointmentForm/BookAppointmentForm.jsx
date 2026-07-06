@@ -1,6 +1,6 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button } from "antd";
+import { Form, Input, Select, DatePicker, TimePicker, Button, Alert } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
@@ -18,7 +18,7 @@ const BookAppointmentForm = () => {
   const {
     fields,
     errors,
-    loading,
+    isSubmitting,          // submission only (for button spinner)
     submitted,
     branches,
     services,
@@ -140,6 +140,7 @@ const BookAppointmentForm = () => {
   };
 
   const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
+  const noServicesAvailable = fields.branchId && !servicesLoading && services.length === 0;
 
   if (submitted) {
     return (
@@ -277,20 +278,37 @@ const BookAppointmentForm = () => {
                 )}
               </S.FieldRow>
 
-              <Form.Item name="serviceBranchId" label="Service" rules={[{ required: true, message: "Please select a service." }]}>
-                <Select
-                  placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
-                  loading={servicesLoading}
-                  disabled={!fields.branchId || services.length === 0 || isDateUnavailable}
-                  size="large"
+              {/* ── Service Selection ── */}
+              {noServicesAvailable ? (
+                <S.FullWidth>
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="No services available for online booking"
+                    description="This branch does not currently offer any services that can be booked online. Please contact the clinic for assistance."
+                    style={{ marginBottom: 16 }}
+                  />
+                </S.FullWidth>
+              ) : (
+                <Form.Item
+                  name="serviceBranchId"
+                  label="Service"
+                  rules={[{ required: true, message: "Please select a service." }]}
                 >
-                  {services.map((s) => (
-                    <Option key={s.service_branch_id} value={s.service_branch_id}>
-                      {s.name || "Unnamed"}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+                  <Select
+                    placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
+                    loading={servicesLoading}
+                    disabled={!fields.branchId || services.length === 0 || isDateUnavailable}
+                    size="large"
+                  >
+                    {services.map((s) => (
+                      <Option key={s.service_branch_id} value={s.service_branch_id}>
+                        {s.name || "Unnamed"}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              )}
 
               <Form.Item name="notes" label="Notes / Remarks" rules={[{ required: false }]}>
                 <TextArea placeholder="Additional notes (optional)" rows={3} />
@@ -304,9 +322,9 @@ const BookAppointmentForm = () => {
             <Button
               type="primary"
               htmlType="submit"
-              loading={loading}
-              disabled={loading || (fields.date && isDateUnavailable)}
-              icon={!loading && <AiOutlineSend />}
+              loading={isSubmitting}          // ✅ use only submission loading
+              disabled={isSubmitting || (fields.date && isDateUnavailable)}
+              icon={!isSubmitting && <AiOutlineSend />}
               size="large"
               style={{
                 background: "#886217",
@@ -316,7 +334,7 @@ const BookAppointmentForm = () => {
                 padding: "0 32px",
               }}
             >
-              {loading ? "Submitting…" : "Book Appointment"}
+              {isSubmitting ? "Submitting…" : "Book Appointment"}
             </Button>
           </S.ButtonWrapper>
         </Form>

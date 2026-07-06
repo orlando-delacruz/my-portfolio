@@ -30,7 +30,7 @@ const INITIAL_STATE = {
 export function useBookAppointmentForm(form) {
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ separate submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const isMounted = useRef(true);
 
@@ -75,7 +75,7 @@ export function useBookAppointmentForm(form) {
     setFields((prev) => ({ ...prev, ...newFields }));
   }, []);
 
-  // Clear time when date becomes unavailable
+  // ── Clear time when date becomes unavailable ──
   const clearedRef = useRef(false);
   useEffect(() => {
     if (fields.date && (isSelectedDateClosed || isDateFullyBooked)) {
@@ -89,6 +89,7 @@ export function useBookAppointmentForm(form) {
     }
   }, [fields.date, isSelectedDateClosed, isDateFullyBooked, fields.time, form, updateFields]);
 
+  // ── Manual submit handler (only triggered by user click) ──
   const handleSubmit = useCallback(
     async (values) => {
       const phoneDigits = getRawPhoneDigits(values.phoneNumber);
@@ -101,7 +102,7 @@ export function useBookAppointmentForm(form) {
         return;
       }
 
-      setIsSubmitting(true); // ✅ only submission loading
+      setIsSubmitting(true);
       setErrors({});
       try {
         const appointment = await bookPublicAppointment({
@@ -134,7 +135,7 @@ export function useBookAppointmentForm(form) {
         console.error("Booking error:", err);
         setErrors({ form: err.message || "Failed to book." });
       } finally {
-        setIsSubmitting(false); // ✅ always reset
+        setIsSubmitting(false);
       }
     },
     []
@@ -147,14 +148,14 @@ export function useBookAppointmentForm(form) {
     form?.resetFields();
   }, [form]);
 
-  // Combined loading for other parts (like disabling form while fetching)
+  // ── Combined loading state (for UI only, not for submission) ──
   const loading = isSubmitting || availabilityLoading || branchesLoading || servicesLoading;
 
   return {
     fields,
     errors,
-    loading,                 // still available for other uses
-    isSubmitting,            // ✅ specific for button
+    loading,               // global loading (for disabling UI)
+    isSubmitting,          // dedicated submission loading
     submitted,
     branches,
     services,
@@ -165,7 +166,7 @@ export function useBookAppointmentForm(form) {
     isDateFullyBooked,
     isSelectedDateClosed,
     availabilityError,
-    handleSubmit,
+    handleSubmit,          // only called from the submit button
     handleReset,
     updateFields,
     setErrors,
