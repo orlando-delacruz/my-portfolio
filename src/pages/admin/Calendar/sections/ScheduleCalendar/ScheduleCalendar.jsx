@@ -1,9 +1,10 @@
 // src/pages/admin/Calendar/sections/ScheduleCalendar/ScheduleCalendar.jsx
 import { memo, useMemo, useState, useCallback } from 'react';
-import { Alert, Skeleton } from 'antd';
+import { Alert, Skeleton, Tooltip } from 'antd';
 import CalendarEventCard from '../../../../../components/admin/Card/CalendarEventCard';
 import useCalendarStore from '../../../../../store/useCalendarStore';
 import { buildCalendarGrid } from '../../../../../utils/calendarGrid';
+import { useClosureDates } from '../../../../../hooks/useClosureDates';
 import {
   WEEKDAY_LABELS,
   MAX_VISIBLE_EVENTS_PER_DAY,
@@ -12,8 +13,10 @@ import * as S from './ScheduleCalendar.styled';
 
 const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClick }) => {
   const currentMonth = useCalendarStore((s) => s.currentMonth);
+  const branchId = useCalendarStore((s) => s.branchId);
 
-  // Memoized — only recompute the 6x7 grid when the visible month changes.
+  const { closedDates, closureDetails, loading: closureLoading } = useClosureDates(branchId, currentMonth);
+
   const gridDays = useMemo(() => buildCalendarGrid(currentMonth), [currentMonth]);
 
   const [expandedDates, setExpandedDates] = useState(() => new Set());
@@ -27,12 +30,10 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
   }, []);
 
   if (error) {
-    return (
-      <Alert type="error" showIcon title="Couldn't load the calendar" description={error} />
-    );
+    return <Alert type="error" showIcon title="Couldn't load the calendar" description={error} />;
   }
 
-  if (loading) {
+  if (loading || closureLoading) {
     return (
       <S.GridWrapper aria-busy="true" aria-label="Loading calendar">
         <Skeleton active paragraph={{ rows: 10 }} />
@@ -57,6 +58,8 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
           : dayAppointments.slice(0, MAX_VISIBLE_EVENTS_PER_DAY);
         const hiddenCount = dayAppointments.length - visibleAppointments.length;
         const isToday = date.isSame(new Date(), 'day');
+        const isClosed = closedDates.has(isoDate);
+        const closureTitle = closureDetails[isoDate] || 'Clinic Closed';
 
         return (
           <S.DayCell
@@ -64,12 +67,23 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
             role="gridcell"
             $isCurrentMonth={isCurrentMonth}
             $isToday={isToday}
+            $isClosed={isClosed}
           >
             <S.DayHeader>
-              <S.DayNumber $isCurrentMonth={isCurrentMonth} $isToday={isToday}>
-                {date.date()}
-              </S.DayNumber>
+              <Tooltip title={isClosed ? closureTitle : ''} placement="top" color="#886217">
+                <S.DayNumber
+                  $isCurrentMonth={isCurrentMonth}
+                  $isToday={isToday}
+                  $isClosed={isClosed}
+                >
+                  {date.date()}
+                </S.DayNumber>
+              </Tooltip>
             </S.DayHeader>
+
+            {isClosed && (
+              <S.ClosedLabel>CLOSED</S.ClosedLabel>
+            )}
 
             <S.EventList>
               {visibleAppointments.map((appt) => (

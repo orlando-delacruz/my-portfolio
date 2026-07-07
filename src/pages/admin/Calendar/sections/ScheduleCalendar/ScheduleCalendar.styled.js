@@ -1,4 +1,4 @@
-// src\pages\admin\Calendar\sections\ScheduleCalendar\ScheduleCalendar.styled.js
+// src/pages/admin/Calendar/sections/ScheduleCalendar/ScheduleCalendar.styled.js
 import styled, { css } from "styled-components";
 import adminTheme from "../../../../../styles/adminTheme";
 
@@ -47,11 +47,21 @@ export const DayCell = styled.div`
       outline: 2px solid ${adminTheme.colors.primary};
       outline-offset: -2px;
     `}
+
+  ${({ $isClosed }) =>
+    $isClosed &&
+    css`
+      background: #fef2f2;
+      border-color: #fecaca;
+    `}
 `;
 
 export const DayHeader = styled.div`
   display: flex;
   justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
 `;
 
 export const DayNumber = styled.span`
@@ -67,6 +77,37 @@ export const DayNumber = styled.span`
     css`
       color: ${adminTheme.colors.primary};
     `}
+
+  ${({ $isClosed }) =>
+    $isClosed &&
+    css`
+      background: #dc2626;
+      color: #fff;
+      border-radius: 50%;
+      padding: 2px 8px;
+      min-width: 28px;
+      text-align: center;
+      display: inline-block;
+      font-size: 12px;
+    `}
+
+  transition: all 0.15s ease;
+`;
+
+export const ClosedLabel = styled.div`
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-block;
+  align-self: center;
+  border: 1px solid rgba(220, 38, 38, 0.2);
 `;
 
 export const EventList = styled.div`

@@ -143,3 +143,32 @@ export async function deleteClinicClosure(id) {
 
   if (error) throw error;
 }
+
+
+export async function fetchClosureRangesForMonth(branchId, monthDate) {
+  if (!monthDate) return [];
+  const monthStart = dayjs(monthDate).startOf('month').format('YYYY-MM-DD');
+  const monthEnd = dayjs(monthDate).endOf('month').format('YYYY-MM-DD');
+
+  console.log('[fetchClosureRangesForMonth] monthStart:', monthStart, 'monthEnd:', monthEnd, 'branchId:', branchId);
+
+  let query = supabase
+    .from('clinic_closures')
+    .select('*')
+    .eq('is_cancelled', false)
+    .eq('affects_booking', true)
+    .lte('start_date', monthEnd)
+    .gte('end_date', monthStart);
+
+  if (branchId && branchId !== 'all') {
+    query = query.eq('branch_id', branchId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[fetchClosureRangesForMonth] error:', error);
+    throw error;
+  }
+  console.log('[fetchClosureRangesForMonth] fetched closures:', data);
+  return data || [];
+}
