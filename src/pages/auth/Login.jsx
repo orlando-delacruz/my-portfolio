@@ -110,7 +110,6 @@ function Login() {
   return (
     <PageWrapper>
       <Card role="main">
-        {/* ── Back to Homepage (top) ── */}
         <TopNav>
           <BackHomeLink
             type="button"

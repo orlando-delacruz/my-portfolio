@@ -1,4 +1,3 @@
-// api/admin/users.js
 /*global process*/
 import { createClient } from "@supabase/supabase-js";
 
@@ -27,7 +26,6 @@ function errorResponse(res, step, message, status = 500, details = null) {
 }
 
 export default async function handler(req, res) {
-  // Only POST allowed
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -81,7 +79,6 @@ export default async function handler(req, res) {
         );
       }
 
-      // ── Check if admin already exists (idempotent) ──
       const { data: existingAdmin, error: checkAdminError } = await supabase
         .from("admins")
         .select("*")
@@ -107,7 +104,6 @@ export default async function handler(req, res) {
 
       let authUserId;
 
-      // ── Try to create auth user ──
       const { data: authUser, error: authError } =
         await supabase.auth.admin.createUser({
           email,
@@ -117,7 +113,6 @@ export default async function handler(req, res) {
         });
 
       if (authError) {
-        // If the email is already registered, find the existing user via listUsers
         if (
           authError.message &&
           authError.message.toLowerCase().includes("already been registered")
@@ -162,7 +157,6 @@ export default async function handler(req, res) {
         console.log(`✅ Auth user created: ${authUserId}`);
       }
 
-      // ── Insert admin profile ──
       const { data: admin, error: adminInsertError } = await supabase
         .from("admins")
         .insert({
@@ -179,12 +173,10 @@ export default async function handler(req, res) {
         .single();
 
       if (adminInsertError) {
-        // Rollback: delete the auth user if we created it and admin insert fails
         if (
           !authError ||
           !authError.message.includes("already been registered")
         ) {
-          // We created it, so delete it
           await supabase.auth.admin.deleteUser(authUserId);
         }
         return errorResponse(
@@ -225,7 +217,6 @@ export default async function handler(req, res) {
         status,
       });
 
-      // 1. Update admin profile
       const { data: admin, error: updateError } = await supabase
         .from("admins")
         .update({
@@ -254,7 +245,6 @@ export default async function handler(req, res) {
 
       console.log(`✅ Admin profile updated:`, admin);
 
-      // 2. If email changed and admin has auth_user_id, update auth user email
       if (email && admin.auth_user_id) {
         console.log(
           `📧 Updating auth email for user ${admin.auth_user_id} to ${email}`,
@@ -277,66 +267,67 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, admin });
     }
 
-    // ── DELETE ──
+    // ── DELETE (hard delete) ──
     if (action === "delete") {
-      const { adminId, authUserId } = req.body;
-
+      const { adminId } = req.body;
       if (!adminId) {
         return errorResponse(res, "delete_validate", "Missing adminId", 400);
       }
 
-      console.log(
-        `🗑️ Deleting admin ${adminId}, authUserId: ${authUserId || "none"}`,
-      );
+      console.log(`🗑️ Hard deleting admin ${adminId}`);
 
-      // 1. Delete auth user if present
-      if (authUserId) {
-        console.log(`🗑️ Deleting auth user ${authUserId}`);
-        const { error: deleteAuthError } =
-          await supabase.auth.admin.deleteUser(authUserId);
-        if (deleteAuthError) {
-          console.error("⚠️ Auth deletion failed:", deleteAuthError);
-          // Continue to delete admin, but return a warning
-          const { error: deleteAdminError } = await supabase
-            .from("admins")
-            .delete()
-            .eq("id", adminId);
+      // 1. Get admin's auth_user_id
+      const { data: admin, error: fetchError } = await supabase
+        .from("admins")
+        .select("auth_user_id")
+        .eq("id", adminId)
+        .single();
 
-          if (deleteAdminError) {
-            return errorResponse(
-              res,
-              "delete_admin_after_auth_fail",
-              deleteAdminError.message,
-              500,
-              deleteAdminError,
-            );
-          }
-
-          return res.status(200).json({
-            success: true,
-            warning: `Admin deleted, but auth user could not be removed: ${deleteAuthError.message}`,
-          });
-        }
-        console.log(`✅ Auth user deleted`);
+      if (fetchError) {
+        return errorResponse(
+          res,
+          "delete_fetch_admin",
+          fetchError.message,
+          500,
+          fetchError,
+        );
       }
 
-      // 2. Delete admin profile
+      const authUserId = admin?.auth_user_id;
+
+      // 2. Delete the admin record (cascade will handle appointment_logs, SET NULL for others)
       const { error: deleteAdminError } = await supabase
         .from("admins")
         .delete()
         .eq("id", adminId);
 
       if (deleteAdminError) {
+        console.error("Admin deletion error:", deleteAdminError);
         return errorResponse(
           res,
-          "delete_admin_profile",
+          "delete_admin",
           deleteAdminError.message,
           500,
           deleteAdminError,
         );
       }
 
-      console.log(`✅ Admin profile deleted`);
+      // 3. Delete the auth user if exists
+      if (authUserId) {
+        const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(
+          authUserId,
+        );
+        if (deleteAuthError) {
+          console.warn(
+            "⚠️ Auth deletion failed (but admin was deleted):",
+            deleteAuthError,
+          );
+        } else {
+          console.log(`✅ Auth user ${authUserId} deleted`);
+        }
+      }
+
+      console.log(`✅ Admin ${adminId} permanently deleted`);
       return res.status(200).json({ success: true });
     }
 
