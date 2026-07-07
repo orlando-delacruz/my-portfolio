@@ -4,6 +4,19 @@ import dayjs from "dayjs";
 import { hasBookingConflict, STATUS_TO_DB } from "./appointments";
 import { findOrCreatePatient } from "./patients";
 import { fetchServiceBranchById } from "./serviceBranches";
+import { createNotificationsForAdmins } from "./notificationService";
+
+async function getAllAdminIds() {
+  const { data, error } = await supabase
+    .from("admins")
+    .select("id")
+    .eq("status", "active");
+  if (error) {
+    console.error("Failed to fetch admin IDs:", error);
+    return [];
+  }
+  return data.map(a => a.id);
+}
 
 function isPastAppointment(date, time) {
   const now = dayjs();
@@ -164,6 +177,28 @@ export async function bookPublicAppointment({
     admin_id: null,
     status: "pending",
   });
+
+  // ── 10. Create notifications for all admins using direct Supabase insert ──
+  try {
+    const adminIds = await getAllAdminIds();
+    if (adminIds.length > 0) {
+      const notificationData = {
+        type: "NEW_BOOKING",
+        title: "New Appointment Request",
+        message: `${firstName} ${lastName} requested a ${serviceBranch.name} appointment.`,
+        appointment_id: appointment.id,
+        metadata: {
+          patient_name: `${firstName} ${lastName}`,
+          service: serviceBranch.name,
+          date: dateObj.format("YYYY-MM-DD"),
+          time: timeObj.format("HH:mm:ss"),
+        },
+      };
+      await createNotificationsForAdmins(adminIds, notificationData);
+    }
+  } catch (err) {
+    console.error("Failed to create notifications:", err);
+  }
 
   return appointment;
 }

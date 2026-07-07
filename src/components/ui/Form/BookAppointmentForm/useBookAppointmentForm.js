@@ -123,7 +123,7 @@ export function useBookAppointmentForm(form) {
       setIsSubmitting(true);
       setErrors({});
       try {
-        const appointment = await bookPublicAppointment({
+        await bookPublicAppointment({
           firstName: values.firstName.trim(),
           middleName: values.middleName?.trim() || undefined,
           lastName: values.lastName.trim(),
@@ -142,14 +142,6 @@ export function useBookAppointmentForm(form) {
 
         message.success("Appointment booked successfully!");
         setSubmitted(true);
-
-        if (appointment?.id) {
-          fetch("/api/send-confirmation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ appointmentId: appointment.id }),
-          }).catch((err) => console.error("Confirmation email failed:", err));
-        }
       } catch (err) {
         console.error("Booking error:", err);
         setErrors({ form: err.message || "Failed to book." });

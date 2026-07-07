@@ -1,12 +1,13 @@
 // src/components/admin/TopBar/TopBar.jsx
-import { memo } from "react";
-import { useNavigate } from "react-router-dom";
-import { MdMenu, MdNotifications } from "react-icons/md";
-import { Dropdown, Avatar, Spin } from "antd";
-import { LogoutOutlined, SettingOutlined } from "@ant-design/icons";
-import { useLogoutStore } from "../../../store/useLogoutStore";
-import useAdminStore from "../../../store/useAdminStore";
-import * as S from "./TopBar.styled";
+import { memo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MdMenu } from 'react-icons/md';
+import { Dropdown, Avatar, Spin } from 'antd';
+import { LogoutOutlined, SettingOutlined } from '@ant-design/icons';
+import { useLogoutStore } from '../../../store/useLogoutStore';
+import useAdminStore from '../../../store/useAdminStore';
+import NotificationDropdown from '../NotificationDropdown/NotificationDropdown';
+import * as S from './TopBar.styled';
 
 const TopBar = memo(({ user, loading, onMenuClick }) => {
   const navigate = useNavigate();
@@ -15,27 +16,27 @@ const TopBar = memo(({ user, loading, onMenuClick }) => {
 
   const menuItems = [
     {
-      key: "profile",
+      key: 'profile',
       icon: <SettingOutlined />,
-      label: "My Profile",
-      onClick: () => navigate("/admin/settings"),
+      label: 'My Profile',
+      onClick: () => navigate('/admin/settings'),
     },
     {
-      key: "logout",
+      key: 'logout',
       icon: <LogoutOutlined />,
-      label: "Logout",
+      label: 'Logout',
       onClick: openLogoutModal,
       danger: true,
     },
   ];
 
   const getInitials = (name) => {
-    if (!name) return "U";
-    const parts = name.trim().split(" ");
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
     if (parts.length >= 2) {
       return parts[0][0] + parts[parts.length - 1][0];
     }
-    return parts[0][0] || "U";
+    return parts[0][0] || 'U';
   };
 
   const initials = getInitials(user.name);
@@ -52,25 +53,22 @@ const TopBar = memo(({ user, loading, onMenuClick }) => {
       </S.LeftGroup>
 
       <S.RightGroup>
-        <S.NotifButton aria-label="View notifications">
-          <MdNotifications aria-hidden="true" />
-          <S.NotifBadge aria-hidden="true" />
-        </S.NotifButton>
+        <NotificationDropdown />
 
-        <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight" arrow>
+        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight" arrow>
           <S.UserBlock>
             {loading ? (
               <Spin size="small" />
             ) : (
               <>
                 {user.avatarUrl ? (
-                  <Avatar src={user.avatarUrl} alt={user.name || "Admin"} size={38} />
+                  <Avatar src={user.avatarUrl} alt={user.name || 'Admin'} size={38} />
                 ) : (
                   <S.AvatarWrapper>{initials}</S.AvatarWrapper>
                 )}
                 <S.UserInfo>
-                  <S.UserName>{user.name || "Admin"}</S.UserName>
-                  <S.UserRole>{user.role || "Staff"}</S.UserRole>
+                  <S.UserName>{user.name || 'Admin'}</S.UserName>
+                  <S.UserRole>{user.role || 'Staff'}</S.UserRole>
                 </S.UserInfo>
               </>
             )}
@@ -81,5 +79,5 @@ const TopBar = memo(({ user, loading, onMenuClick }) => {
   );
 });
 
-TopBar.displayName = "TopBar";
+TopBar.displayName = 'TopBar';
 export default TopBar;

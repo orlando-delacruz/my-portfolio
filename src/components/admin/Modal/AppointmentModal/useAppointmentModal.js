@@ -45,7 +45,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           });
         }
 
-        // Get duration from selected service
         const serviceBranch = await fetchServiceBranchById(values.serviceBranchId);
         const intervalMinutes = serviceBranch.duration_minutes || 30;
 
@@ -85,13 +84,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         setAddOpen(false);
         onAddSuccess?.(newRecord);
 
-        if (created.id) {
-          fetch("/api/send-confirmation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ appointmentId: created.id }),
-          }).catch((err) => console.error("Confirmation email failed:", err));
-        }
+        // Email sending is removed – no EmailJS integration.
       } catch (err) {
         console.error(err);
         message.error(err.message || "Failed to add appointment. Please try again.");
@@ -122,8 +115,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       if (!rescheduleTargetId) return;
       setRescheduleLoading(true);
       try {
-        // Get duration – you may want to fetch the service duration from appointment or service
-        // For simplicity, we'll use default 30 (you can improve by fetching from appointment data)
         const updated = await adminRescheduleAppointment({
           appointmentId: rescheduleTargetId,
           branchId: values.branchId,
@@ -131,7 +122,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           time: dayjs(values.time),
           status: values.status,
           adminId: profile?.id,
-          intervalMinutes: 30, // you could fetch this from service
+          intervalMinutes: 30,
         });
 
         const row = toAppointmentRow(updated);

@@ -175,13 +175,13 @@ const BookAppointmentForm = () => {
           <S.FormSection>
             <S.FormSectionTitle>Personal Information</S.FormSectionTitle>
             <S.FieldRow>
-              <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "Please enter your first name." }]}>
+              <Form.Item name="firstName" label="First Name" rules={[{ required: true, title: "Please enter your first name." }]}>
                 <Input placeholder="Enter your first name" size="large" />
               </Form.Item>
               <Form.Item name="middleName" label="Middle Name" rules={[{ required: false }]}>
                 <Input placeholder="Enter your middle name (optional)" size="large" />
               </Form.Item>
-              <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please enter your last name." }]}>
+              <Form.Item name="lastName" label="Last Name" rules={[{ required: true, title: "Please enter your last name." }]}>
                 <Input placeholder="Enter your last name" size="large" />
               </Form.Item>
             </S.FieldRow>
@@ -195,7 +195,7 @@ const BookAppointmentForm = () => {
                   disabledDate={(current) => current && current > dayjs().endOf('day')}
                 />
               </Form.Item>
-              <Form.Item name="gender" label="Gender" rules={[{ required: true, message: "Please select your gender." }]}>
+              <Form.Item name="gender" label="Gender" rules={[{ required: true, title: "Please select your gender." }]}>
                 <Select placeholder="Select your gender" size="large">
                   <Option value="male">Male</Option>
                   <Option value="female">Female</Option>
@@ -206,7 +206,7 @@ const BookAppointmentForm = () => {
             </S.FieldRow>
 
             <S.FieldGroup>
-              <Form.Item name="email" label="Email" rules={[{ type: "email", message: "Please enter a valid email address." }, { required: false }]}>
+              <Form.Item name="email" label="Email" rules={[{ type: "email", title: "Please enter a valid email address." }, { required: false }]}>
                 <Input placeholder="Enter your email address" size="large" />
               </Form.Item>
               <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]} normalize={(value) => value.replace(/\D/g, '')}>
@@ -233,7 +233,7 @@ const BookAppointmentForm = () => {
           <S.FormSection>
             <S.FormSectionTitle>Appointment Information</S.FormSectionTitle>
             <S.FieldGroup>
-              <Form.Item name="branchId" label="Choose Branch" rules={[{ required: true, message: "Please select a branch." }]}>
+              <Form.Item name="branchId" label="Choose Branch" rules={[{ required: true, title: "Please select a branch." }]}>
                 <Select placeholder="Select a branch first" loading={branchesLoading} size="large">
                   {branches.map((b) => (
                     <Option key={b.id} value={b.id}>{b.name}</Option>
@@ -288,7 +288,7 @@ const BookAppointmentForm = () => {
                   <Alert
                     type="info"
                     showIcon
-                    message="No services available for online booking"
+                    title="No services available for online booking"
                     description="This branch does not currently offer any services that can be booked online. Please contact the clinic for assistance."
                     style={{ marginBottom: 16 }}
                   />
@@ -297,7 +297,7 @@ const BookAppointmentForm = () => {
                 <Form.Item
                   name="serviceBranchId"
                   label="Service"
-                  rules={[{ required: true, message: "Please select a service." }]}
+                  rules={[{ required: true, title: "Please select a service." }]}
                 >
                   <Select
                     placeholder={fields.branchId ? "Select a service" : "Select a branch first"}

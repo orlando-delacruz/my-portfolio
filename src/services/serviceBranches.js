@@ -2,8 +2,9 @@
 import { supabase } from "./supabase/supabase";
 
 /**
- * Fetch active services for a specific branch.
+ * Fetch active services for a specific branch (for public booking).
  * Returns an array of objects with service_branch_id, name, price, duration_minutes.
+ * Sorted alphabetically by service name.
  */
 export async function fetchServicesForBranch(branchId) {
   if (!branchId) {
@@ -37,21 +38,14 @@ export async function fetchServicesForBranch(branchId) {
     return [];
   }
 
-  // Step 3: Fetch service names from the services table
+  // Step 3: Fetch service names from the services table, sorted alphabetically
   const { data: services, error: servicesError } = await supabase
     .from("services")
     .select("id, name")
-    .in("id", serviceIds);
+    .in("id", serviceIds)
+    .order("name", { ascending: true }); // ✅ Alphabetical sort
 
   if (servicesError) {
-    // If RLS blocks the query, fallback to a hardcoded map (optional)
-    // Uncomment the fallback map below if needed
-    // return branchServices.map((bs) => ({
-    //   service_branch_id: bs.id,
-    //   name: SERVICE_NAMES[bs.service_id] || "",
-    //   price: bs.price,
-    //   duration_minutes: bs.duration_minutes,
-    // }));
     console.error("fetchServicesForBranch services query error:", servicesError);
     throw servicesError;
   }
@@ -62,13 +56,23 @@ export async function fetchServicesForBranch(branchId) {
     serviceMap[svc.id] = svc.name;
   });
 
-  // Step 4: Combine the data
-  return branchServices.map((bs) => ({
+  // Step 4: Combine the data and sort again for safety
+  const combined = branchServices.map((bs) => ({
     service_branch_id: bs.id,
     name: serviceMap[bs.service_id] || "",
     price: bs.price,
     duration_minutes: bs.duration_minutes,
   }));
+
+  // Sort alphabetically by name (case-insensitive)
+  combined.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, {
+      sensitivity: "base",
+      numeric: true,
+    })
+  );
+
+  return combined;
 }
 
 /**

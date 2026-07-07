@@ -3,13 +3,14 @@ import { supabase } from "./supabase/supabase";
 
 /**
  * Fetch services for a specific branch (for Service Management)
- * Returns an array of services with full details
+ * Returns an array of services with full details, sorted alphabetically by name.
  */
 export async function fetchServices(branchId) {
   if (!branchId) {
     throw new Error("Branch ID is required");
   }
 
+  // Step 1: Get branch-specific service records from service_branches
   const { data: branchServices, error: branchError } = await supabase
     .from("service_branches")
     .select("id, service_id, price, duration_minutes, status, online_booking_enabled")
@@ -25,42 +26,57 @@ export async function fetchServices(branchId) {
     return [];
   }
 
+  // Step 2: Collect all unique service_ids
   const serviceIds = branchServices.map((bs) => bs.service_id).filter((id) => id);
 
   if (serviceIds.length === 0) {
     return [];
   }
 
+  // Step 3: Fetch the corresponding services from the services table, sorted alphabetically
   const { data: services, error: servicesError } = await supabase
     .from("services")
-    .select("id, name, description, starting_price, maximum_price, default_duration_minutes")
-    .in("id", serviceIds);
+    .select("id, name, description")
+    .in("id", serviceIds)
+    .order("name", { ascending: true }); // ✅ Alphabetical sort
 
   if (servicesError) {
     console.error("Error fetching services by IDs:", servicesError);
     throw new Error(servicesError.message || "Failed to fetch service details");
   }
 
+  // Step 4: Build a map of service_id -> service object
   const serviceMap = {};
   services.forEach((svc) => {
     serviceMap[svc.id] = svc;
   });
 
-  return branchServices.map((bs) => ({
+  // Step 5: Combine the data and sort for safety
+  const combined = branchServices.map((bs) => ({
     id: bs.id,
     service_id: bs.service_id,
     name: serviceMap[bs.service_id]?.name || "",
     description: serviceMap[bs.service_id]?.description || "",
     duration_minutes: bs.duration_minutes,
-    starting_price: serviceMap[bs.service_id]?.starting_price || 0,
-    maximum_price: serviceMap[bs.service_id]?.maximum_price || 0,
+    price: bs.price,
     is_active: bs.status === "active",
     branch_id: branchId,
   }));
+
+  // Sort alphabetically by name (case-insensitive)
+  combined.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, {
+      sensitivity: "base",
+      numeric: true,
+    })
+  );
+
+  return combined;
 }
 
 /**
  * Create a new service for a branch.
+ * Inserts into services and service_branches.
  */
 export async function createService(serviceData) {
   const { branch_id, name, description, duration_minutes, starting_price, maximum_price, is_active } = serviceData;
@@ -93,7 +109,7 @@ export async function createService(serviceData) {
     .insert({
       service_id: service.id,
       branch_id,
-      price: starting_price, // for backward compatibility
+      price: starting_price,
       duration_minutes,
       status: is_active ? "active" : "inactive",
       online_booking_enabled: true,
