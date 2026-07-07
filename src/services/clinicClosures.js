@@ -79,7 +79,7 @@ export async function fetchClinicClosures({
 }
 
 /**
- * Create a new clinic closure
+ * Create a new clinic closure (single branch)
  */
 export async function createClinicClosure(data) {
   const { data: result, error } = await supabase
@@ -90,6 +90,31 @@ export async function createClinicClosure(data) {
 
   if (error) throw error;
   return result;
+}
+
+/**
+ * Create multiple clinic closures for multiple branches
+ * @param {Object} baseData - Closure data without branch_id
+ * @param {string[]} branchIds - Array of branch IDs
+ * @returns {Promise<Object[]>} Array of created closure records
+ */
+export async function createClinicClosures(baseData, branchIds) {
+  if (!branchIds || branchIds.length === 0) {
+    throw new Error("At least one branch must be selected.");
+  }
+
+  const records = branchIds.map((branchId) => ({
+    ...baseData,
+    branch_id: branchId,
+  }));
+
+  const { data, error } = await supabase
+    .from("clinic_closures")
+    .insert(records)
+    .select();
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**

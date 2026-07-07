@@ -21,7 +21,7 @@ export const Label = styled.span`
 
 export const Value = styled.span`
   width: 100%;
-  padding: 5px;
+  padding: 5px 10px;
   overflow: hidden;
   border-radius: 5px;
   outline: 1px solid rgba(0, 0, 0, 0.20);

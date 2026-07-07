@@ -1,3 +1,4 @@
+// src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.styled.js
 import styled from "styled-components";
 import adminTheme from "../../../../styles/adminTheme";
 
@@ -79,41 +80,5 @@ export const Footer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 4px;
-`;
-
-export const ActionBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  transition:
-    background 0.2s,
-    opacity 0.2s;
-
-  ${({ $variant }) =>
-    $variant === "primary"
-      ? `
-        background: ${adminTheme.colors.primary};
-        color: #fff;
-        &:hover { background: ${adminTheme.colors.primaryDark}; }
-      `
-      : `
-        background: transparent;
-        color: ${adminTheme.colors.black};
-        border: 1px solid ${adminTheme.colors.champagne};
-        &:hover { background: ${adminTheme.colors.ivory}; }
-      `}
-
-  &:focus-visible {
-    outline: 2px solid ${adminTheme.colors.primary};
-    outline-offset: 2px;
-  }
+  padding: 8px 0;
 `;

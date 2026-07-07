@@ -7,7 +7,6 @@ import {
   CLOSURE_STATUS_CONFIG,
   TABLE_COLUMNS,
 } from '../../../../../data/admin/clinicClosures';
-import { formatDate } from '../../../../../utils/dateFormatter';
 import * as S from './Table.styled';
 
 // ── Status Badge ──
@@ -138,15 +137,15 @@ const ClosureTable = ({
                   </S.TD>
                   <S.TD>
                     <S.DateCell>
-                      {formatDate(closure.date)}
-                      <S.DayOfWeek>({closure.dayOfWeek})</S.DayOfWeek>
+                      {closure.date || '—'}
+                      <S.DayOfWeek>({closure.dayOfWeek || '—'})</S.DayOfWeek>
                     </S.DateCell>
                   </S.TD>
                   <S.TD $center>{closure.timeRange}</S.TD>
                   <S.TD>
                     <ClosureTypeBadge type={closure.closureType} />
                   </S.TD>
-                  <S.TD>{closure.reason}</S.TD>
+                  <S.TD>{closure.reason || '—'}</S.TD>
                   <S.TD $center>
                     <StatusBadge status={closure.status} />
                   </S.TD>

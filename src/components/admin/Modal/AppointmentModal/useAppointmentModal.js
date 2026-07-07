@@ -29,19 +29,14 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       setAddLoading(true);
       try {
         let patient;
-        if (
-          values.patientType === "ortho" &&
-          values.selectedOrthodonticPatient
-        ) {
+        if (values.patientType === "ortho" && values.selectedOrthodonticPatient) {
           patient = values.selectedOrthodonticPatient;
         } else {
           patient = await findOrCreatePatient({
             firstName: values.firstName,
             middleName: values.middleName || "",
             lastName: values.lastName,
-            birthDate: values.birthDate
-              ? dayjs(values.birthDate).format("YYYY-MM-DD")
-              : undefined,
+            birthDate: values.birthDate ? dayjs(values.birthDate).format("YYYY-MM-DD") : undefined,
             gender: values.gender,
             email: values.email || undefined,
             phoneNumber: getRawPhoneDigits(values.phoneNumber),
@@ -50,10 +45,15 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           });
         }
 
+        // Get duration from selected service
+        const serviceBranch = await fetchServiceBranchById(values.serviceBranchId);
+        const intervalMinutes = serviceBranch.duration_minutes || 30;
+
         const conflictCheck = await checkBookingConflictWithDetails({
           branchId: values.branchId,
           date: dayjs(values.date),
           time: dayjs(values.time),
+          intervalMinutes,
         });
         if (conflictCheck.hasConflict) {
           const msg = generateConflictMessage(conflictCheck);
@@ -62,16 +62,13 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           return;
         }
 
-        const serviceBranch = await fetchServiceBranchById(
-          values.serviceBranchId,
-        );
-
         const created = await adminCreateAppointment({
           patient,
           serviceBranch,
           date: dayjs(values.date),
           time: dayjs(values.time),
           adminId: profile?.id,
+          intervalMinutes,
         });
 
         const newRecord = toAppointmentRow({
@@ -87,7 +84,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         form.resetFields();
         setAddOpen(false);
         onAddSuccess?.(newRecord);
-        // ── Send confirmation email ──
+
         if (created.id) {
           fetch("/api/send-confirmation", {
             method: "POST",
@@ -95,25 +92,14 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
             body: JSON.stringify({ appointmentId: created.id }),
           }).catch((err) => console.error("Confirmation email failed:", err));
         }
-
-        // ── Trigger confirmation email via Trigger.dev ──
-        if (created.id) {
-          fetch("/api/trigger-confirmation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ appointmentId: created.id }),
-          }).catch((err) => console.error("Trigger confirmation failed:", err));
-        }
       } catch (err) {
         console.error(err);
-        message.error(
-          err.message || "Failed to add appointment. Please try again.",
-        );
+        message.error(err.message || "Failed to add appointment. Please try again.");
       } finally {
         setAddLoading(false);
       }
     },
-    [onAddSuccess, profile],
+    [onAddSuccess, profile]
   );
 
   // ── Reschedule modal ──
@@ -136,6 +122,8 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
       if (!rescheduleTargetId) return;
       setRescheduleLoading(true);
       try {
+        // Get duration – you may want to fetch the service duration from appointment or service
+        // For simplicity, we'll use default 30 (you can improve by fetching from appointment data)
         const updated = await adminRescheduleAppointment({
           appointmentId: rescheduleTargetId,
           branchId: values.branchId,
@@ -143,6 +131,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           time: dayjs(values.time),
           status: values.status,
           adminId: profile?.id,
+          intervalMinutes: 30, // you could fetch this from service
         });
 
         const row = toAppointmentRow(updated);
@@ -153,14 +142,12 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         onRescheduleSuccess?.(row);
       } catch (err) {
         console.error(err);
-        message.error(
-          err.message || "Failed to reschedule appointment. Please try again.",
-        );
+        message.error(err.message || "Failed to reschedule appointment. Please try again.");
       } finally {
         setRescheduleLoading(false);
       }
     },
-    [rescheduleTargetId, onRescheduleSuccess, profile],
+    [rescheduleTargetId, onRescheduleSuccess, profile]
   );
 
   return {

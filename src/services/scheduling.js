@@ -2,52 +2,43 @@
 import { supabase } from "./supabase/supabase";
 import dayjs from "dayjs";
 
-const MIN_INTERVAL_MINUTES = 60;
-
-function timeToMinutes(timeStr) {
-  if (!timeStr) return NaN;
-  const parts = timeStr.split(":").map(Number);
-  if (parts.length < 2) return NaN;
-  const h = parts[0];
-  const m = parts[1];
-  if (isNaN(h) || isNaN(m)) return NaN;
-  return h * 60 + m;
-}
+const DEFAULT_INTERVAL = 30;
 
 /**
- * Get confirmed appointments for a specific date across ALL branches.
- * @param {string} branchId - ignored (kept for API compatibility)
- * @param {dayjs} date - the date to check
+ * Get confirmed appointments for a specific date and branch.
+ * @param {string} branchId
+ * @param {dayjs} date
  * @returns {Array<string>} times in "HH:mm:ss" format
  */
 export async function getConfirmedAppointmentsForDate(branchId, date) {
   const dateStr = dayjs(date).format("YYYY-MM-DD");
 
+  // Use inner join with service_branches to filter by branch_id
   const { data, error } = await supabase
     .from("appointments")
-    .select("confirmed_time, preferred_time")
+    .select(`
+      confirmed_time,
+      preferred_time,
+      service_branch_id,
+      service_branches!inner(branch_id)
+    `)
     .eq("approval_status", "approved")
     .eq("appointment_status", "scheduled")
-    .or(`confirmed_date.eq.${dateStr},preferred_date.eq.${dateStr}`);
+    .or(`confirmed_date.eq.${dateStr},preferred_date.eq.${dateStr}`)
+    .eq("service_branches.branch_id", branchId);
 
   if (error) {
     console.error("[scheduling] Error fetching appointments:", error);
     return [];
   }
 
+  // Extract times from the returned data
   const times = data.map((apt) => apt.confirmed_time || apt.preferred_time);
-  console.log(
-    `[scheduling] Global confirmed appointments for ${dateStr}:`,
-    times,
-  );
   return times;
 }
 
 /**
- * Get operating hours for a branch on a specific date (branch-specific).
- * @param {string} branchId - the branch to get hours for
- * @param {dayjs} date - the date
- * @returns {Object} { isClosed, openMinutes, closeMinutes }
+ * Get operating hours for a branch on a specific date.
  */
 export async function getOperatingHoursForBranchDate(branchId, date) {
   const dayOfWeek = dayjs(date).day();
@@ -66,139 +57,122 @@ export async function getOperatingHoursForBranchDate(branchId, date) {
 }
 
 /**
- * Check if there is any available slot globally on a given date.
- * @param {string} branchId - ignored for conflict checking, used only for operating hours.
- * @param {dayjs} date - the date
- * @returns {boolean} true if any slot is available globally
+ * Check if the clinic is closed on a specific date for a given branch.
  */
-export async function hasAvailableSlot(branchId, date) {
-  const hoursData = await getOperatingHoursForBranchDate(branchId, date);
-  let openMin = 10 * 60 + 30; // 10:30 AM default
-  let closeMin = 17 * 60; // 5:00 PM default
-  if (
-    hoursData &&
-    !hoursData.is_closed &&
-    hoursData.open_time &&
-    hoursData.close_time
-  ) {
-    const o = timeToMinutes(hoursData.open_time);
-    const c = timeToMinutes(hoursData.close_time);
-    if (!isNaN(o) && !isNaN(c)) {
-      openMin = o;
-      closeMin = c;
-    }
-  }
-  if (isNaN(openMin) || isNaN(closeMin) || (hoursData && hoursData.is_closed)) {
+export async function isDateClosed(branchId, date) {
+  if (!branchId || !date) return false;
+
+  const hours = await getOperatingHoursForBranchDate(branchId, date);
+  if (hours && hours.is_closed) return true;
+
+  const dateStr = dayjs(date).format("YYYY-MM-DD");
+  const { data, error } = await supabase
+    .from("clinic_closures")
+    .select("id")
+    .eq("branch_id", branchId)
+    .eq("is_cancelled", false)
+    .eq("affects_booking", true)
+    .lte("start_date", dateStr)
+    .gte("end_date", dateStr)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[scheduling] Error checking clinic closure:", error);
     return false;
   }
-
-  const appointmentMinutes = await getConfirmedAppointmentsForDate(null, date);
-  const sortedMinutes = appointmentMinutes
-    .map((t) => timeToMinutes(t))
-    .filter((m) => !isNaN(m))
-    .sort((a, b) => a - b);
-
-  let current = openMin;
-  for (const aptMin of sortedMinutes) {
-    if (aptMin - current >= MIN_INTERVAL_MINUTES) {
-      return true;
-    }
-    current = aptMin + MIN_INTERVAL_MINUTES;
-  }
-  return closeMin - current >= MIN_INTERVAL_MINUTES;
+  return !!data;
 }
 
 /**
- * Get disabled hours and minutes for TimePicker (global conflicts + past times).
- * @param {string} branchId - ignored for conflicts, used for operating hours
- * @param {dayjs} date - the date
- * @returns {Object} { disabledHours: () => [...], disabledMinutes: (h) => [...] }
+ * Generate available time slots for a given date and branch,
+ * using the provided interval (in minutes).
  */
-export async function getDisabledTimes(branchId, date) {
+export async function generateAvailableSlots(
+  branchId,
+  date,
+  intervalMinutes = DEFAULT_INTERVAL
+) {
+  if (!branchId || !date) return [];
+
   const hoursData = await getOperatingHoursForBranchDate(branchId, date);
+  if (!hoursData || hoursData.is_closed) return [];
 
-  let openMin = 10 * 60 + 30; // 10:30 AM default
-  let closeMin = 17 * 60; // 5:00 PM default
-  let isClosed = false;
+  let openMin = timeToMinutes(hoursData.open_time);
+  let closeMin = timeToMinutes(hoursData.close_time);
+  if (isNaN(openMin) || isNaN(closeMin) || openMin >= closeMin) return [];
 
-  if (hoursData) {
-    if (hoursData.is_closed) {
-      isClosed = true;
-    } else if (hoursData.open_time && hoursData.close_time) {
-      const o = timeToMinutes(hoursData.open_time);
-      const c = timeToMinutes(hoursData.close_time);
-      if (!isNaN(o) && !isNaN(c)) {
-        openMin = o;
-        closeMin = c;
-      }
+  const bookedTimes = await getConfirmedAppointmentsForDate(branchId, date);
+  const bookedMinutes = bookedTimes.map((t) => timeToMinutes(t)).filter((m) => !isNaN(m));
+
+  const slots = [];
+  let current = openMin;
+  while (current + intervalMinutes <= closeMin) {
+    const hasConflict = bookedMinutes.some((bookedMin) => {
+      return (bookedMin >= current && bookedMin < current + intervalMinutes);
+    });
+    if (!hasConflict) {
+      slots.push(minutesToTime(current));
     }
+    current += intervalMinutes;
   }
+  return slots;
+}
 
-  if (isClosed || openMin >= closeMin) {
+/**
+ * Get disabled hours/minutes for TimePicker.
+ */
+export async function getDisabledTimes(
+  branchId,
+  date,
+  intervalMinutes = DEFAULT_INTERVAL
+) {
+  const hoursData = await getOperatingHoursForBranchDate(branchId, date);
+  if (!hoursData || hoursData.is_closed) {
     return {
       disabledHours: () => Array.from({ length: 24 }, (_, i) => i),
       disabledMinutes: () => [],
     };
   }
 
-  // Get global appointments for the date
-  const appointmentMinutes = await getConfirmedAppointmentsForDate(null, date);
-  const sortedMinutes = appointmentMinutes
-    .map((t) => timeToMinutes(t))
-    .filter((m) => !isNaN(m))
-    .sort((a, b) => a - b);
+  const openMin = timeToMinutes(hoursData.open_time);
+  const closeMin = timeToMinutes(hoursData.close_time);
+  if (isNaN(openMin) || isNaN(closeMin) || openMin >= closeMin) {
+    return {
+      disabledHours: () => Array.from({ length: 24 }, (_, i) => i),
+      disabledMinutes: () => [],
+    };
+  }
 
-  // ── Build a set of disabled minutes (conflicts + operating hours + past times) ──
+  const bookedTimes = await getConfirmedAppointmentsForDate(branchId, date);
+  const bookedMinutes = bookedTimes.map((t) => timeToMinutes(t)).filter((m) => !isNaN(m));
+
   const disabledMinutesSet = new Set();
-
-  // 1. Add minutes outside operating hours
   for (let m = 0; m < 24 * 60; m++) {
     if (m < openMin || m >= closeMin) {
       disabledMinutesSet.add(m);
     }
-  }
-
-  // 2. Add minutes that conflict with confirmed appointments
-  for (let m = openMin; m < closeMin; m++) {
-    const isDisabled = sortedMinutes.some(
-      (aptMin) => Math.abs(aptMin - m) < MIN_INTERVAL_MINUTES,
-    );
-    if (isDisabled) {
-      disabledMinutesSet.add(m);
-    }
-  }
-
-  // 3. ✅ Add past times for today (fix: compare date with current date)
-  const now = dayjs();
-  const isToday = date.isSame(now, "day");
-  if (isToday) {
-    const currentTotalMinutes = now.hour() * 60 + now.minute();
-    for (let m = openMin; m < closeMin; m++) {
-      if (m < currentTotalMinutes) {
+    for (const bookedMin of bookedMinutes) {
+      if (m >= bookedMin && m < bookedMin + intervalMinutes) {
         disabledMinutesSet.add(m);
       }
     }
   }
 
-  // ── Build disabledHours and disabledMinutesByHour ──
   const disabledHours = [];
   const disabledMinutesByHour = {};
-
   for (let h = 0; h < 24; h++) {
     const start = h * 60;
     const end = start + 60;
-    const disabledMinutes = [];
-
+    const minutes = [];
     for (let m = start; m < end; m++) {
       if (disabledMinutesSet.has(m)) {
-        disabledMinutes.push(m - start);
+        minutes.push(m - start);
       }
     }
-
-    if (disabledMinutes.length === 60) {
+    if (minutes.length === 60) {
       disabledHours.push(h);
     } else {
-      disabledMinutesByHour[h] = disabledMinutes;
+      disabledMinutesByHour[h] = minutes;
     }
   }
 
@@ -208,18 +182,50 @@ export async function getDisabledTimes(branchId, date) {
   };
 }
 
-export async function getFullyBookedDatesInMonth(branchId, monthDate) {
-  const start = dayjs(monthDate).startOf("month");
-  const end = dayjs(monthDate).endOf("month");
-  const dates = [];
-  const current = start.clone();
+/**
+ * Determine which dates in a given month are fully booked (no available slots).
+ * @param {string} branchId
+ * @param {dayjs} monthDate - any date within the month
+ * @param {number} intervalMinutes - appointment interval
+ * @returns {string[]} array of "YYYY-MM-DD" strings for fully booked dates
+ */
+export async function getFullyBookedDatesInMonth(
+  branchId,
+  monthDate,
+  intervalMinutes = DEFAULT_INTERVAL
+) {
+  if (!branchId || !monthDate) return [];
 
+  const start = monthDate.startOf("month");
+  const end = monthDate.endOf("month");
+  const fullyBooked = [];
+
+  let current = start.clone();
   while (current.isBefore(end) || current.isSame(end, "day")) {
-    const hasSlot = await hasAvailableSlot(branchId, current);
-    if (!hasSlot) {
-      dates.push(current.format("YYYY-MM-DD"));
+    const closed = await isDateClosed(branchId, current);
+    if (closed) {
+      fullyBooked.push(current.format("YYYY-MM-DD"));
+    } else {
+      const slots = await generateAvailableSlots(branchId, current, intervalMinutes);
+      if (slots.length === 0) {
+        fullyBooked.push(current.format("YYYY-MM-DD"));
+      }
     }
-    current.add(1, "day");
+    current = current.add(1, "day");
   }
-  return dates;
+  return fullyBooked;
+}
+
+// ── Utilities ──
+function timeToMinutes(timeStr) {
+  if (!timeStr) return NaN;
+  const parts = timeStr.split(":").map(Number);
+  if (parts.length < 2) return NaN;
+  return parts[0] * 60 + parts[1];
+}
+
+function minutesToTime(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
 }

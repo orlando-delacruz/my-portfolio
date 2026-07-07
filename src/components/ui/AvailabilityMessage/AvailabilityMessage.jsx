@@ -10,9 +10,10 @@ const AvailabilityMessage = ({ isClosed, isFullyBooked }) => {
           <MdEventBusy size={20} />
         </S.CardIcon>
         <S.CardContent>
-          <S.CardTitle>Selected date is closed.</S.CardTitle>
+          <S.CardTitle>Clinic Closed</S.CardTitle>
           <S.CardDescription>
-            The clinic is not accepting appointments on this day. Please choose another date.
+            The selected date is unavailable because the clinic is closed.
+            Please choose another available date.
           </S.CardDescription>
         </S.CardContent>
       </S.WarningCard>
@@ -26,7 +27,7 @@ const AvailabilityMessage = ({ isClosed, isFullyBooked }) => {
           <MdOutlineEventBusy size={20} />
         </S.CardIcon>
         <S.CardContent>
-          <S.CardTitle>Selected date is fully booked.</S.CardTitle>
+          <S.CardTitle>Fully Booked</S.CardTitle>
           <S.CardDescription>
             There are no remaining appointment slots for this date. Please choose another date.
           </S.CardDescription>

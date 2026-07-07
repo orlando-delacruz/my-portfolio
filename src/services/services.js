@@ -10,7 +10,6 @@ export async function fetchServices(branchId) {
     throw new Error("Branch ID is required");
   }
 
-  // Step 1: Get branch-specific service records from service_branches
   const { data: branchServices, error: branchError } = await supabase
     .from("service_branches")
     .select("id, service_id, price, duration_minutes, status, online_booking_enabled")
@@ -26,17 +25,15 @@ export async function fetchServices(branchId) {
     return [];
   }
 
-  // Step 2: Collect all unique service_ids
   const serviceIds = branchServices.map((bs) => bs.service_id).filter((id) => id);
 
   if (serviceIds.length === 0) {
     return [];
   }
 
-  // Step 3: Fetch the corresponding services from the services table
   const { data: services, error: servicesError } = await supabase
     .from("services")
-    .select("id, name, description")
+    .select("id, name, description, starting_price, maximum_price, default_duration_minutes")
     .in("id", serviceIds);
 
   if (servicesError) {
@@ -44,20 +41,19 @@ export async function fetchServices(branchId) {
     throw new Error(servicesError.message || "Failed to fetch service details");
   }
 
-  // Step 4: Build a map of service_id -> service object
   const serviceMap = {};
   services.forEach((svc) => {
     serviceMap[svc.id] = svc;
   });
 
-  // Step 5: Combine the data
   return branchServices.map((bs) => ({
     id: bs.id,
     service_id: bs.service_id,
     name: serviceMap[bs.service_id]?.name || "",
     description: serviceMap[bs.service_id]?.description || "",
     duration_minutes: bs.duration_minutes,
-    price: bs.price,
+    starting_price: serviceMap[bs.service_id]?.starting_price || 0,
+    maximum_price: serviceMap[bs.service_id]?.maximum_price || 0,
     is_active: bs.status === "active",
     branch_id: branchId,
   }));
@@ -65,10 +61,9 @@ export async function fetchServices(branchId) {
 
 /**
  * Create a new service for a branch.
- * Inserts into services and service_branches.
  */
 export async function createService(serviceData) {
-  const { branch_id, name, description, duration_minutes, price, is_active } = serviceData;
+  const { branch_id, name, description, duration_minutes, starting_price, maximum_price, is_active } = serviceData;
 
   if (!branch_id) throw new Error("Branch ID is required");
   if (!name || name.trim() === "") throw new Error("Service name is required");
@@ -80,7 +75,8 @@ export async function createService(serviceData) {
       name: name.trim(),
       description: description?.trim() || null,
       default_duration_minutes: duration_minutes,
-      default_price: price,
+      starting_price: starting_price,
+      maximum_price: maximum_price,
       status: "active",
     })
     .select()
@@ -97,7 +93,7 @@ export async function createService(serviceData) {
     .insert({
       service_id: service.id,
       branch_id,
-      price,
+      price: starting_price, // for backward compatibility
       duration_minutes,
       status: is_active ? "active" : "inactive",
       online_booking_enabled: true,
@@ -106,7 +102,6 @@ export async function createService(serviceData) {
     .single();
 
   if (branchError) {
-    // Rollback: delete the service we just inserted
     await supabase.from("services").delete().eq("id", service.id);
     console.error("Error creating branch service:", branchError);
     throw new Error(branchError.message || "Failed to link service to branch");
@@ -118,20 +113,20 @@ export async function createService(serviceData) {
     name: service.name,
     description: service.description,
     duration_minutes: branchService.duration_minutes,
-    price: branchService.price,
+    starting_price: service.starting_price,
+    maximum_price: service.maximum_price,
     is_active: branchService.status === "active",
     branch_id,
   };
 }
 
 /**
- * Update an existing branch service (service_branches record)
- * ✅ Fixed: throws error if no row is updated.
+ * Update an existing branch service
  */
 export async function updateService(serviceId, updates) {
   if (!serviceId) throw new Error("Service ID is required");
 
-  const { name, description, duration_minutes, price, is_active } = updates;
+  const { name, description, duration_minutes, starting_price, maximum_price, is_active } = updates;
 
   // 1. Get the service_branches record to find the associated service_id
   const { data: existing, error: fetchError } = await supabase
@@ -145,15 +140,18 @@ export async function updateService(serviceId, updates) {
     throw new Error(fetchError.message || "Service not found");
   }
 
-  // 2. Update the services table (name, description)
-  if (name || description) {
+  // 2. Update the services table (name, description, prices)
+  if (name || description || starting_price !== undefined || maximum_price !== undefined) {
+    const updateData = {};
+    if (name) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (starting_price !== undefined) updateData.starting_price = starting_price;
+    if (maximum_price !== undefined) updateData.maximum_price = maximum_price;
+    updateData.updated_at = new Date().toISOString();
+
     const { error: updateServiceError } = await supabase
       .from("services")
-      .update({
-        name: name?.trim(),
-        description: description?.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", existing.service_id);
 
     if (updateServiceError) {
@@ -162,12 +160,11 @@ export async function updateService(serviceId, updates) {
     }
   }
 
-  // 3. Update the service_branches table (duration, price, status)
+  // 3. Update the service_branches table (duration, status)
   const { data: updated, error: updateBranchError } = await supabase
     .from("service_branches")
     .update({
       duration_minutes: duration_minutes !== undefined ? duration_minutes : null,
-      price: price !== undefined ? price : null,
       status: is_active !== undefined ? (is_active ? "active" : "inactive") : undefined,
       updated_at: new Date().toISOString(),
     })
@@ -180,15 +177,10 @@ export async function updateService(serviceId, updates) {
     throw new Error(updateBranchError.message || "Failed to update branch service");
   }
 
-  // ✅ Verify that the update actually happened
-  if (!updated) {
-    throw new Error("Service update failed: no matching record found.");
-  }
-
-  // 4. Fetch the updated service name
+  // 4. Fetch the updated service data
   const { data: serviceData, error: serviceFetchError } = await supabase
     .from("services")
-    .select("id, name, description")
+    .select("id, name, description, starting_price, maximum_price")
     .eq("id", existing.service_id)
     .single();
 
@@ -202,18 +194,18 @@ export async function updateService(serviceId, updates) {
     name: serviceData?.name || "",
     description: serviceData?.description || "",
     duration_minutes: updated.duration_minutes,
-    price: updated.price,
+    starting_price: serviceData?.starting_price || 0,
+    maximum_price: serviceData?.maximum_price || 0,
     is_active: updated.status === "active",
   };
 }
 
 /**
- * Delete a branch service (service_branches record) and cascade to service if no other branches use it
+ * Delete a branch service
  */
 export async function deleteService(serviceId) {
   if (!serviceId) throw new Error("Service ID is required");
 
-  // Get the service_id before deleting
   const { data: branchService, error: fetchError } = await supabase
     .from("service_branches")
     .select("service_id")
@@ -225,7 +217,6 @@ export async function deleteService(serviceId) {
     throw new Error(fetchError.message || "Service not found");
   }
 
-  // Delete the service_branches record
   const { error: deleteBranchError } = await supabase
     .from("service_branches")
     .delete()
@@ -247,7 +238,6 @@ export async function deleteService(serviceId) {
     return;
   }
 
-  // If no other branches use it, delete the service from services table
   if (count === 0) {
     const { error: deleteServiceError } = await supabase
       .from("services")

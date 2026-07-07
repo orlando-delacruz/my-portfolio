@@ -1,6 +1,6 @@
 // src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.jsx
 import { memo, useState, useEffect } from 'react';
-import { Modal, Divider, Dropdown, Spin } from 'antd';
+import { Modal, Dropdown, Spin, Button } from 'antd';
 import dayjs from 'dayjs';
 import { STATUS_CONFIG } from '../../../../data/admin/appointment';
 import { getAppointmentById } from '../../../../services/appointments';
@@ -170,11 +170,28 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
     );
   };
 
+  // ── Footer with actions ──
+  const footer = (
+    <S.Footer>
+      <Button onClick={onClose}>Close</Button>
+      {appointment && !loading && !error && (
+        <>
+          <Dropdown menu={statusMenuProps} trigger={['click']}>
+            <Button type="primary">Set Status</Button>
+          </Dropdown>
+          <Button type="default" onClick={() => onReschedule(appointment.id)}>
+            Reschedule
+          </Button>
+        </>
+      )}
+    </S.Footer>
+  );
+
   return (
     <Modal
       open={open}
       onCancel={onClose}
-      footer={null}
+      footer={footer}
       title={<S.ModalTitle>Appointment Details</S.ModalTitle>}
       width={700}
       centered
@@ -182,24 +199,6 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
       aria-label="Appointment details"
     >
       {renderContent()}
-      {appointment && !loading && !error && (
-        <>
-          <Divider />
-          <S.Footer>
-            <Dropdown menu={statusMenuProps} trigger={['click']}>
-              <S.ActionBtn $variant="primary">Set Status</S.ActionBtn>
-            </Dropdown>
-            <S.ActionBtn
-              $variant="secondary"
-              onClick={() => {
-                onReschedule(appointment.id);
-              }}
-            >
-              Reschedule
-            </S.ActionBtn>
-          </S.Footer>
-        </>
-      )}
     </Modal>
   );
 });

@@ -9,7 +9,7 @@ import ClosureTable from './sections/Table';
 import ClinicClosureModal from '../../../components/admin/Modal/ClinicClosureModal';
 import ClinicClosureDetailsModal from '../../../components/admin/Modal/ClinicClosureDetailsModal';
 import { useClinicClosures } from './useClinicClosures';
-import { createClinicClosure, updateClinicClosure, deleteClinicClosure } from '../../../services/clinicClosures';
+import { createClinicClosure, createClinicClosures, updateClinicClosure, deleteClinicClosure } from '../../../services/clinicClosures';
 import * as S from './ClinicClosures.styled';
 
 const { confirm } = Modal;
@@ -53,11 +53,20 @@ const ClinicClosures = () => {
     setModalLoading(true);
     try {
       if (editingClosure) {
+        // Update single closure
         await updateClinicClosure(editingClosure.id, data);
         message.success('Closure updated successfully!');
       } else {
-        await createClinicClosure(data);
-        message.success('Closure created successfully!');
+        // Create: data contains branch_ids array
+        const { branch_ids, ...rest } = data;
+        if (branch_ids && branch_ids.length > 0) {
+          await createClinicClosures(rest, branch_ids);
+          message.success(`Closure created for ${branch_ids.length} branch(es).`);
+        } else {
+          // Fallback: single branch (should not happen, but safe)
+          await createClinicClosure(data);
+          message.success('Closure created successfully!');
+        }
       }
       handleModalClose();
       refetch();

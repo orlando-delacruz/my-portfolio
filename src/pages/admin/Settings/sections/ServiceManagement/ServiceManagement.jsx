@@ -105,16 +105,23 @@ const ServiceManagement = () => {
     form.resetFields();
   }, [form]);
 
-  // ✅ Fixed: only show success after the update actually happens
   const handleModalSave = useCallback(async () => {
     try {
       const values = await form.validateFields();
+
+      // Validate: starting_price <= maximum_price
+      if (values.starting_price > values.maximum_price) {
+        message.error("Starting price cannot be greater than maximum price.");
+        return;
+      }
+
       const payload = {
         branch_id: activeBranch,
         name: values.name,
         description: values.description,
         duration_minutes: values.duration_minutes,
-        price: values.price,
+        starting_price: values.starting_price,
+        maximum_price: values.maximum_price,
         is_active: values.is_active,
       };
 
@@ -123,7 +130,8 @@ const ServiceManagement = () => {
           name: values.name,
           description: values.description,
           duration_minutes: values.duration_minutes,
-          price: values.price,
+          starting_price: values.starting_price,
+          maximum_price: values.maximum_price,
           is_active: values.is_active,
         });
         message.success("Service updated successfully.");
@@ -147,7 +155,8 @@ const ServiceManagement = () => {
           name: editingService.name,
           description: editingService.description,
           duration_minutes: editingService.duration_minutes,
-          price: editingService.price,
+          starting_price: editingService.starting_price,
+          maximum_price: editingService.maximum_price,
           is_active: editingService.is_active,
         });
       } else {
@@ -155,6 +164,9 @@ const ServiceManagement = () => {
         form.setFieldsValue({
           branch_id: activeBranch,
           is_active: true,
+          duration_minutes: 30,
+          starting_price: 0,
+          maximum_price: 0,
         });
       }
     }
@@ -174,7 +186,13 @@ const ServiceManagement = () => {
         </S.ServiceCardHeader>
         <S.ServiceCardMeta>
           <span>{service.duration_minutes ? `${service.duration_minutes} mins` : "—"}</span>
-          <span>{service.price ? `₱${Number(service.price).toLocaleString()}` : "—"}</span>
+          <span>
+            {service.starting_price && service.maximum_price
+              ? service.starting_price === service.maximum_price
+                ? `₱${Number(service.starting_price).toLocaleString()}`
+                : `₱${Number(service.starting_price).toLocaleString()} – ₱${Number(service.maximum_price).toLocaleString()}`
+              : "—"}
+          </span>
         </S.ServiceCardMeta>
       </S.ServiceCard>
     );
@@ -190,8 +208,14 @@ const ServiceManagement = () => {
         </S.DetailsHeader>
         <Descriptions bordered column={1} size="small" style={{ marginBottom: 16 }}>
           <Descriptions.Item label="Description">{service.description || "—"}</Descriptions.Item>
-          <Descriptions.Item label="Duration">{service.duration_minutes ? `${service.duration_minutes} mins` : "—"}</Descriptions.Item>
-          <Descriptions.Item label="Price">{service.price ? `₱${Number(service.price).toLocaleString()}` : "—"}</Descriptions.Item>
+          <Descriptions.Item label="Appointment Interval">{service.duration_minutes ? `${service.duration_minutes} mins` : "—"}</Descriptions.Item>
+          <Descriptions.Item label="Price Range">
+            {service.starting_price && service.maximum_price
+              ? service.starting_price === service.maximum_price
+                ? `₱${Number(service.starting_price).toLocaleString()}`
+                : `₱${Number(service.starting_price).toLocaleString()} – ₱${Number(service.maximum_price).toLocaleString()}`
+              : "—"}
+          </Descriptions.Item>
         </Descriptions>
         <S.DetailsActions>
           <Button icon={<EditOutlined />} onClick={() => handleEdit(service)} style={{ marginRight: 8 }}>Edit</Button>
@@ -263,11 +287,14 @@ const ServiceManagement = () => {
           <Form.Item name="description" label="Description">
             <Input.TextArea placeholder="Optional description" rows={3} />
           </Form.Item>
-          <Form.Item name="duration_minutes" label="Duration (minutes)" rules={[{ type: "number", min: 1, message: "Must be greater than 0." }]}>
-            <InputNumber placeholder="e.g., 30" style={{ width: "100%" }} min={1} />
+          <Form.Item name="duration_minutes" label="Appointment Interval (minutes)" rules={[{ type: "number", min: 5, max: 480, message: "Must be between 5 and 480." }]}>
+            <InputNumber placeholder="e.g., 30" style={{ width: "100%" }} min={5} max={480} />
           </Form.Item>
-          <Form.Item name="price" label="Price" rules={[{ type: "number", min: 0, message: "Cannot be negative." }]}>
+          <Form.Item name="starting_price" label="Starting Price (₱)" rules={[{ type: "number", min: 0, message: "Cannot be negative." }]}>
             <InputNumber placeholder="e.g., 800" style={{ width: "100%" }} min={0} step={0.01} />
+          </Form.Item>
+          <Form.Item name="maximum_price" label="Maximum Price (₱)" rules={[{ type: "number", min: 0, message: "Cannot be negative." }]}>
+            <InputNumber placeholder="e.g., 1200" style={{ width: "100%" }} min={0} step={0.01} />
           </Form.Item>
           <Form.Item name="is_active" label="Active" valuePropName="checked">
             <Switch defaultChecked />

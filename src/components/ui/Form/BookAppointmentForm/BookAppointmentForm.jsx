@@ -18,7 +18,7 @@ const BookAppointmentForm = () => {
   const {
     fields,
     errors,
-    isSubmitting,          // submission only (for button spinner)
+    isSubmitting,
     submitted,
     branches,
     services,
@@ -28,6 +28,9 @@ const BookAppointmentForm = () => {
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
+    closureVersion,
+    schedulingVersion,
+    durationMinutes,
     handleSubmit,
     handleReset,
     updateFields,
@@ -246,10 +249,10 @@ const BookAppointmentForm = () => {
                     placeholder="Select your preferred date"
                     disabledDate={disabledDate}
                     disabled={!fields.branchId}
+                    key={`datepicker-${fields.branchId}-${closureVersion}`}
                   />
                 </Form.Item>
 
-                {/* ── Conditional Time Selection ── */}
                 {fields.date && isDateUnavailable ? (
                   <S.FullWidth>
                     <AvailabilityMessage
@@ -269,16 +272,17 @@ const BookAppointmentForm = () => {
                       use12Hours
                       placeholder={fields.date ? "Select your preferred time" : "Select a date first"}
                       disabledTime={disabledTime}
+                      minuteStep={1}
                       hideDisabledOptions={true}
                       disabled={!fields.branchId || !fields.date}
                       popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       popupClassName="time-picker-no-scrollbar"
+                      key={`timepicker-${fields.branchId}-${fields.date}-${durationMinutes}-${closureVersion}-${schedulingVersion}`}
                     />
                   </Form.Item>
                 )}
               </S.FieldRow>
 
-              {/* ── Service Selection ── */}
               {noServicesAvailable ? (
                 <S.FullWidth>
                   <Alert
@@ -322,7 +326,7 @@ const BookAppointmentForm = () => {
             <Button
               type="primary"
               htmlType="submit"
-              loading={isSubmitting}          // ✅ use only submission loading
+              loading={isSubmitting}
               disabled={isSubmitting || (fields.date && isDateUnavailable)}
               icon={!isSubmitting && <AiOutlineSend />}
               size="large"

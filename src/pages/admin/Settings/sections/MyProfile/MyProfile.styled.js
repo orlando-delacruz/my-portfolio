@@ -35,7 +35,7 @@ export const FieldGroup = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 24px;
 `;
 
 export const FieldRow = styled.div`

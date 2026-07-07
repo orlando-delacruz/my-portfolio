@@ -37,26 +37,49 @@ export function useClinicClosures() {
         });
 
         if (isMounted) {
+          // ✅ Fix: Use raw date strings from the database
           const mapped = (result.data || []).map((c) => {
+            // Parse dates safely
             const start = dayjs(c.start_date);
             const end = dayjs(c.end_date);
-            let dateDisplay = start.format("MMMM D, YYYY");
-            if (!start.isSame(end, "day")) {
-              dateDisplay = `${start.format("MMMM D")} – ${end.format("MMMM D, YYYY")}`;
+
+            // Check if dates are valid
+            const isStartValid = start.isValid();
+            const isEndValid = end.isValid();
+
+            let dateDisplay = "Invalid Date";
+            let dayOfWeek = "—";
+
+            if (isStartValid && isEndValid) {
+              if (start.isSame(end, "day")) {
+                dateDisplay = start.format("MMMM D, YYYY");
+              } else {
+                dateDisplay = `${start.format("MMMM D")} – ${end.format("MMMM D, YYYY")}`;
+              }
+              dayOfWeek = start.format("dddd");
+            } else if (isStartValid) {
+              dateDisplay = start.format("MMMM D, YYYY");
+              dayOfWeek = start.format("dddd");
+            } else if (isEndValid) {
+              dateDisplay = end.format("MMMM D, YYYY");
+              dayOfWeek = end.format("dddd");
             }
+
             let timeRange = "All day";
             if (!c.is_all_day && c.start_time && c.end_time) {
               const st = dayjs(c.start_time, "HH:mm:ss").format("h:mm A");
               const et = dayjs(c.end_time, "HH:mm:ss").format("h:mm A");
               timeRange = `${st} - ${et}`;
             }
+
             return {
               ...c,
-              date: dateDisplay,
-              dayOfWeek: start.format("dddd"),
+              date: dateDisplay, // ✅ Formatted display string
+              dateRaw: c.start_date, // ✅ Raw date for sorting/filtering
+              dayOfWeek,
               timeRange,
-              closureType: c.closure_type, // ✅ map database field to display field
-              status: c.computed_status || "scheduled", // ✅ use computed status
+              closureType: c.closure_type,
+              status: c.computed_status || "scheduled",
             };
           });
 

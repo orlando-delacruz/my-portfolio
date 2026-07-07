@@ -154,7 +154,7 @@ const BranchManagement = () => {
                 color: "#886217",
                 padding: "6px 0",
                 height: "auto",
-                fontSize: "10px",
+                fontSize: "14px",
                 justifyContent: "center",
               }}
             >

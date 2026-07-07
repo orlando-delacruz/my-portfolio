@@ -1,13 +1,13 @@
 // src/hooks/useAppointmentAvailability.js
-import { useState, useEffect, useCallback, useMemo, useReducer } from "react";
+import { useEffect, useCallback, useMemo, useReducer, useRef } from "react";
 import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
 import { useScheduling } from "./useScheduling";
 import { getFullyBookedDatesInMonth } from "../services/scheduling";
-import { fetchOperatingHours } from "../services/operatingHours";
 import { supabase } from "../services/supabase/supabase";
-import useSettingsStore from "../store/useSettingsStore";
 
-// ── Reducer ──
+dayjs.extend(isBetween);
+
 const FETCH_ACTIONS = {
   START: "START",
   SUCCESS: "SUCCESS",
@@ -24,6 +24,7 @@ function fetchReducer(state, action) {
         error: null,
         closures: action.payload.closures,
         fullyBooked: action.payload.fullyBooked,
+        version: action.payload.version,
       };
     case FETCH_ACTIONS.ERROR:
       return { ...state, loading: false, error: action.payload };
@@ -37,53 +38,37 @@ const INITIAL_FETCH_STATE = {
   error: null,
   closures: [],
   fullyBooked: [],
+  version: 0,
 };
 
-export function useAppointmentAvailability(branchId, selectedDateKey, monthKey) {
-  // 1. Operating hours from the store
-  const storeOperatingHours = useSettingsStore((state) => state.operatingHours);
-
-  // 2. Local state for fetched hours (branchId + map) – only set after async fetch
-  const [hoursData, setHoursData] = useState({ branchId: null, map: {} });
-
-  // 3. Build operatingHoursMap: prefer store, else local if branch matches
-  const operatingHoursMap = useMemo(() => {
-    if (branchId && storeOperatingHours[branchId] && storeOperatingHours[branchId].length > 0) {
-      const map = {};
-      storeOperatingHours[branchId].forEach((hour) => {
-        map[hour.dayOfWeek] = hour;
-      });
-      return map;
-    }
-
-    // Use local data only if it matches the current branch
-    if (branchId && hoursData.branchId === branchId) {
-      return hoursData.map;
-    }
-
-    return {};
-  }, [branchId, storeOperatingHours, hoursData]);
-
-  // 4. Scheduling (for time slot generation)
+export function useAppointmentAvailability(
+  branchId,
+  selectedDateKey,
+  monthKey,
+  durationMinutes = 30
+) {
   const selectedDate = useMemo(() => {
     return selectedDateKey ? dayjs(selectedDateKey) : null;
   }, [selectedDateKey]);
 
-  const { disabledTime, loading: schedulingLoading, error: schedulingError } =
-    useScheduling(branchId, selectedDate);
+  const {
+    disabledTime,
+    isClosed: schedulingIsClosed,
+    schedulingVersion,
+    loading: schedulingLoading,
+    error: schedulingError,
+  } = useScheduling(branchId, selectedDate);
 
-  // 5. Reducer for closures & fully booked dates
   const [fetchState, dispatch] = useReducer(fetchReducer, INITIAL_FETCH_STATE);
 
-  // 6. Stable month key
   const stableMonthKey = monthKey;
+  const versionRef = useRef(0);
 
-  // 7. Fetch closures and fully booked dates
   useEffect(() => {
     if (!branchId || !stableMonthKey) {
       dispatch({
         type: FETCH_ACTIONS.SUCCESS,
-        payload: { closures: [], fullyBooked: [] },
+        payload: { closures: [], fullyBooked: [], version: versionRef.current++ },
       });
       return;
     }
@@ -101,16 +86,17 @@ export function useAppointmentAvailability(branchId, selectedDateKey, monthKey) 
       try {
         const { data: closuresData, error: closureError } = await supabase
           .from("clinic_closures")
-          .select("start_date, end_date")
+          .select("*")
           .eq("branch_id", branchId)
           .eq("is_cancelled", false)
           .eq("affects_booking", true)
-          .or(`start_date.lte.${monthEnd},end_date.gte.${monthStart}`)
+          .lte("start_date", monthEnd)
+          .gte("end_date", monthStart)
           .abortSignal(abortController.signal);
 
         if (closureError) throw closureError;
 
-        const fullyBookedData = await getFullyBookedDatesInMonth(branchId, monthDate);
+        const fullyBookedData = await getFullyBookedDatesInMonth(branchId, monthDate, durationMinutes);
 
         if (isMounted) {
           dispatch({
@@ -118,11 +104,13 @@ export function useAppointmentAvailability(branchId, selectedDateKey, monthKey) 
             payload: {
               closures: closuresData || [],
               fullyBooked: fullyBookedData || [],
+              version: versionRef.current++,
             },
           });
         }
       } catch (err) {
         if (isMounted && err.name !== "AbortError") {
+          console.error("❌ [useAppointmentAvailability] Error fetching closures:", err);
           dispatch({
             type: FETCH_ACTIONS.ERROR,
             payload: err.message || "Failed to load availability data",
@@ -137,91 +125,53 @@ export function useAppointmentAvailability(branchId, selectedDateKey, monthKey) 
       isMounted = false;
       abortController.abort();
     };
-  }, [branchId, stableMonthKey]);
+  }, [branchId, stableMonthKey, durationMinutes]);
 
-  // 8. Fallback: fetch operating hours if not in store
-  useEffect(() => {
-    // If no branch, do nothing – we don't need to reset state.
-    if (!branchId) {
-      return;
-    }
-
-    // If store already has data, we don't need to fetch or clear local state.
-    if (storeOperatingHours[branchId] && storeOperatingHours[branchId].length > 0) {
-      return; // ✅ No setState called here – avoids the warning
-    }
-
-    let isMounted = true;
-
-    const fetchHours = async () => {
-      try {
-        const hours = await fetchOperatingHours(branchId);
-        if (isMounted && hours && hours.length > 0) {
-          const map = {};
-          hours.forEach((hour) => {
-            map[hour.dayOfWeek] = hour;
-          });
-          setHoursData({ branchId, map });
-        } else if (isMounted) {
-          // No hours returned, store empty map for this branch
-          setHoursData({ branchId, map: {} });
-        }
-      } catch (err) {
-        console.warn("Failed to fetch operating hours for branch:", branchId, err);
-        if (isMounted) {
-          setHoursData({ branchId, map: {} });
-        }
-      }
-    };
-
-    fetchHours();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [branchId, storeOperatingHours]);
-
-  // 9. Helpers
   const isClosureDate = useCallback(
     (dateStr) => {
+      if (!dateStr) return false;
+      const selected = dayjs(dateStr);
       return fetchState.closures.some((c) => {
+        const isAllDay = c.is_all_day === true || (!c.is_all_day && !c.start_time && !c.end_time);
+        if (!isAllDay) return false;
         const start = dayjs(c.start_date);
         const end = dayjs(c.end_date);
-        const d = dayjs(dateStr);
-        return d.isBetween(start, end, "day", "[]");
+        return selected.isBetween(start, end, 'day', '[]');
       });
     },
     [fetchState.closures]
   );
 
-  const isFullyBookedDate = useCallback(
+  const isDateFullyBooked = useCallback(
     (dateStr) => {
       return fetchState.fullyBooked.includes(dateStr);
     },
     [fetchState.fullyBooked]
   );
 
-  // 10. Derived statuses for the selected date
   const isSelectedDateClosed = useMemo(() => {
     if (!selectedDateKey || !branchId) return false;
+    if (schedulingLoading) return false;
+    if (schedulingIsClosed) return true;
     if (isClosureDate(selectedDateKey)) return true;
-    const dayOfWeek = dayjs(selectedDateKey).day();
-    const hours = operatingHoursMap[dayOfWeek];
-    return hours && hours.isClosed;
-  }, [selectedDateKey, branchId, isClosureDate, operatingHoursMap]);
+    return false;
+  }, [selectedDateKey, branchId, schedulingIsClosed, schedulingLoading, isClosureDate]);
 
-  const isDateFullyBooked = useMemo(() => {
+  const isDateFullyBookedSelected = useMemo(() => {
     if (!selectedDateKey || !branchId) return false;
-    return isFullyBookedDate(selectedDateKey);
-  }, [selectedDateKey, branchId, isFullyBookedDate]);
+    return isDateFullyBooked(selectedDateKey);
+  }, [selectedDateKey, branchId, isDateFullyBooked]);
 
   const loading = schedulingLoading || fetchState.loading;
   const error = schedulingError || fetchState.error;
 
   return {
     disabledTime,
-    isDateFullyBooked,
+    isDateFullyBooked: isDateFullyBookedSelected,
     isSelectedDateClosed,
+    isClosureDate,
+    closureVersion: fetchState.version,
+    schedulingVersion,
     loading,
     error,
   };

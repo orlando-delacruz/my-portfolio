@@ -28,6 +28,7 @@ export async function bookPublicAppointment({
   date,
   time,
   notes,
+  durationMinutes = 30,
 }) {
   // 1. Validate required fields
   if (
@@ -54,23 +55,56 @@ export async function bookPublicAppointment({
   // 2. Prevent past appointments
   if (isPastAppointment(dateObj, timeObj)) {
     throw new Error(
-      "The selected appointment time has already passed. Please choose a future time.",
+      "The selected appointment time has already passed. Please choose a future time."
     );
   }
 
-  // 3. Check conflict
+  // ── 3. Validate against clinic closures ──
+  const dateStr = dateObj.format("YYYY-MM-DD");
+  const timeStr = timeObj.format("HH:mm:ss");
+
+  const { data: closure, error: closureError } = await supabase
+    .from("clinic_closures")
+    .select("*")
+    .eq("branch_id", branchId)
+    .eq("is_cancelled", false)
+    .eq("affects_booking", true)
+    .lte("start_date", dateStr)
+    .gte("end_date", dateStr)
+    .maybeSingle();
+
+  if (closureError) {
+    console.error("Closure check error:", closureError);
+    throw new Error("Unable to verify availability. Please try again.");
+  }
+
+  if (closure) {
+    if (closure.is_all_day) {
+      throw new Error("The clinic is closed on this date. Please choose another date.");
+    } else {
+      const closureStart = closure.start_time;
+      const closureEnd = closure.end_time;
+      if (timeStr >= closureStart && timeStr <= closureEnd) {
+        throw new Error("The selected time is within a clinic closure period. Please choose another time.");
+      }
+    }
+  }
+
+  // 4. Check conflict with dynamic interval
   const conflict = await hasBookingConflict({
     date: dateObj,
     time: timeObj,
+    branchId: branchId,
+    intervalMinutes: durationMinutes,
   });
 
   if (conflict) {
     throw new Error(
-      "The selected time is too close to an existing appointment. Please choose a time at least 60 minutes apart.",
+      `The selected time is too close to an existing appointment. Please choose a time at least ${durationMinutes} minutes apart.`
     );
   }
 
-  // 4. Find or create patient
+  // 5. Find or create patient
   const patient = await findOrCreatePatient({
     firstName,
     middleName,
@@ -82,14 +116,14 @@ export async function bookPublicAppointment({
     address,
   });
 
-  // 5. Fetch service branch details for snapshot
+  // 6. Fetch service branch details for snapshot
   const serviceBranch = await fetchServiceBranchById(serviceBranchId);
 
-  // 6. Generate reference number atomically via RPC
-  const dateStr = dateObj.format("YYYY-MM-DD");
+  // 7. Generate reference number
+  const dateStrForRef = dateObj.format("YYYY-MM-DD");
   const { data: refNumber, error: refError } = await supabase.rpc(
     "generate_reference_number",
-    { p_date: dateStr },
+    { p_date: dateStrForRef }
   );
 
   if (refError) {
@@ -97,7 +131,7 @@ export async function bookPublicAppointment({
     throw new Error("Failed to generate reference number. Please try again.");
   }
 
-  // 7. Insert appointment – Pending
+  // 8. Insert appointment – Pending
   const { approval_status, appointment_status } = STATUS_TO_DB.pending;
   const { data: appointment, error: insertErr } = await supabase
     .from("appointments")
@@ -110,8 +144,9 @@ export async function bookPublicAppointment({
       preferred_time: timeObj.format("HH:mm:ss"),
       chief_complaint: notes || null,
       snapshot_service_name: serviceBranch.name,
-      snapshot_price: serviceBranch.price,
-      snapshot_duration_minutes: serviceBranch.duration_minutes,
+      snapshot_duration_minutes: durationMinutes,
+      snapshot_starting_price: serviceBranch.starting_price,
+      snapshot_maximum_price: serviceBranch.maximum_price,
       approval_status,
       appointment_status,
     })
@@ -120,7 +155,7 @@ export async function bookPublicAppointment({
 
   if (insertErr) throw insertErr;
 
-  // 8. Log the activity
+  // 9. Log the activity
   await supabase.from("appointment_logs").insert({
     appointment_id: appointment.id,
     action: "created",

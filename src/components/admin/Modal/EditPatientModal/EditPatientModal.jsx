@@ -80,10 +80,9 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
     return Promise.resolve();
   };
 
+  // ✅ MODIFIED: Birthdate is now optional – only validate if a value is provided.
   const validateBirthDate = (_, value) => {
-    if (!value) {
-      return Promise.reject(new Error('Please select birthdate.'));
-    }
+    if (!value) return Promise.resolve(); // allow empty
     if (dayjs(value).isAfter(dayjs(), 'day')) {
       return Promise.reject(new Error('Birthdate cannot be in the future.'));
     }
@@ -140,16 +139,16 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             />
           </Form.Item>
 
-          {/* Row 3: Birthdate + Gender (aligned) */}
+          {/* Row 3: Birthdate (now optional) + Gender */}
           <Form.Item
             name="birthDate"
-            label="Birthdate"
+            label="Birthdate (Optional)"
             rules={[{ validator: validateBirthDate }]}
           >
             <DatePicker
               style={{ width: '100%' }}
               format="MMM D, YYYY"
-              placeholder="Select birthdate"
+              placeholder="Select birthdate (optional)"
               disabledDate={(current) => current && current > dayjs().endOf('day')}
             />
           </Form.Item>
@@ -181,14 +180,14 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             </Form.Item>
           </S.FullWidth>
 
-          {/* Row 5: Address (full width) */}
+          {/* Row 5: Address (full width) – now optional */}
           <S.FullWidth>
             <Form.Item
               name="address"
-              label="Complete Address"
-              rules={[{ required: true, message: 'Address is required.' }]}
+              label="Complete Address (Optional)"
+            // ✅ Removed required rule
             >
-              <Input placeholder="Enter complete address" />
+              <Input placeholder="Enter complete address (optional)" />
             </Form.Item>
           </S.FullWidth>
 

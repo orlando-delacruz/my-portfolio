@@ -106,6 +106,10 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ EditPatientModal.jsx
 │  │  │  │  │  ├─ EditPatientModal.styled.js
 │  │  │  │  │  └─ index.js
+│  │  │  │  ├─ LogoutModal
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ LogoutModal.jsx
+│  │  │  │  │  └─ LogoutModal.styled.js
 │  │  │  │  ├─ PatientDetailsModal
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ PatientDetailsModal.jsx
@@ -378,6 +382,7 @@ leidi-bud-dentals
 │  │  │  ├─ index.js
 │  │  │  ├─ Login.jsx
 │  │  │  ├─ Login.styled.js
+│  │  │  ├─ Unauthorized.jsx
 │  │  │  └─ useLogin.js
 │  │  └─ public
 │  │     ├─ BookAppointment
@@ -455,6 +460,7 @@ leidi-bud-dentals
 │  │  ├─ authStore.js
 │  │  ├─ useAdminStore.js
 │  │  ├─ useCalendarStore.js
+│  │  ├─ useLogoutStore.js
 │  │  └─ useSettingsStore.js
 │  ├─ styles
 │  │  ├─ adminTheme.js
