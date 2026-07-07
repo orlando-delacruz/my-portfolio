@@ -4,7 +4,7 @@ import { Alert, Skeleton, Tooltip } from 'antd';
 import CalendarEventCard from '../../../../../components/admin/Card/CalendarEventCard';
 import useCalendarStore from '../../../../../store/useCalendarStore';
 import { buildCalendarGrid } from '../../../../../utils/calendarGrid';
-import { useClosureDates } from '../../../../../hooks/useClosureDates';
+import { useCalendarIndicators } from '../../../../../hooks/useCalendarIndicators';
 import {
   WEEKDAY_LABELS,
   MAX_VISIBLE_EVENTS_PER_DAY,
@@ -15,7 +15,8 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
   const currentMonth = useCalendarStore((s) => s.currentMonth);
   const branchId = useCalendarStore((s) => s.branchId);
 
-  const { closedDates, closureDetails, loading: closureLoading } = useClosureDates(branchId, currentMonth);
+  // Get combined indicators (clinic closures + recurring events)
+  const { indicators, loading: indicatorsLoading } = useCalendarIndicators(branchId, currentMonth);
 
   const gridDays = useMemo(() => buildCalendarGrid(currentMonth), [currentMonth]);
 
@@ -33,7 +34,7 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
     return <Alert type="error" showIcon title="Couldn't load the calendar" description={error} />;
   }
 
-  if (loading || closureLoading) {
+  if (loading || indicatorsLoading) {
     return (
       <S.GridWrapper aria-busy="true" aria-label="Loading calendar">
         <Skeleton active paragraph={{ rows: 10 }} />
@@ -58,8 +59,10 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
           : dayAppointments.slice(0, MAX_VISIBLE_EVENTS_PER_DAY);
         const hiddenCount = dayAppointments.length - visibleAppointments.length;
         const isToday = date.isSame(new Date(), 'day');
-        const isClosed = closedDates.has(isoDate);
-        const closureTitle = closureDetails[isoDate] || 'Clinic Closed';
+
+        // Get all indicators for this date
+        const dateIndicators = indicators.get(isoDate) || [];
+        const hasClosure = dateIndicators.some(ind => ind.type === 'closure');
 
         return (
           <S.DayCell
@@ -67,23 +70,28 @@ const ScheduleCalendar = memo(({ appointmentsByDate, loading, error, onEventClic
             role="gridcell"
             $isCurrentMonth={isCurrentMonth}
             $isToday={isToday}
-            $isClosed={isClosed}
+            $hasClosure={hasClosure}
           >
-            <S.DayHeader>
-              <Tooltip title={isClosed ? closureTitle : ''} placement="top" color="#886217">
-                <S.DayNumber
-                  $isCurrentMonth={isCurrentMonth}
-                  $isToday={isToday}
-                  $isClosed={isClosed}
-                >
+            <S.DayHeader $hasClosure={hasClosure}>
+              <Tooltip
+                title={dateIndicators.map(ind => ind.title).join(' • ')}
+                placement="top"
+                color="#886217"
+              >
+                <S.DayNumber $isCurrentMonth={isCurrentMonth} $isToday={isToday} $hasClosure={hasClosure}>
                   {date.date()}
                 </S.DayNumber>
               </Tooltip>
             </S.DayHeader>
 
-            {isClosed && (
-              <S.ClosedLabel>CLOSED</S.ClosedLabel>
-            )}
+            {/* Render indicators */}
+            <S.IndicatorsContainer>
+              {dateIndicators.map((ind, idx) => (
+                <S.IndicatorBadge key={idx} $type={ind.type}>
+                  {ind.title}
+                </S.IndicatorBadge>
+              ))}
+            </S.IndicatorsContainer>
 
             <S.EventList>
               {visibleAppointments.map((appt) => (

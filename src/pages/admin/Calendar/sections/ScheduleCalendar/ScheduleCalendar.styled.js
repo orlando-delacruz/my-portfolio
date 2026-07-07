@@ -29,7 +29,7 @@ export const WeekdayHeader = styled.div`
 export const DayCell = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   min-height: 110px;
   padding: 10px 15px;
   border: 1px solid rgba(0, 0, 0, 0.15);
@@ -48,8 +48,8 @@ export const DayCell = styled.div`
       outline-offset: -2px;
     `}
 
-  ${({ $isClosed }) =>
-    $isClosed &&
+  ${({ $hasClosure }) =>
+    $hasClosure &&
     css`
       background: #fef2f2;
       border-color: #fecaca;
@@ -62,6 +62,12 @@ export const DayHeader = styled.div`
   align-items: center;
   gap: 4px;
   width: 100%;
+
+  ${({ $hasClosure }) =>
+    $hasClosure &&
+    css`
+      justify-content: center;
+    `}
 `;
 
 export const DayNumber = styled.span`
@@ -78,36 +84,62 @@ export const DayNumber = styled.span`
       color: ${adminTheme.colors.primary};
     `}
 
-  ${({ $isClosed }) =>
-    $isClosed &&
+  ${({ $hasClosure }) =>
+    $hasClosure &&
     css`
       background: #dc2626;
       color: #fff;
       border-radius: 50%;
-      padding: 2px 8px;
+      padding: 0 8px;
       min-width: 28px;
       text-align: center;
       display: inline-block;
-      font-size: 12px;
+      font-weight: 700;
     `}
 
   transition: all 0.15s ease;
 `;
 
-export const ClosedLabel = styled.div`
-  font-family: Inter, sans-serif;
-  font-size: 12px;
+export const IndicatorsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0;
+`;
+
+export const IndicatorBadge = styled.span`
+  font-size: 9px;
   font-weight: 600;
-  color: #dc2626;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(220, 38, 38, 0.1);
+  padding: 1px 6px;
   border-radius: 4px;
-  padding: 4px 8px;
-  display: inline-block;
-  align-self: center;
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+
+  ${({ $type }) => {
+    switch ($type) {
+      case 'day-off':
+        return css`
+          background: #dbeafe;
+          color: #1e40af;
+        `;
+      case 'sabbath':
+        return css`
+          background: #ede9fe;
+          color: #6d28d9;
+        `;
+      case 'closure':
+        return css`
+          background: #fee2e2;
+          color: #991b1b;
+        `;
+      default:
+        return css`
+          background: #f3f4f6;
+          color: #374151;
+        `;
+    }
+  }}
 `;
 
 export const EventList = styled.div`
