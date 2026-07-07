@@ -16,7 +16,7 @@ const Header = () => {
     useHeader(navlivnks);
 
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const isAuthorized = useAuthStore((state) => state.isAuthorized); // ✅ use authorization, not just user
   const loading = useAuthStore((state) => state.loading);
 
   const handleBookNow = () => {
@@ -25,7 +25,7 @@ const Header = () => {
   };
 
   const handleAuthAction = () => {
-    if (user) {
+    if (isAuthorized) {
       navigate("/admin");
     } else {
       navigate("/login");
@@ -33,11 +33,12 @@ const Header = () => {
     closeMobile();
   };
 
-  const authLabel = user ? "Dashboard" : "Login";
-  const AuthIcon = user ? FiHome : FiLogIn;
+  const authLabel = isAuthorized ? "Dashboard" : "Login";
+  const AuthIcon = isAuthorized ? FiHome : FiLogIn;
 
   return (
     <S.Header $scrolled={scrolled} role="banner">
+      {/* Banner */}
       <S.Banner>
         <div className="left-details">
           <a className="contacts" href={banner.phone.href}>{banner.phone.display}</a>
@@ -90,12 +91,11 @@ const Header = () => {
             </S.NavItem>
           ))}
 
-          {/* Action buttons container */}
           <S.NavItem role="none">
             <S.ButtonGroup>
               {!loading && (
                 <Button
-                  variant={user ? "outline" : "primary"}
+                  variant={isAuthorized ? "outline" : "primary"}
                   size="sm"
                   aria-label={authLabel}
                   onClick={handleAuthAction}
@@ -146,7 +146,6 @@ const Header = () => {
           </S.MobileNavLink>
         ))}
 
-        {/* Mobile action buttons */}
         {!loading && (
           <S.MobileActionGroup>
             <S.MobileNavLink

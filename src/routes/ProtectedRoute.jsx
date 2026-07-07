@@ -4,9 +4,8 @@ import { Spin } from 'antd';
 import { useAuthStore } from '../store/authStore';
 
 export default function ProtectedRoute() {
-  const user = useAuthStore((s) => s.user);
-  const profile = useAuthStore((s) => s.profile);
   const loading = useAuthStore((s) => s.loading);
+  const isAuthorized = useAuthStore((s) => s.isAuthorized);
 
   if (loading) {
     return (
@@ -25,9 +24,8 @@ export default function ProtectedRoute() {
     );
   }
 
-  // User must be authenticated and have a valid admin profile
-  if (!user || !profile) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthorized) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return <Outlet />;

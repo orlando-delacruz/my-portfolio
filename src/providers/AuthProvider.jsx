@@ -1,36 +1,41 @@
 // src/providers/AuthProvider.jsx
-import { useEffect } from 'react';
-import { supabase } from '../services/supabase/supabase';
-import { useAuthStore } from '../store/authStore';
+import { useEffect } from "react";
+import { supabase } from "../services/supabase/supabase";
+import { useAuthStore } from "../store/authStore";
 
 export default function AuthProvider({ children }) {
-  const { setUser, setLoading, fetchProfile, clear } = useAuthStore();
+  const { setUser, setLoading, fetchProfile, clear, setAuthorized } = useAuthStore();
 
   useEffect(() => {
     let mounted = true;
 
-    // 1. Restore session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. Restore session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       if (session?.user) {
         setUser(session.user);
-        // Fetch admin profile from admins table using auth_user_id
-        fetchProfile(session.user.id).finally(() => setLoading(false));
+        // Keep loading true until profile is fetched
+        await fetchProfile(session.user.id);
+        setLoading(false);
       } else {
         setLoading(false);
+        setAuthorized(false);
       }
     });
 
     // 2. Listen to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id).finally(() => setLoading(false));
+        await fetchProfile(session.user.id);
+        setLoading(false);
       } else {
         clear();
+        setAuthorized(false);
+        setLoading(false);
       }
     });
 
@@ -38,7 +43,7 @@ export default function AuthProvider({ children }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clear, fetchProfile, setAuthorized, setLoading, setUser]);
 
   return children;
 }

@@ -6,14 +6,16 @@ export const useAuthStore = create((set) => ({
   user: null,
   profile: null,
   loading: true,
+  isAuthorized: false,
 
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading }),
+  setAuthorized: (isAuthorized) => set({ isAuthorized }),
 
   fetchProfile: async (authUserId) => {
     if (!authUserId) {
-      set({ profile: null });
+      set({ profile: null, isAuthorized: false });
       return;
     }
     const { data, error } = await supabase
@@ -23,11 +25,11 @@ export const useAuthStore = create((set) => ({
       .single();
     if (error) {
       console.error("Error fetching admin profile:", error);
-      set({ profile: null });
+      set({ profile: null, isAuthorized: false });
     } else {
-      set({ profile: data });
+      set({ profile: data, isAuthorized: true });
     }
   },
 
-  clear: () => set({ user: null, profile: null, loading: false }),
+  clear: () => set({ user: null, profile: null, loading: false, isAuthorized: false }),
 }));
