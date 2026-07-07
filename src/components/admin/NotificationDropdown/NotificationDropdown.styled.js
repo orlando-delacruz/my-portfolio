@@ -62,8 +62,10 @@ export const Dropdown = styled.div`
 
   @media (max-width: 480px) {
     width: calc(100vw - 32px);
-    right: -16px;
     max-height: 400px;
+    right: auto;
+    left: -130%;
+    transform: translateX(-50%);
   }
 `;
 
