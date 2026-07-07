@@ -118,7 +118,7 @@ const BranchManagement = () => {
                       style={{
                         borderRadius: "5px",
                         borderColor: "rgba(136, 98, 23, 0.20)",
-                        fontSize: "10px",
+                        fontSize: "14px",
                         padding: "4px 12px",
                         height: "auto",
                       }}
@@ -132,7 +132,7 @@ const BranchManagement = () => {
                       onClick={() => handleDelete(branch)}
                       style={{
                         borderRadius: "5px",
-                        fontSize: "10px",
+                        fontSize: "14px",
                         padding: "4px 12px",
                         height: "auto",
                       }}

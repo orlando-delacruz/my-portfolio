@@ -1,6 +1,7 @@
 // src/components/admin/Modal/AppointmentModal/RescheduleModal.jsx
 import { memo, useState, useEffect } from "react";
 import { Modal, Form, Spin } from "antd";
+import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import AppointmentForm from "./AppointmentForm";
 import { getAppointmentById } from "../../../../services/appointments";
@@ -115,11 +116,11 @@ const RescheduleModal = memo(({ open, appointmentId, loading, onClose, onSubmit 
     >
       <AppointmentForm form={form} showStatus={true} />
       <S.FooterRow>
-        <S.CancelBtn onClick={handleCancel} type="button">
-          Cancel
+        <S.CancelBtn onClick={handleCancel} type="button" disabled={loading}>
+          <CloseOutlined /> Cancel
         </S.CancelBtn>
         <S.SubmitBtn onClick={handleOk} disabled={loading} type="button">
-          {loading ? "Saving…" : "Save Changes"}
+          <SaveOutlined /> {loading ? "Saving…" : "Save Changes"}
         </S.SubmitBtn>
       </S.FooterRow>
     </Modal>
