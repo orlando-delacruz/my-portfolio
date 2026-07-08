@@ -1,39 +1,39 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import React, { memo, useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Spin, Alert, Tooltip, message } from 'antd';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import updateLocale from 'dayjs/plugin/updateLocale';
+import { memo, useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Spin, Alert, Tooltip, message } from "antd";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import updateLocale from "dayjs/plugin/updateLocale";
 import {
   MdCalendarToday,
   MdUpcoming,
   MdCheckCircle,
   MdPendingActions,
-  MdBookOnline,
   MdAssessment,
   MdSchedule,
-} from 'react-icons/md';
-import { BsCalendar2Check } from 'react-icons/bs';
-import { FiXCircle } from 'react-icons/fi';
+  MdPersonAdd,
+  MdAccessTime,
+} from "react-icons/md";
+import { BsCalendar2Check } from "react-icons/bs";
+import { FiXCircle } from "react-icons/fi";
 
-import AdminLayout from '../../../components/admin/AdminLayout';
-import useDashboard from './useDashboard';
-import { useDashboardData } from '../../../hooks/useDashboardData';
-import { useRealtimeAppointments } from '../../../hooks/useRealtimeAppointments';
-import { quickActions } from '../../../data/admin/dashboard';
+import AdminLayout from "../../../components/admin/AdminLayout";
+import { useAuthStore } from "../../../store/authStore";
+import useDashboard from "./useDashboard";
+import { useDashboardData } from "../../../hooks/useDashboardData";
+import { useRealtimeAppointments } from "../../../hooks/useRealtimeAppointments";
 import {
   AddAppointmentModal,
   RescheduleModal,
   useAppointmentModal,
-} from '../../../components/admin/Modal/AppointmentModal';
-import AppointmentDetailsModal from '../../../components/admin/Modal/AppointmentDetailsModal';
-import { STATUS_CONFIG } from '../../../data/admin/appointment';
-import { adminUpdateAppointmentStatus } from '../../../services/appointments';
-import { useAuthStore } from '../../../store/authStore';
-import * as S from './Dashboard.styled';
+} from "../../../components/admin/Modal/AppointmentModal";
+import AppointmentDetailsModal from "../../../components/admin/Modal/AppointmentDetailsModal";
+import { STATUS_CONFIG } from "../../../data/admin/appointment";
+import { adminUpdateAppointmentStatus } from "../../../services/appointments";
+import * as S from "./Dashboard.styled";
 
-// ── Extend dayjs with relative time plugins ──────────────────
+// ── Extend dayjs ──
 dayjs.extend(relativeTime);
 dayjs.extend(updateLocale);
 dayjs.updateLocale('en', {
@@ -54,7 +54,7 @@ dayjs.updateLocale('en', {
   },
 });
 
-// ── Constants ────────────────────────────────────────────
+// ── Activity Icons ──
 const ACTIVITY_ICONS = {
   created: BsCalendar2Check,
   status_changed: MdCheckCircle,
@@ -63,7 +63,10 @@ const ACTIVITY_ICONS = {
   default: BsCalendar2Check,
 };
 
-// ── Status Badge Component ──────────────────────────────
+// Compact preview shows at most this many rows; internal scroll handles the rest.
+const SCHEDULE_PREVIEW_LIMIT = 7;
+
+// ── Status Badge ──
 const StatusBadge = memo(({ status }) => {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
@@ -79,11 +82,22 @@ const StatusBadge = memo(({ status }) => {
 });
 StatusBadge.displayName = 'StatusBadge';
 
-// ── Stats Card Component ─────────────────────────────────
-const StatCard = memo(({ stat, value }) => {
+// ── Stats Card ──
+const StatCard = memo(({ stat, value, onClick }) => {
   const Icon = stat.icon;
   return (
-    <S.StatCard role="listitem">
+    <S.StatCard
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      aria-label={`${stat.label}: ${value} — click to view filtered appointments`}
+    >
       <S.StatIconWrap $color={stat.iconColor} aria-hidden="true">
         <Icon />
       </S.StatIconWrap>
@@ -97,23 +111,19 @@ const StatCard = memo(({ stat, value }) => {
 });
 StatCard.displayName = 'StatCard';
 
-// ── Main Dashboard ────────────────────────────────────────
+// ── Main Dashboard ──
 const Dashboard = () => {
   const navigate = useNavigate();
-  const profile = useAuthStore((s) => s.profile);
-  const { greeting, formattedDate, dayName } = useDashboard('DOCTOR YENYEN');
+  const profile = useAuthStore((state) => state.profile);
+  const authLoading = useAuthStore((state) => state.loading);
+  const user = useAuthStore((state) => state.user);
 
-  // ── Fetch real dashboard data ──────────────────────────
-  const { data, loading, error, refetch } = useDashboardData();
+  const { greeting, formattedDate, dayName } = useDashboard(profile, user);
+  const { data, loading: dashboardLoading, error, refetch } = useDashboardData();
+  useRealtimeAppointments(() => refetch());
 
-  // ── Realtime updates ────────────────────────────────────
-  useRealtimeAppointments(() => {
-    refetch();
-  });
-
-  // ── Modal hook ──────────────────────────────────────────
   const {
-    addOpen, addLoading, openAdd, closeAdd, handleAdd,
+    addOpen, addLoading, closeAdd, handleAdd,
     rescheduleOpen, rescheduleLoading, rescheduleTargetId,
     openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
@@ -121,25 +131,43 @@ const Dashboard = () => {
     onRescheduleSuccess: () => refetch(),
   });
 
-  // ── Details Modal state ────────────────────────────────
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
-  // ── Navigation helpers ──────────────────────────────────
   const goTo = useCallback((path) => navigate(path), [navigate]);
 
-  // ── Handle quick action clicks ──────────────────────────
-  const handleQuickAction = useCallback((action) => {
-    if (action.id === 'qa1') {
-      openAdd(); // Book Appointment
-    } else if (action.id === 'qa4') {
-      goTo('/admin/appointments'); // Appointment List
-    } else {
-      goTo('/admin/dashboard'); // placeholder
+  // ── Navigate to appointments with filters via URL params ──
+  const handleStatClick = useCallback((statId) => {
+    const params = new URLSearchParams();
+    switch (statId) {
+      case 'today':
+        // All appointments for today, regardless of status
+        params.set('date', 'today');
+        break;
+      case 'upcoming':
+        // All appointments from tomorrow onward (no status filter)
+        params.set('date', 'upcoming');
+        break;
+      case 'completed':
+        // Today's completed appointments
+        params.set('date', 'today');
+        params.set('status', 'completed');
+        break;
+      case 'pending':
+        // All pending appointments (regardless of date) – matches dashboard count
+        params.set('status', 'pending');
+        break;
+      case 'walkins':
+        // Today's walk-in appointments
+        params.set('date', 'today');
+        params.set('type', 'walkin');
+        break;
+      default:
+        return;
     }
-  }, [openAdd, goTo]);
+    navigate(`/admin/appointments?${params.toString()}`);
+  }, [navigate]);
 
-  // ── Stats mapping ───────────────────────────────────────
   const statsConfig = useMemo(
     () => [
       {
@@ -174,15 +202,23 @@ const Dashboard = () => {
         label: 'Pending',
         icon: MdPendingActions,
         iconColor: '#FFA000',
-        note: 'today',
+        note: 'Pending',
         noteColor: '#FFA000',
         value: data?.stats?.pending ?? 0,
+      },
+      {
+        id: 'walkins',
+        label: "Today's Walk-ins",
+        icon: MdPersonAdd,
+        iconColor: '#B75DEB',
+        note: 'walk-in patients',
+        noteColor: '#B75DEB',
+        value: data?.walkInCount ?? 0,
       },
     ],
     [data]
   );
 
-  // ── Handlers for Details Modal ──────────────────────────
   const handleViewAppointment = useCallback(() => {
     const nextAppt = data?.nextAppointment;
     if (nextAppt?.id) {
@@ -223,8 +259,9 @@ const Dashboard = () => {
     [handleCloseDetails, openReschedule]
   );
 
-  // ── Loading / Error states ─────────────────────────────
-  if (loading) {
+  const isLoading = authLoading || dashboardLoading;
+
+  if (isLoading) {
     return (
       <AdminLayout>
         <S.Page>
@@ -242,7 +279,7 @@ const Dashboard = () => {
         <S.Page>
           <Alert
             type="error"
-            message="Failed to load dashboard"
+            title="Failed to load dashboard"
             description={error}
             showIcon
           />
@@ -251,8 +288,8 @@ const Dashboard = () => {
     );
   }
 
-  // ── Extract data with fallbacks ────────────────────────
   const schedule = data?.schedule ?? [];
+  const displayedSchedule = schedule.slice(0, SCHEDULE_PREVIEW_LIMIT);
   const upcoming = data?.upcoming ?? [];
   const activity = data?.activity ?? [];
   const nextAppointment = data?.nextAppointment ?? {
@@ -263,12 +300,12 @@ const Dashboard = () => {
     avatarColor: '#888888',
     id: null,
   };
+  const walkIns = data?.walkIns ?? [];
 
-  // ── Render ──────────────────────────────────────────────
   return (
     <AdminLayout>
       <S.Page>
-        {/* ── Welcome bar ─────────────────────────────────── */}
+        {/* Row 1: Header */}
         <S.WelcomeBar>
           <S.WelcomeText>
             <S.WelcomeHeading>{greeting}</S.WelcomeHeading>
@@ -276,7 +313,6 @@ const Dashboard = () => {
               Here's what's happening to your clinic today.
             </S.WelcomeSubtitle>
           </S.WelcomeText>
-
           <S.DateBadge aria-label={`Today: ${formattedDate}, ${dayName}`}>
             <MdCalendarToday aria-hidden="true" />
             <S.DateInfo>
@@ -286,21 +322,28 @@ const Dashboard = () => {
           </S.DateBadge>
         </S.WelcomeBar>
 
-        {/* ── Stat cards ───────────────────────────────────── */}
+        {/* Row 2: Stats */}
         <S.StatsGrid role="list" aria-label="Clinic statistics">
           {statsConfig.map((stat) => (
-            <StatCard key={stat.id} stat={stat} value={stat.value} />
+            <StatCard
+              key={stat.id}
+              stat={stat}
+              value={stat.value}
+              onClick={() => handleStatClick(stat.id)}
+            />
           ))}
         </S.StatsGrid>
 
-        {/* ── Next Appt + Schedule ────────────────────────── */}
-        <S.TwoColGrid>
-          {/* Next appointment */}
+        {/* Row 3: Next Appointment (left) | Today's Schedule (right) */}
+        <S.MainContentGrid>
+          {/* Next Appointment — gradient hero card */}
           <S.NextApptCard aria-label="Next appointment details">
             <S.NextApptLabel>
-              <BsCalendar2Check aria-hidden="true" />
+              <MdAccessTime aria-hidden="true" />
               Next Appointment
             </S.NextApptLabel>
+
+            <S.NextApptTime>{nextAppointment.time}</S.NextApptTime>
 
             <S.NextApptBody>
               <S.AvatarCircle $color={nextAppointment.avatarColor} aria-hidden="true">
@@ -308,26 +351,30 @@ const Dashboard = () => {
               </S.AvatarCircle>
               <S.NextApptInfo>
                 <S.NextApptName>{nextAppointment.patient}</S.NextApptName>
-                <S.NextApptMeta>
-                  <S.TimeBadge>{nextAppointment.time}</S.TimeBadge>
-                  <S.NextApptDate>{nextAppointment.date}</S.NextApptDate>
-                </S.NextApptMeta>
                 <S.NextApptService>{nextAppointment.service}</S.NextApptService>
+                {nextAppointment.branch && (
+                  <S.NextApptDate>{nextAppointment.branch}</S.NextApptDate>
+                )}
+                {!nextAppointment.branch && nextAppointment.date && (
+                  <S.NextApptDate>{nextAppointment.date}</S.NextApptDate>
+                )}
               </S.NextApptInfo>
             </S.NextApptBody>
 
-            <div>
-              <S.Divider />
-              <S.ViewApptBtn
-                onClick={handleViewAppointment}
-                disabled={!nextAppointment.id}
-              >
-                View Appointment
-              </S.ViewApptBtn>
-            </div>
+            {nextAppointment.status && (
+              <StatusBadge status={nextAppointment.status} />
+            )}
+
+            <S.Divider />
+            <S.ViewApptBtn
+              onClick={handleViewAppointment}
+              disabled={!nextAppointment.id}
+            >
+              View Details
+            </S.ViewApptBtn>
           </S.NextApptCard>
 
-          {/* Today's schedule table */}
+          {/* Today's Schedule — compact preview */}
           <S.ScheduleCard>
             <S.ScheduleHeader>
               <S.ScheduleTitle>
@@ -338,6 +385,9 @@ const Dashboard = () => {
                 View Calendar
               </S.ViewCalendarLink>
             </S.ScheduleHeader>
+            <S.ScheduleSubtitle>
+              Appointments scheduled for today.
+            </S.ScheduleSubtitle>
             <S.ScheduleScrollWrapper>
               <S.ScheduleTable>
                 <S.ScheduleThead>
@@ -349,14 +399,14 @@ const Dashboard = () => {
                   </tr>
                 </S.ScheduleThead>
                 <tbody>
-                  {schedule.length === 0 ? (
+                  {displayedSchedule.length === 0 ? (
                     <tr>
                       <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
                         No appointments scheduled for today
                       </td>
                     </tr>
                   ) : (
-                    schedule.map((row) => (
+                    displayedSchedule.map((row) => (
                       <tr key={row.id}>
                         <S.ScheduleTd>{row.time}</S.ScheduleTd>
                         <S.ScheduleTd>{row.patient}</S.ScheduleTd>
@@ -371,11 +421,10 @@ const Dashboard = () => {
               </S.ScheduleTable>
             </S.ScheduleScrollWrapper>
           </S.ScheduleCard>
-        </S.TwoColGrid>
+        </S.MainContentGrid>
 
-        {/* ── 3-col grid ────────────────────────────────────── */}
+        {/* Row 4: Three columns (Upcoming, Recent Activity, Walk-ins) */}
         <S.ThreeColGrid>
-          {/* Upcoming appointments */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -413,7 +462,6 @@ const Dashboard = () => {
             </S.PanelContent>
           </S.Panel>
 
-          {/* Recent activity */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -457,60 +505,42 @@ const Dashboard = () => {
             </S.PanelContent>
           </S.Panel>
 
-          {/* Quick actions */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
-                <MdBookOnline aria-hidden="true" />
-                Quick Actions
+                <MdPersonAdd aria-hidden="true" />
+                Today's Walk-ins
               </S.PanelTitle>
             </S.PanelHeader>
             <S.PanelContent>
-              <S.QuickGrid role="list">
-                {quickActions.map((action) => {
-                  const ActionIcon = action.icon;
-                  const isBookAppointment = action.id === 'qa1';
-                  const isAppointmentList = action.id === 'qa4';
-                  const hasFunctionality = isBookAppointment || isAppointmentList;
-                  const handleClick = hasFunctionality
-                    ? () => handleQuickAction(action)
-                    : () => goTo('/admin/dashboard');
-
-                  const showTooltip = !hasFunctionality;
-
-                  const button = (
-                    <S.QuickBtn
-                      $color={action.color}
-                      $bg={action.bg}
-                      onClick={handleClick}
-                      aria-label={action.label}
-                      role="listitem"
-                    >
-                      <ActionIcon aria-hidden="true" />
-                      <span>{action.label}</span>
-                    </S.QuickBtn>
-                  );
-
-                  return showTooltip ? (
-                    <Tooltip
-                      key={action.id}
-                      title="This feature is coming soon."
-                      placement="top"
-                      color="#886217"
-                    >
-                      {button}
-                    </Tooltip>
-                  ) : (
-                    <React.Fragment key={action.id}>{button}</React.Fragment>
-                  );
-                })}
-              </S.QuickGrid>
+              {walkIns.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                  No walk-in patients today.
+                </div>
+              ) : (
+                walkIns.map((walkin) => (
+                  <S.ApptRow key={walkin.id} role="listitem">
+                    <S.ApptLeft>
+                      <S.ApptAvatar $color="#B75DEB" aria-hidden="true">
+                        {walkin.patient_name?.[0] ?? '?'}
+                      </S.ApptAvatar>
+                      <S.ApptDetails>
+                        <S.ApptName>{walkin.patient_name}</S.ApptName>
+                        <S.ApptService>{walkin.service}</S.ApptService>
+                      </S.ApptDetails>
+                    </S.ApptLeft>
+                    <S.ApptRight>
+                      <S.ApptDate>{walkin.time}</S.ApptDate>
+                      <S.ApptTime>{walkin.branch}</S.ApptTime>
+                    </S.ApptRight>
+                  </S.ApptRow>
+                ))
+              )}
             </S.PanelContent>
           </S.Panel>
         </S.ThreeColGrid>
       </S.Page>
 
-      {/* ── Add Appointment Modal ────────────────────────────── */}
       <AddAppointmentModal
         open={addOpen}
         loading={addLoading}
@@ -518,7 +548,6 @@ const Dashboard = () => {
         onSubmit={handleAdd}
       />
 
-      {/* ── Reschedule Modal ─────────────────────────────────── */}
       <RescheduleModal
         open={rescheduleOpen}
         appointmentId={rescheduleTargetId}
@@ -527,7 +556,6 @@ const Dashboard = () => {
         onSubmit={handleReschedule}
       />
 
-      {/* ── Appointment Details Modal ───────────────────────── */}
       <AppointmentDetailsModal
         open={detailsModalOpen}
         appointmentId={selectedAppointmentId}

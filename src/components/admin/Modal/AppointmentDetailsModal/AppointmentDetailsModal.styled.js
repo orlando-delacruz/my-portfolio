@@ -1,41 +1,89 @@
-import styled from "styled-components";
-import adminTheme from "../../../../styles/adminTheme";
+// src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.styled.js
+import styled from 'styled-components';
+import adminTheme from '../../../../styles/adminTheme';
 
-export const ModalTitle = styled.h2`
-  font-size: 18px;
+export const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 4px;
+`;
+
+export const PatientInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+`;
+
+export const PatientName = styled.h2`
+  font-size: 22px;
   font-weight: 600;
   color: ${adminTheme.colors.black};
   margin: 0;
+  line-height: 1.3;
 `;
 
-export const Content = styled.div`
-  padding: 8px 0;
+export const PatientMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  color: ${adminTheme.colors.gray};
+`;
+
+// ── Action Container ──
+export const ActionContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 0 0 12px 0;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+export const SectionTitle = styled.span`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 export const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px 24px;
+  gap: 12px 24px;
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
   }
 `;
 
-export const SectionTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${adminTheme.colors.black};
-  margin: 16px 0 8px 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid ${adminTheme.colors.champagne};
-  grid-column: 1 / -1;
-`;
-
 export const InfoItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 `;
 
 export const InfoLabel = styled.span`
@@ -53,67 +101,27 @@ export const InfoValue = styled.span`
   word-break: break-word;
 `;
 
-export const StatusBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color};
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  width: fit-content;
-`;
-
-export const StatusDot = styled.span`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${({ $color }) => $color};
-  flex-shrink: 0;
-`;
-
-export const Footer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
-`;
-
-export const ActionBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  transition:
-    background 0.2s,
-    opacity 0.2s;
-
-  ${({ $variant }) =>
-    $variant === "primary"
-      ? `
-        background: ${adminTheme.colors.primary};
-        color: #fff;
-        &:hover { background: ${adminTheme.colors.primaryDark}; }
-      `
-      : `
-        background: transparent;
-        color: ${adminTheme.colors.black};
-        border: 1px solid ${adminTheme.colors.champagne};
-        &:hover { background: ${adminTheme.colors.ivory}; }
-      `}
-
-  &:focus-visible {
-    outline: 2px solid ${adminTheme.colors.primary};
-    outline-offset: 2px;
+export const NotesSection = styled.div`
+  margin-bottom: 12px;
+  &:last-child {
+    margin-bottom: 0;
   }
+`;
+
+export const NoteLabel = styled.div`
+  font-weight: 500;
+  color: ${adminTheme.colors.gray};
+  font-size: 13px;
+  margin-bottom: 4px;
+`;
+
+export const NoteText = styled.div`
+  font-size: 14px;
+  color: ${adminTheme.colors.black};
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fafafa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  min-height: 40px;
 `;

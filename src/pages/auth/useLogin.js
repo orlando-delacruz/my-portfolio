@@ -1,6 +1,5 @@
 // src/pages/auth/useLogin.js
 import { useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabase/supabase";
 import { useAuthStore } from "../../store/authStore";
 
@@ -62,7 +61,6 @@ function validate(fields) {
 }
 
 export function useLogin() {
-  const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
   const setProfile = useAuthStore((state) => state.setProfile);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -164,7 +162,6 @@ export function useLogin() {
 
         // ── If the admin is pending or auth_user_id is null, link and activate ──
         if (!admin.auth_user_id || admin.status === "pending") {
-          // Update the admin record with the auth_user_id and set status to active
           const { error: updateError } = await supabase
             .from("admins")
             .update({
@@ -183,7 +180,6 @@ export function useLogin() {
             return;
           }
 
-          // Fetch the updated admin profile
           const { data: updatedAdmin, error: fetchError } = await supabase
             .from("admins")
             .select("*")
@@ -194,10 +190,8 @@ export function useLogin() {
             console.error("Failed to fetch updated admin:", fetchError);
           }
 
-          // Update the store with the admin profile
           setProfile(updatedAdmin || admin);
         } else {
-          // Already active – just use the existing admin profile
           setProfile(admin);
         }
 
@@ -205,7 +199,7 @@ export function useLogin() {
         setUser(user);
         setLoading(false);
 
-        navigate("/admin", { replace: true });
+        // ✅ Redirect is handled by GuestRoute – do NOT navigate manually
       } catch (err) {
         console.error("Login error:", err);
         setGlobalError("An unexpected error occurred. Please try again.");
@@ -214,7 +208,7 @@ export function useLogin() {
         submitting.current = false;
       }
     },
-    [fields, navigate, setUser, setProfile, setLoading],
+    [fields, setUser, setProfile, setLoading],
   );
 
   const handleGoogleLogin = useCallback(async () => {
@@ -224,7 +218,7 @@ export function useLogin() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/admin/dashboard`,
+          redirectTo: `${window.location.origin}/admin`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",

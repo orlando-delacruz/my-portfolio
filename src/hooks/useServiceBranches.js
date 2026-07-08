@@ -24,27 +24,19 @@ export function useServiceBranches(branchId) {
         return;
       }
 
-      if (isMounted.current) {
-        setLoading(true);
-      }
-
+      if (isMounted.current) setLoading(true);
       try {
         const result = await fetchServicesForBranch(branchId);
         if (isMounted.current) {
           setData(result);
         }
       } catch (err) {
-        console.error("Error fetching services:", err);
-        if (isMounted.current) {
-          setData([]);
-        }
+        console.error("useServiceBranches error:", err);
+        if (isMounted.current) setData([]);
       } finally {
-        if (isMounted.current) {
-          setLoading(false);
-        }
+        if (isMounted.current) setLoading(false);
       }
     }
-
     loadServices();
   }, [branchId]);
 

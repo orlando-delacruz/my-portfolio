@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../services/supabase/supabase";
 
-export function useAppointments() {
+export function useAppointments(source = null, excludeCancelled = false) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,33 +12,57 @@ export function useAppointments() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
 
-    supabase
-      .from("appointments")
-      .select(
-        `
-        *,
-        patient:patients(id, first_name, last_name, phone_number, email),
-        service_branch:service_branches(
-          id, price, duration_minutes,
-          service:services(id, name),
-          branch:branches(id, name)
-        )
-      `,
-      )
-      .order("preferred_date", { ascending: true })
-      .then(({ data, error: fetchError }) => {
+    const fetchData = async () => {
+      try {
+        let query = supabase
+          .from("appointments")
+          .select(
+            `
+            *,
+            patient:patients(id, first_name, last_name, phone_number, email),
+            service_branch:service_branches(
+              id, price, duration_minutes,
+              service:services(id, name),
+              branch:branches(id, name)
+            )
+          `
+          )
+          .order("preferred_date", { ascending: true });
+
+        if (source && source !== 'all') {
+          if (source === 'online') {
+            query = query.eq('is_walk_in', false);
+          } else if (source === 'walk-in') {
+            query = query.eq('is_walk_in', true);
+          }
+        }
+
+        // Exclude cancelled appointments if flag is true
+        if (excludeCancelled) {
+          query = query.neq('appointment_status', 'cancelled');
+        }
+
+        const { data, error: fetchError } = await query;
         if (cancelled) return;
         if (fetchError) setError(fetchError);
         else setAppointments(data ?? []);
-        setLoading(false);
-      });
+      } catch (err) {
+        if (cancelled) return;
+        setError(err.message || 'Failed to fetch appointments');
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
 
     return () => {
       cancelled = true;
     };
-  }, [fetchTrigger]);
+  }, [fetchTrigger, source, excludeCancelled]);
 
   return { appointments, loading, error, refetch };
 }

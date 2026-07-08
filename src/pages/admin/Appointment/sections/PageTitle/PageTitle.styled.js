@@ -1,11 +1,12 @@
+// src/pages/admin/Appointment/sections/PageTitle/PageTitle.styled.js
 import styled from "styled-components";
+import adminTheme from "../../../../../styles/adminTheme";
 
 export const Header = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 24px;
 
   @media (max-width: 480px) {
     flex-direction: column;
@@ -35,4 +36,14 @@ export const Title = styled.h1`
   @media (max-width: 480px) {
     font-size: 18px;
   }
+`;
+
+export const Subtitle = styled.p`
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: ${adminTheme.colors.gray};
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.75;
 `;

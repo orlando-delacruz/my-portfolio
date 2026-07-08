@@ -1,58 +1,83 @@
 // src/components/admin/TopBar/TopBar.jsx
-import { memo } from "react";
-import { MdMenu, MdNotifications } from "react-icons/md";
-import useAdminStore from "../../../store/useAdminStore";
-import * as S from "./TopBar.styled";
+import { memo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MdMenu } from 'react-icons/md';
+import { Dropdown, Avatar, Spin } from 'antd';
+import { LogoutOutlined, SettingOutlined } from '@ant-design/icons';
+import { useLogoutStore } from '../../../store/useLogoutStore';
+import useAdminStore from '../../../store/useAdminStore';
+import NotificationDropdown from '../NotificationDropdown/NotificationDropdown';
+import * as S from './TopBar.styled';
 
-/**
- * @param {object}   user
- * @param {function} onMenuClick
- */
-const TopBar = ({ user, onMenuClick }) => {
+const TopBar = memo(({ user, loading, onMenuClick }) => {
+  const navigate = useNavigate();
   const toggleSidebar = useAdminStore((s) => s.toggleSidebar);
+  const openLogoutModal = useLogoutStore((s) => s.openLogoutModal);
+
+  const menuItems = [
+    {
+      key: 'profile',
+      icon: <SettingOutlined />,
+      label: 'My Profile',
+      onClick: () => navigate('/admin/settings'),
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      onClick: openLogoutModal,
+      danger: true,
+    },
+  ];
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return parts[0][0] + parts[parts.length - 1][0];
+    }
+    return parts[0][0] || 'U';
+  };
+
+  const initials = getInitials(user.name);
 
   return (
     <S.Bar role="banner">
       <S.LeftGroup>
-        {/* Desktop: collapses the sidebar column */}
-        <S.DesktopHamburgerBtn
-          onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
-        >
+        <S.DesktopHamburgerBtn onClick={toggleSidebar} aria-label="Toggle sidebar">
           <MdMenu aria-hidden="true" />
         </S.DesktopHamburgerBtn>
-
-        {/* Mobile: opens the drawer overlay */}
-        <S.MobileHamburgerBtn
-          onClick={onMenuClick}
-          aria-label="Open navigation menu"
-        >
+        <S.MobileHamburgerBtn onClick={onMenuClick} aria-label="Open navigation menu">
           <MdMenu aria-hidden="true" />
         </S.MobileHamburgerBtn>
       </S.LeftGroup>
 
       <S.RightGroup>
-        <S.NotifButton aria-label="View notifications">
-          <MdNotifications aria-hidden="true" />
-          <S.NotifBadge aria-hidden="true" />
-        </S.NotifButton>
+        <NotificationDropdown />
 
-        <S.UserBlock>
-          <S.UserAvatar
-            src={user?.avatarUrl ?? "https://picsum.photos/seed/admin-user/40/40"}
-            alt={`${user?.name ?? "Admin"} profile photo`}
-            width={38}
-            height={38}
-            loading="eager"
-          />
-          <S.UserInfo>
-            <S.UserName>{user?.name ?? "Dra. Yenyen Galabit"}</S.UserName>
-            <S.UserRole>{user?.role ?? "Super Admin"}</S.UserRole>
-          </S.UserInfo>
-        </S.UserBlock>
+        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight" arrow>
+          <S.UserBlock>
+            {loading ? (
+              <Spin size="small" />
+            ) : (
+              <>
+                {user.avatarUrl ? (
+                  <Avatar src={user.avatarUrl} alt={user.name || 'Admin'} size={38} />
+                ) : (
+                  <S.AvatarWrapper>{initials}</S.AvatarWrapper>
+                )}
+                <S.UserInfo>
+                  <S.UserName>{user.name || 'Admin'}</S.UserName>
+                  <S.UserRole>{user.role || 'Staff'}</S.UserRole>
+                </S.UserInfo>
+              </>
+            )}
+          </S.UserBlock>
+        </Dropdown>
       </S.RightGroup>
     </S.Bar>
   );
-};
+});
 
-export default memo(TopBar);
+TopBar.displayName = 'TopBar';
+export default TopBar;

@@ -2,7 +2,16 @@
 ```
 leidi-bud-dentals
 ├─ api
-│  └─ send-faq.js
+│  ├─ admin
+│  │  └─ users.js
+│  ├─ cancel-appointment.js
+│  ├─ notifications
+│  │  ├─ create.js
+│  │  └─ reminders.js
+│  ├─ send-confirmation.js
+│  ├─ send-faq.js
+│  ├─ send-reminders.js
+│  └─ validate-token.js
 ├─ eslint.config.js
 ├─ index.html
 ├─ package.json
@@ -46,6 +55,14 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ Branch.jsx
 │  │  │  │  │  ├─ Branch.styled.js
 │  │  │  │  │  └─ index.js
+│  │  │  │  ├─ ClosureStatus
+│  │  │  │  │  ├─ ClosureStatus.jsx
+│  │  │  │  │  ├─ ClosureStatus.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ ClosureType
+│  │  │  │  │  ├─ ClosureType.jsx
+│  │  │  │  │  ├─ ClosureType.styled.js
+│  │  │  │  │  └─ index.js
 │  │  │  │  ├─ Date
 │  │  │  │  │  ├─ Date.jsx
 │  │  │  │  │  ├─ Date.styled.js
@@ -54,10 +71,14 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ Filters.jsx
 │  │  │  │  │  ├─ Filters.styled.js
 │  │  │  │  │  └─ index.js
+│  │  │  │  ├─ MobileFilterToggle.jsx
 │  │  │  │  ├─ Search
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ Search.jsx
 │  │  │  │  │  └─ Search.styled.js
+│  │  │  │  ├─ Source
+│  │  │  │  │  ├─ Source.jsx
+│  │  │  │  │  └─ Source.styled.js
 │  │  │  │  └─ Status
 │  │  │  │     ├─ index.js
 │  │  │  │     ├─ Status.jsx
@@ -79,14 +100,57 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ RescheduleModal.jsx
 │  │  │  │  │  └─ useAppointmentModal.js
-│  │  │  │  └─ EditPatientModal
-│  │  │  │     ├─ EditPatientModal.jsx
-│  │  │  │     ├─ EditPatientModal.styled.js
-│  │  │  │     └─ index.js
+│  │  │  │  ├─ ClinicClosureDetailsModal
+│  │  │  │  │  ├─ ClinicClosureDetailsModal.jsx
+│  │  │  │  │  ├─ ClinicClosureDetailsModal.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ ClinicClosureModal
+│  │  │  │  │  ├─ ClinicClosureModal.jsx
+│  │  │  │  │  ├─ ClinicClosureModal.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ EditPatientModal
+│  │  │  │  │  ├─ EditPatientModal.jsx
+│  │  │  │  │  ├─ EditPatientModal.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ LogoutModal
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ LogoutModal.jsx
+│  │  │  │  │  └─ LogoutModal.styled.js
+│  │  │  │  ├─ PatientDetailsModal
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ PatientDetailsModal.jsx
+│  │  │  │  │  └─ PatientDetailsModal.styled.js
+│  │  │  │  ├─ UserDetailsModal
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ UserDetailsModal.jsx
+│  │  │  │  │  └─ UserDetailsModal.styled.js
+│  │  │  │  └─ UserModal
+│  │  │  │     ├─ index.js
+│  │  │  │     ├─ UserModal.jsx
+│  │  │  │     └─ UserModal.styled.js
+│  │  │  ├─ NotificationDropdown
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ NotificationDropdown.jsx
+│  │  │  │  ├─ NotificationDropdown.styled.js
+│  │  │  │  ├─ NotificationItem.jsx
+│  │  │  │  └─ NotificationItem.styled.js
 │  │  │  ├─ Pagination
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ Pagination.jsx
 │  │  │  │  └─ Pagination.styled.js
+│  │  │  ├─ Settings
+│  │  │  │  ├─ SettingsCard
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ SettingsCard.jsx
+│  │  │  │  │  └─ SettingsCard.styled.js
+│  │  │  │  ├─ SettingsField
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ SettingsField.jsx
+│  │  │  │  │  └─ SettingsField.styled.js
+│  │  │  │  └─ ToggleSwitch
+│  │  │  │     ├─ index.js
+│  │  │  │     ├─ ToggleSwitch.jsx
+│  │  │  │     └─ ToggleSwitch.styled.js
 │  │  │  ├─ SideBar
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ SideBar.jsx
@@ -120,6 +184,12 @@ leidi-bud-dentals
 │  │     │     ├─ FaqAccordion.jsx
 │  │     │     ├─ FaqAccordion.styled.js
 │  │     │     └─ index.js
+│  │     ├─ AppointmentTimePicker
+│  │     │  └─ AppointmentTimePicker.jsx
+│  │     ├─ AvailabilityMessage
+│  │     │  ├─ AvailabilityMessage.jsx
+│  │     │  ├─ AvailabilityMessage.styled.js
+│  │     │  └─ index.js
 │  │     ├─ Button
 │  │     │  ├─ Button.jsx
 │  │     │  ├─ Button.styled.js
@@ -137,6 +207,9 @@ leidi-bud-dentals
 │  │     │     ├─ index.js
 │  │     │     ├─ TestimonialCard.jsx
 │  │     │     └─ TestimonialCard.styled.js
+│  │     ├─ Email
+│  │     │  ├─ ConfirmationEmail.jsx
+│  │     │  └─ ReminderEmail.jsx
 │  │     ├─ Fields
 │  │     │  ├─ BranchToggleField
 │  │     │  │  ├─ BranchToggleField.jsx
@@ -167,6 +240,8 @@ leidi-bud-dentals
 │  │     │     ├─ index.js
 │  │     │     ├─ ServiceModal.jsx
 │  │     │     └─ ServiceModal.styled.js
+│  │     ├─ PhoneInput
+│  │     │  └─ PhoneInput.jsx
 │  │     └─ SuccessView
 │  │        ├─ index.js
 │  │        ├─ SuccessView.jsx
@@ -177,8 +252,10 @@ leidi-bud-dentals
 │  ├─ data
 │  │  ├─ admin
 │  │  │  ├─ appointment.js
+│  │  │  ├─ clinicClosures.js
 │  │  │  ├─ dashboard.js
 │  │  │  ├─ mockCalendarAppointments.js
+│  │  │  ├─ settings.js
 │  │  │  └─ sidebar.js
 │  │  ├─ callToAction.js
 │  │  ├─ footer.js
@@ -198,12 +275,18 @@ leidi-bud-dentals
 │  │  ├─ useAppointments.js
 │  │  ├─ useBranches.js
 │  │  ├─ useCalendarAppointments.js
+│  │  ├─ useCalendarIndicators.js
+│  │  ├─ useClosureDates.js
 │  │  ├─ useCurrentUser.js
 │  │  ├─ useDashboardData.js
+│  │  ├─ useMobileFilter.js
+│  │  ├─ useNotifications.js
 │  │  ├─ usePatients.js
+│  │  ├─ usePhoneInput.js
 │  │  ├─ useRealtimeAppointments.js
 │  │  ├─ useScheduling.js
-│  │  └─ useServiceBranches.js
+│  │  ├─ useServiceBranches.js
+│  │  └─ useUsers.js
 │  ├─ main.jsx
 │  ├─ pages
 │  │  ├─ admin
@@ -242,26 +325,94 @@ leidi-bud-dentals
 │  │  │  │        ├─ index.js
 │  │  │  │        ├─ Toolbar.jsx
 │  │  │  │        └─ Toolbar.styled.js
+│  │  │  ├─ ClinicClosures
+│  │  │  │  ├─ ClinicClosures.jsx
+│  │  │  │  ├─ ClinicClosures.styled.js
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ sections
+│  │  │  │  │  ├─ Filter
+│  │  │  │  │  │  ├─ Filter.jsx
+│  │  │  │  │  │  ├─ Filter.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ PageTitle
+│  │  │  │  │  │  ├─ index.js
+│  │  │  │  │  │  ├─ PageTitle.jsx
+│  │  │  │  │  │  └─ PageTitle.styled.js
+│  │  │  │  │  └─ Table
+│  │  │  │  │     ├─ index.js
+│  │  │  │  │     ├─ Table.jsx
+│  │  │  │  │     └─ Table.styled.js
+│  │  │  │  └─ useClinicClosures.js
 │  │  │  ├─ Dashboard
 │  │  │  │  ├─ Dashboard.jsx
 │  │  │  │  ├─ Dashboard.styled.js
-│  │  │  │  ├─ sections
 │  │  │  │  └─ useDashboard.js
 │  │  │  ├─ PageDevelopment.jsx
-│  │  │  └─ Patients
+│  │  │  ├─ Patients
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ Patients.jsx
+│  │  │  │  └─ Patients.styled.js
+│  │  │  ├─ Settings
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ sections
+│  │  │  │  │  ├─ AppointmentSettings
+│  │  │  │  │  │  ├─ AppointmentSettings.jsx
+│  │  │  │  │  │  ├─ AppointmentSettings.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ BranchManagement
+│  │  │  │  │  │  ├─ BranchManagement.jsx
+│  │  │  │  │  │  ├─ BranchManagement.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ ClinicInformation
+│  │  │  │  │  │  ├─ ClinicInformation.jsx
+│  │  │  │  │  │  ├─ ClinicInformation.styled.js
+│  │  │  │  │  │  └─ index.js
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ MyProfile
+│  │  │  │  │  │  ├─ index.js
+│  │  │  │  │  │  ├─ MyProfile.jsx
+│  │  │  │  │  │  └─ MyProfile.styled.js
+│  │  │  │  │  ├─ OperatingHours
+│  │  │  │  │  │  ├─ BranchTabs.jsx
+│  │  │  │  │  │  ├─ BranchTabs.styled.js
+│  │  │  │  │  │  ├─ index.js
+│  │  │  │  │  │  ├─ OperatingHours.jsx
+│  │  │  │  │  │  ├─ OperatingHours.styled.js
+│  │  │  │  │  │  ├─ TimeTable.jsx
+│  │  │  │  │  │  └─ TimeTable.styled.js
+│  │  │  │  │  └─ ServiceManagement
+│  │  │  │  │     ├─ index.js
+│  │  │  │  │     ├─ ServiceManagement.jsx
+│  │  │  │  │     └─ ServiceManagement.styled.js
+│  │  │  │  ├─ Settings.jsx
+│  │  │  │  ├─ Settings.styled.js
+│  │  │  │  ├─ SettingsSkeleton.jsx
+│  │  │  │  └─ SettingsSkeleton.styled.js
+│  │  │  └─ Users
 │  │  │     ├─ index.js
-│  │  │     ├─ Patients.jsx
-│  │  │     └─ Patients.styled.js
+│  │  │     ├─ sections
+│  │  │     │  └─ Table
+│  │  │     │     ├─ index.js
+│  │  │     │     ├─ Table.jsx
+│  │  │     │     └─ Table.styled.js
+│  │  │     ├─ Users.jsx
+│  │  │     └─ Users.styled.js
 │  │  ├─ auth
 │  │  │  ├─ index.js
 │  │  │  ├─ Login.jsx
 │  │  │  ├─ Login.styled.js
+│  │  │  ├─ Unauthorized.jsx
 │  │  │  └─ useLogin.js
 │  │  └─ public
 │  │     ├─ BookAppointment
 │  │     │  ├─ BookAppointment.jsx
 │  │     │  ├─ BookAppointment.styled.js
 │  │     │  └─ index.js
+│  │     ├─ CancelAppointment
+│  │     │  ├─ CancelAppointment.jsx
+│  │     │  ├─ CancelAppointment.styled.js
+│  │     │  ├─ index.js
+│  │     │  └─ useCancelAppointment.js
 │  │     └─ Home
 │  │        ├─ Home.jsx
 │  │        ├─ index.js
@@ -305,20 +456,33 @@ leidi-bud-dentals
 │  │  ├─ ProtectedRoute.jsx
 │  │  └─ PublicRoutes.jsx
 │  ├─ services
+│  │  ├─ admins.js
 │  │  ├─ appointments.js
 │  │  ├─ branches.js
+│  │  ├─ calendar.js
+│  │  ├─ clinicClosures.js
 │  │  ├─ dashboard.js
+│  │  ├─ notificationService.js
+│  │  ├─ operatingHours.js
 │  │  ├─ patients.js
 │  │  ├─ publicBooking.js
 │  │  ├─ scheduling.js
 │  │  ├─ serviceBranches.js
-│  │  └─ supabase
-│  │     ├─ auth.js
-│  │     └─ supabase.js
+│  │  ├─ services.js
+│  │  ├─ settings.js
+│  │  ├─ storage.js
+│  │  ├─ supabase
+│  │  │  ├─ auth.js
+│  │  │  └─ supabase.js
+│  │  └─ __tests__
+│  │     └─ settings.test.js
 │  ├─ store
 │  │  ├─ authStore.js
+│  │  ├─ notificationStore.js
 │  │  ├─ useAdminStore.js
-│  │  └─ useCalendarStore.js
+│  │  ├─ useCalendarStore.js
+│  │  ├─ useLogoutStore.js
+│  │  └─ useSettingsStore.js
 │  ├─ styles
 │  │  ├─ adminTheme.js
 │  │  ├─ fonts.css
@@ -326,9 +490,12 @@ leidi-bud-dentals
 │  │  └─ theme.js
 │  └─ utils
 │     ├─ appointmentMapper.js
+│     ├─ branchUtils.js
 │     ├─ calendarGrid.js
+│     ├─ calendarHelpers.js
 │     ├─ conflictMessage.js
 │     ├─ convert-images.mjs
+│     ├─ dateFormatter.js
 │     ├─ mapAppointmentRow.js
 │     ├─ phoneFormatter.js
 │     ├─ scheduling.js

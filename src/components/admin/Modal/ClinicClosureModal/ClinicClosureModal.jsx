@@ -1,6 +1,6 @@
 // src/components/admin/Modal/ClinicClosureModal/ClinicClosureModal.jsx
-import { memo, useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, DatePicker, TimePicker, Switch, Row, Col, Button } from 'antd';
+import { memo, useEffect, useState, useRef } from 'react';
+import { Modal, Form, Input, Select, DatePicker, TimePicker, Switch, Row, Col, Button, Checkbox } from 'antd';
 import dayjs from 'dayjs';
 import { useBranches } from '../../../../hooks/useBranches';
 import { CLOSURE_TYPES } from '../../../../data/admin/clinicClosures';
@@ -13,9 +13,21 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
   const [form] = Form.useForm();
   const { branches, loading: branchesLoading } = useBranches();
   const [isAllDay, setIsAllDay] = useState(true);
+  const [applyToAllBranches, setApplyToAllBranches] = useState(false);
+  const [selectedBranches, setSelectedBranches] = useState([]);
+  const formMounted = useRef(false);
 
+  const isEditing = !!closure;
+
+  // Reset form when modal opens – but only after the Form is mounted
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+
+    // Mark that the form is about to mount
+    formMounted.current = false;
+
+    // Defer form updates to ensure the Form component is fully connected
+    const timer = setTimeout(() => {
       if (closure) {
         form.setFieldsValue({
           branch_id: closure.branch_id || closure.branch?.id,
@@ -30,6 +42,8 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
           affects_booking: closure.affects_booking ?? true,
         });
         setIsAllDay(closure.is_all_day ?? true);
+        setSelectedBranches([closure.branch_id || closure.branch?.id]);
+        setApplyToAllBranches(false);
       } else {
         form.resetFields();
         form.setFieldsValue({
@@ -37,14 +51,53 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
           affects_booking: true,
           start_date: dayjs(),
           end_date: dayjs(),
+          branch_id: [],
         });
         setIsAllDay(true);
+        setSelectedBranches([]);
+        setApplyToAllBranches(false);
       }
-    }
+      formMounted.current = true;
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [open, closure, form]);
 
+  // When "Apply to All Branches" is toggled, update the selection
+  useEffect(() => {
+    if (!open || !formMounted.current) return;
+
+    const timer = setTimeout(() => {
+      if (applyToAllBranches) {
+        const allBranchIds = branches.map((b) => b.id);
+        setSelectedBranches(allBranchIds);
+        form.setFieldsValue({ branch_id: allBranchIds });
+      } else {
+        if (!isEditing) {
+          setSelectedBranches([]);
+          form.setFieldsValue({ branch_id: [] });
+        } else {
+          const currentBranchId = closure?.branch_id || closure?.branch?.id;
+          if (currentBranchId) {
+            setSelectedBranches([currentBranchId]);
+            form.setFieldsValue({ branch_id: [currentBranchId] });
+          }
+        }
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [applyToAllBranches, branches, form, isEditing, closure, open]);
+
+  const handleBranchChange = (value) => {
+    setSelectedBranches(value || []);
+    if (applyToAllBranches) {
+      setApplyToAllBranches(false);
+    }
+  };
+
   const handleFinish = async (values) => {
-    const { start_date, end_date, start_time, end_time, ...rest } = values;
+    const { start_date, end_date, start_time, end_time, branch_id, ...rest } = values;
     const payload = {
       ...rest,
       start_date: start_date ? start_date.format('YYYY-MM-DD') : null,
@@ -53,13 +106,23 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
       end_time: isAllDay ? null : (end_time ? end_time.format('HH:mm:ss') : null),
       affects_booking: rest.affects_booking ?? true,
     };
-    await onSave(payload);
+
+    if (isEditing) {
+      const singleBranchId = Array.isArray(branch_id) ? branch_id[0] : branch_id;
+      await onSave({ ...payload, branch_id: singleBranchId });
+    } else {
+      if (!branch_id || branch_id.length === 0) {
+        form.setFields([{ name: 'branch_id', errors: ['Please select at least one branch.'] }]);
+        return;
+      }
+      await onSave({ ...payload, branch_ids: branch_id });
+    }
   };
 
   return (
     <Modal
       open={open}
-      title={closure ? 'Edit Clinic Closure' : 'Add Clinic Closure'}
+      title={isEditing ? 'Edit Clinic Closure' : 'Add Clinic Closure'}
       onCancel={onClose}
       width={720}
       footer={null}
@@ -71,20 +134,54 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
       className="clinic-closure-modal"
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
-        {/* Branch */}
+        {/* Branch Selection */}
         <Row gutter={16}>
           <Col xs={24}>
             <Form.Item
               name="branch_id"
               label="Branch"
-              rules={[{ required: true, message: 'Please select a branch.' }]}
+              rules={[
+                {
+                  required: true,
+                  message: isEditing ? 'Please select a branch.' : 'Please select at least one branch.',
+                },
+              ]}
             >
-              <Select placeholder="Select branch" loading={branchesLoading}>
-                {branches.map((b) => (
-                  <Option key={b.id} value={b.id}>{b.name}</Option>
-                ))}
-              </Select>
+              {isEditing ? (
+                <Select placeholder="Select branch" loading={branchesLoading}>
+                  {branches.map((b) => (
+                    <Option key={b.id} value={b.id}>{b.name}</Option>
+                  ))}
+                </Select>
+              ) : (
+                <Select
+                  mode="multiple"
+                  placeholder="Select one or more branches"
+                  loading={branchesLoading}
+                  onChange={handleBranchChange}
+                  value={selectedBranches}
+                  allowClear
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                  disabled={applyToAllBranches}
+                >
+                  {branches.map((b) => (
+                    <Option key={b.id} value={b.id}>{b.name}</Option>
+                  ))}
+                </Select>
+              )}
             </Form.Item>
+            {!isEditing && (
+              <Form.Item style={{ marginTop: -8 }}>
+                <Checkbox
+                  checked={applyToAllBranches}
+                  onChange={(e) => setApplyToAllBranches(e.target.checked)}
+                >
+                  Apply to All Branches
+                </Checkbox>
+              </Form.Item>
+            )}
           </Col>
         </Row>
 
@@ -127,7 +224,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
           </Col>
         </Row>
 
-        {/* Date Range – Two separate DatePickers */}
+        {/* Date Range */}
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -204,7 +301,7 @@ const ClinicClosureModal = memo(({ open, closure, onClose, onSave, loading }) =>
         <S.FooterRow>
           <S.CancelBtn onClick={onClose} type="button">Cancel</S.CancelBtn>
           <Button type="primary" htmlType="submit" loading={loading} style={{ borderRadius: '8px' }}>
-            {closure ? 'Update' : 'Create'}
+            {isEditing ? 'Update' : 'Create'}
           </Button>
         </S.FooterRow>
       </Form>

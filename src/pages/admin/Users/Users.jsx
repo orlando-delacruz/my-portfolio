@@ -1,14 +1,14 @@
 // src/pages/admin/Users/Users.jsx
-import { memo, useState, useCallback } from 'react';
-import { Modal, message, Spin } from 'antd';
-import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import AdminLayout from '../../../components/admin/AdminLayout';
-import { useUsers } from '../../../hooks/useUsers';
-import UserTable from './sections/Table';
-import UserModal from '../../../components/admin/Modal/UserModal';
-import UserDetailsModal from '../../../components/admin/Modal/UserDetailsModal';
-import { createAdminProfile, updateAdmin, deleteAdmin } from '../../../services/admins';
-import * as S from './Users.styled';
+import { memo, useState, useCallback } from "react";
+import { Modal, message, Spin } from "antd";
+import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import AdminLayout from "../../../components/admin/AdminLayout";
+import { useUsers } from "../../../hooks/useUsers";
+import UserTable from "./sections/Table";
+import UserModal from "../../../components/admin/Modal/UserModal";
+import UserDetailsModal from "../../../components/admin/Modal/UserDetailsModal";
+import { createAdmin, updateAdmin, deleteAdmin } from "../../../services/admins";
+import * as S from "./Users.styled";
 
 const { confirm } = Modal;
 
@@ -55,43 +55,47 @@ const Users = () => {
     setModalLoading(true);
     try {
       if (editingUser) {
-        // Update existing admin profile
         await updateAdmin(editingUser.id, data);
-        message.success('User updated successfully!');
+        message.success("User updated successfully!");
       } else {
-        // Create pending admin profile (no auth user yet)
-        await createAdminProfile(data);
-        message.success('User profile created! The user can now log in with their email.');
+        await createAdmin(data);
+        message.success("User created successfully!");
       }
       handleModalClose();
       refetch();
     } catch (err) {
-      console.error('Save error:', err);
-      message.error(err.message || 'Failed to save user. Please try again.');
+      console.error("Save error:", err);
+      message.error(err.message || "Failed to save user. Please try again.");
     } finally {
       setModalLoading(false);
     }
   }, [editingUser, refetch, handleModalClose]);
 
-  // ── Delete a single admin ──
+  // ── Permanent delete (hard delete) ──
   const handleDelete = useCallback((id) => {
     confirm({
-      title: 'Delete User',
+      title: "Permanently Delete Administrator",
       icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete this user? This action cannot be undone.',
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
+      content: (
+        <div>
+          <p>This action <strong>cannot be undone</strong>.</p>
+          <p>The administrator account, authentication credentials, and all associated logs will be <strong>permanently deleted</strong>.</p>
+          <p>Business data (appointments, patients, branches, etc.) will remain intact.</p>
+        </div>
+      ),
+      okText: "Yes, Delete Permanently",
+      okType: "danger",
+      cancelText: "Cancel",
       onOk: async () => {
         try {
           const user = users.find((u) => u.id === id);
           await deleteAdmin(id, user?.auth_user_id);
-          message.success('User deleted successfully!');
+          message.success("Administrator deleted permanently.");
           refetch();
           setSelected(new Set());
         } catch (err) {
-          console.error('Delete error:', err);
-          message.error(err.message || 'Failed to delete user.');
+          console.error("Deletion error:", err);
+          message.error(err.message || "Failed to delete administrator.");
         }
       },
     });
@@ -102,23 +106,29 @@ const Users = () => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     confirm({
-      title: `Delete ${ids.length} User${ids.length > 1 ? 's' : ''}`,
+      title: `Permanently Delete ${ids.length} Administrator${ids.length > 1 ? 's' : ''}`,
       icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete the selected users? This action cannot be undone.',
+      content: (
+        <div>
+          <p>This action <strong>cannot be undone</strong>.</p>
+          <p>All selected administrator accounts, authentication credentials, and associated logs will be <strong>permanently deleted</strong>.</p>
+          <p>Business data (appointments, patients, branches, etc.) will remain intact.</p>
+        </div>
+      ),
       okText: `Delete ${ids.length}`,
-      okType: 'danger',
-      cancelText: 'Cancel',
+      okType: "danger",
+      cancelText: "Cancel",
       onOk: async () => {
         for (const id of ids) {
           try {
             const user = users.find((u) => u.id === id);
             await deleteAdmin(id, user?.auth_user_id);
           } catch (err) {
-            console.error('Bulk delete error:', err);
+            console.error("Bulk deletion error:", err);
             message.error(`Failed to delete user ${id}`);
           }
         }
-        message.success(`${ids.length} user(s) deleted.`);
+        message.success(`${ids.length} administrator(s) deleted permanently.`);
         refetch();
         setSelected(new Set());
       },
@@ -173,7 +183,6 @@ const Users = () => {
   return (
     <AdminLayout>
       <S.PageContainer>
-        {/* ── Header ── */}
         <S.Header>
           <S.TitleGroup>
             <S.Title>Users</S.Title>
@@ -198,7 +207,6 @@ const Users = () => {
           </S.HeaderActions>
         </S.Header>
 
-        {/* ── Table ── */}
         <UserTable
           users={users}
           selected={selected}
@@ -216,7 +224,6 @@ const Users = () => {
           onRowClick={handleRowClick}
         />
 
-        {/* ── Floating delete button ── */}
         {selected.size > 0 && (
           <S.FloatingDeleteButton
             onClick={handleBulkDelete}
@@ -228,7 +235,6 @@ const Users = () => {
         )}
       </S.PageContainer>
 
-      {/* ── Modals ── */}
       <UserModal
         open={modalOpen}
         user={editingUser}

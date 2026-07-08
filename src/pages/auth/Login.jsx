@@ -1,15 +1,17 @@
 // src/pages/auth/Login.jsx
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Spin } from "antd";
 import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { AiOutlineWarning } from "react-icons/ai";
-import { FiLoader } from "react-icons/fi";
-import Logo from "../../assets/images/logo.webp"
+import { FiLoader, FiArrowLeft } from "react-icons/fi";
+import Logo from "../../assets/images/logo.webp";
 
 import { useLogin } from "./useLogin";
 import {
   PageWrapper,
   Card,
+  TopNav,
   BrandRow,
   BrandLogo,
   BrandName,
@@ -28,10 +30,11 @@ import {
   LoginButton,
   GoogleButton,
   ForgotLink,
+  BackHomeLink,
   Divider,
 } from "./Login.styled";
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ──
 
 const Brand = memo(function Brand() {
   return (
@@ -81,8 +84,9 @@ const GoogleSVG = memo(function GoogleSVG() {
   );
 });
 
-
 function Login() {
+  const navigate = useNavigate();
+
   const {
     fields,
     errors,
@@ -99,9 +103,24 @@ function Login() {
 
   const isLoading = loading || googleLoading;
 
+  const handleBackHome = () => {
+    navigate("/");
+  };
+
   return (
     <PageWrapper>
       <Card role="main">
+        <TopNav>
+          <BackHomeLink
+            type="button"
+            onClick={handleBackHome}
+            disabled={isLoading}
+          >
+            <FiArrowLeft aria-hidden="true" />
+            Back to Homepage
+          </BackHomeLink>
+        </TopNav>
+
         <Brand />
 
         <FormSection aria-labelledby="login-heading">
@@ -150,7 +169,6 @@ function Login() {
                 )}
               </FieldGroup>
 
-              {/* Password */}
               <FieldGroup>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <InputWrapper>
@@ -190,7 +208,6 @@ function Login() {
                 )}
               </FieldGroup>
 
-              {/* Submit */}
               <LoginButton
                 type="submit"
                 disabled={isLoading}
@@ -206,10 +223,8 @@ function Login() {
                 )}
               </LoginButton>
 
-              {/* Divider */}
               <Divider aria-hidden="true">or</Divider>
 
-              {/* Google */}
               <GoogleButton
                 type="button"
                 onClick={handleGoogleLogin}
@@ -224,7 +239,6 @@ function Login() {
                 Continue with Google
               </GoogleButton>
 
-              {/* Forgot password */}
               <ForgotLink
                 type="button"
                 onClick={handleForgotPassword}

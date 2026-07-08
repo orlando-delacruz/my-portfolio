@@ -4,7 +4,15 @@ import { FiArrowRight } from "react-icons/fi";
 import * as S from "./ServiceCard.styled";
 
 const ServiceCard = memo(({ service, onViewDetails }) => {
-  const { title, titleTl, shortDesc, image, imageAlt, price } = service;
+  const { title, titleTl, shortDesc, image, imageAlt, starting_price, maximum_price } = service;
+
+  const getPriceDisplay = () => {
+    if (!starting_price && !maximum_price) return "Contact for pricing";
+    if (starting_price === maximum_price) {
+      return `₱${Number(starting_price).toLocaleString()}`;
+    }
+    return `₱${Number(starting_price).toLocaleString()} – ₱${Number(maximum_price).toLocaleString()}`;
+  };
 
   return (
     <S.Card>
@@ -18,9 +26,7 @@ const ServiceCard = memo(({ service, onViewDetails }) => {
           height={300}
         />
         <S.PriceBadge>
-          {price
-            ? `Starts at ₱${price.toLocaleString("en-PH")}`
-            : "Contact for pricing"}
+          {getPriceDisplay()}
         </S.PriceBadge>
       </S.ImageWrapper>
       <S.CardBody>

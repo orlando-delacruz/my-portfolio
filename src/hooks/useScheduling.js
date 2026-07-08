@@ -1,118 +1,82 @@
 // src/hooks/useScheduling.js
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
-import { getOperatingHoursForDay, isDateClosed } from "../utils/scheduling";
+import { generateAvailableSlots, isDateClosed } from "../services/scheduling";
 
-export function useScheduling(branchId, selectedDate) {
-  const [operatingHours, setOperatingHours] = useState(null);
-  const [isClosed, setIsClosed] = useState(false);
+export function useScheduling(branchId, selectedDate, excludeAppointmentId = null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isClosed, setIsClosed] = useState(false);
+  const [allSlots, setAllSlots] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [schedulingVersion, setSchedulingVersion] = useState(0);
   const isMounted = useRef(true);
 
   useEffect(() => {
     isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
+    return () => { isMounted.current = false; };
   }, []);
 
+  const dateKey = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
+
   useEffect(() => {
-    async function loadSchedule() {
-      if (!branchId || !selectedDate) {
+    const compute = async () => {
+      if (!branchId || !dateKey) {
         if (isMounted.current) {
-          setOperatingHours(null);
+          setAllSlots([]);
+          setAvailableSlots([]);
           setIsClosed(false);
           setLoading(false);
-          setError(null);
+          setSchedulingVersion(prev => prev + 1);
         }
         return;
       }
 
-      if (isMounted.current) {
-        setLoading(true);
-        setError(null);
-      }
-
+      setLoading(true);
+      setError(null);
       try {
-        const hours = await getOperatingHoursForDay(branchId, selectedDate);
-        const closed = await isDateClosed(branchId, selectedDate);
+        const dateObj = dayjs(dateKey);
+        const closed = await isDateClosed(branchId, dateObj);
+        setIsClosed(closed);
 
+        if (closed) {
+          setAllSlots([]);
+          setAvailableSlots([]);
+          setSchedulingVersion(prev => prev + 1);
+          setLoading(false);
+          return;
+        }
+
+        const slots = await generateAvailableSlots(branchId, dateObj, excludeAppointmentId);
         if (isMounted.current) {
-          setOperatingHours(hours);
-          setIsClosed(closed || hours.isClosed);
-          console.log("📅 Scheduling data:", {
-            hours,
-            closed,
-            branchId,
-            date: selectedDate,
-          });
+          setAllSlots(slots);
+          setAvailableSlots(slots.filter((s) => !s.disabled));
+          setSchedulingVersion(prev => prev + 1);
         }
       } catch (err) {
         console.error("❌ Error fetching schedule:", err);
         if (isMounted.current) {
           setError(err.message || "Failed to load schedule");
-          // ✅ FALLBACK: use default hours so UI works
-          setOperatingHours({
-            isClosed: false,
-            openTime: "10:30:00",
-            closeTime: "17:00:00",
-          });
-          setIsClosed(false);
+          setAllSlots([]);
+          setAvailableSlots([]);
+          setSchedulingVersion(prev => prev + 1);
         }
       } finally {
         if (isMounted.current) {
           setLoading(false);
         }
       }
-    }
-
-    loadSchedule();
-  }, [branchId, selectedDate]);
-
-  const disabledTime = useCallback(() => {
-    // Use default hours if operatingHours is null (e.g., loading or no data)
-    const hours = operatingHours || {
-      isClosed: false,
-      openTime: "10:30:00",
-      closeTime: "17:00:00",
     };
 
-    if (hours.isClosed || isClosed) {
-      return {
-        disabledHours: () => Array.from({ length: 24 }, (_, i) => i),
-        disabledMinutes: () => [],
-      };
-    }
+    compute();
+  }, [branchId, dateKey, excludeAppointmentId]);
 
-    const openHour = dayjs(hours.openTime, "HH:mm:ss").hour();
-    const openMinute = dayjs(hours.openTime, "HH:mm:ss").minute();
-    const closeHour = dayjs(hours.closeTime, "HH:mm:ss").hour();
-    const closeMinute = dayjs(hours.closeTime, "HH:mm:ss").minute();
-
-    return {
-      disabledHours: () => {
-        const hrs = [];
-        for (let h = 0; h < 24; h++) {
-          if (h < openHour || h > closeHour) hrs.push(h);
-          if (h === closeHour && closeMinute === 0) hrs.push(h);
-        }
-        return hrs;
-      },
-      disabledMinutes: (h) => {
-        if (h === openHour) {
-          return Array.from({ length: openMinute }, (_, i) => i);
-        }
-        if (h === closeHour) {
-          return Array.from(
-            { length: 60 - closeMinute },
-            (_, i) => closeMinute + i,
-          );
-        }
-        return [];
-      },
-    };
-  }, [operatingHours, isClosed]);
-
-  return { isClosed, disabledTime, loading, error };
+  return {
+    isClosed,
+    allSlots,
+    availableSlots,
+    schedulingVersion,
+    loading,
+    error,
+  };
 }

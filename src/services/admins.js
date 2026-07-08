@@ -8,18 +8,34 @@ async function callAdminAPI(action, body) {
     body: JSON.stringify(body),
   });
 
-  const contentType = res.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await res.text();
-    throw new Error(
+  // Log for debugging
+  console.log(`📡 API response status: ${res.status} for action ${action}`);
+
+  // Get the response text first
+  const text = await res.text();
+  console.log(`📡 Response body:`, text);
+
+  // Try to parse JSON
+  let result;
+  try {
+    result = JSON.parse(text);
+  } catch (parseError) {
+    const error = new Error(
       `Unexpected response from API: ${text || "empty response"}`,
     );
+    error.cause = parseError;
+    throw error;
   }
 
-  const result = await res.json();
   if (!res.ok) {
-    throw new Error(result.error || "API request failed");
+    // Use the `error` field from our API, fallback to `message` or generic
+    const errorMsg = result?.error || result?.message || "API request failed";
+    const error = new Error(errorMsg);
+    // Attach the result as cause if available
+    if (result) error.cause = result;
+    throw error;
   }
+
   return result;
 }
 
@@ -46,7 +62,7 @@ export async function fetchAdmins({
   return { data: data || [], count: count || 0 };
 }
 
-export async function createAdminProfile(data) {
+export async function createAdmin(data) {
   const result = await callAdminAPI("create", data);
   return result.admin;
 }
@@ -61,7 +77,6 @@ export async function deleteAdmin(adminId, authUserId) {
   return result;
 }
 
-// Keep password update if needed
 export async function updateAdminPassword(userId, password) {
   if (!userId)
     throw new Error("Missing auth_user_id – admin not linked to auth user.");

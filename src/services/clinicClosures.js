@@ -79,7 +79,7 @@ export async function fetchClinicClosures({
 }
 
 /**
- * Create a new clinic closure
+ * Create a new clinic closure (single branch)
  */
 export async function createClinicClosure(data) {
   const { data: result, error } = await supabase
@@ -90,6 +90,31 @@ export async function createClinicClosure(data) {
 
   if (error) throw error;
   return result;
+}
+
+/**
+ * Create multiple clinic closures for multiple branches
+ * @param {Object} baseData - Closure data without branch_id
+ * @param {string[]} branchIds - Array of branch IDs
+ * @returns {Promise<Object[]>} Array of created closure records
+ */
+export async function createClinicClosures(baseData, branchIds) {
+  if (!branchIds || branchIds.length === 0) {
+    throw new Error("At least one branch must be selected.");
+  }
+
+  const records = branchIds.map((branchId) => ({
+    ...baseData,
+    branch_id: branchId,
+  }));
+
+  const { data, error } = await supabase
+    .from("clinic_closures")
+    .insert(records)
+    .select();
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
@@ -117,4 +142,33 @@ export async function deleteClinicClosure(id) {
     .eq("id", id);
 
   if (error) throw error;
+}
+
+
+export async function fetchClosureRangesForMonth(branchId, monthDate) {
+  if (!monthDate) return [];
+  const monthStart = dayjs(monthDate).startOf('month').format('YYYY-MM-DD');
+  const monthEnd = dayjs(monthDate).endOf('month').format('YYYY-MM-DD');
+
+  console.log('[fetchClosureRangesForMonth] monthStart:', monthStart, 'monthEnd:', monthEnd, 'branchId:', branchId);
+
+  let query = supabase
+    .from('clinic_closures')
+    .select('*')
+    .eq('is_cancelled', false)
+    .eq('affects_booking', true)
+    .lte('start_date', monthEnd)
+    .gte('end_date', monthStart);
+
+  if (branchId && branchId !== 'all') {
+    query = query.eq('branch_id', branchId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[fetchClosureRangesForMonth] error:', error);
+    throw error;
+  }
+  console.log('[fetchClosureRangesForMonth] fetched closures:', data);
+  return data || [];
 }

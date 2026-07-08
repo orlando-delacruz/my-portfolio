@@ -10,7 +10,7 @@ import dayjs from "dayjs";
  */
 export async function getDashboardData(adminId = null, branchId = null) {
   const today = dayjs().format("YYYY-MM-DD");
-  const now = dayjs().toISOString(); // ISO 8601 with timezone
+  const now = dayjs().toISOString();
 
   const { data, error } = await supabase.rpc("get_dashboard_all_data", {
     p_admin_id: adminId,
@@ -90,4 +90,62 @@ export async function getNextAppointment(adminId = null, branchId = null) {
 
   if (error) throw error;
   return data;
+}
+
+// ── Walk-in specific functions ──
+
+/**
+ * Get today's walk-in count.
+ */
+export async function getWalkInCount() {
+  const today = dayjs().format("YYYY-MM-DD");
+
+  let query = supabase
+    .from("appointments")
+    .select("*", { count: "exact", head: true })
+    .eq("is_walk_in", true)
+    .eq("preferred_date", today)
+    .in("appointment_status", ["scheduled", "confirmed"]);
+
+  const { count, error } = await query;
+  if (error) throw error;
+  return count || 0;
+}
+
+/**
+ * Get today's walk-in appointments with patient details.
+ */
+export async function getTodayWalkIns(limit = 5) {
+  const today = dayjs().format("YYYY-MM-DD");
+
+  let query = supabase
+    .from("appointments")
+    .select(`
+      id,
+      preferred_time,
+      service_branch:service_branches(
+        branch:branches(name),
+        service:services(name)
+      ),
+      patient:patients(first_name, last_name, phone_number),
+      approval_status,
+      appointment_status
+    `)
+    .eq("is_walk_in", true)
+    .eq("preferred_date", today)
+    .in("appointment_status", ["scheduled", "confirmed"])
+    .order("preferred_time", { ascending: true })
+    .limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data || []).map((apt) => ({
+    id: apt.id,
+    patient_name: `${apt.patient.first_name} ${apt.patient.last_name}`.trim(),
+    time: dayjs(apt.preferred_time, "HH:mm:ss").format("h:mm A"),
+    branch: apt.service_branch?.branch?.name || "—",
+    service: apt.service_branch?.service?.name || "—",
+    status: apt.approval_status === "approved" ? "confirmed" : "pending",
+  }));
 }

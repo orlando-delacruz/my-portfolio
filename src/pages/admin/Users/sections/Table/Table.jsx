@@ -61,7 +61,7 @@ const Actions = memo(({ user, onEdit, onDelete, onActivate }) => {
     },
     {
       key: 'delete',
-      label: 'Delete User',
+      label: 'Delete Permanently',
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => onDelete(user.id),

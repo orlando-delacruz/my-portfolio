@@ -29,8 +29,7 @@ export async function fetchCalendarAppointments(
 
   let query = supabase
     .from("appointments")
-    .select(
-      `
+    .select(`
       id,
       reference_number,
       preferred_date,
@@ -40,6 +39,7 @@ export async function fetchCalendarAppointments(
       approval_status,
       appointment_status,
       snapshot_service_name,
+      is_walk_in,
       patient:patients(
         id,
         first_name,
@@ -48,22 +48,20 @@ export async function fetchCalendarAppointments(
         email,
         is_orthodontic
       ),
-      service_branch:service_branches(
+      service_branch:service_branches${branchId && isValidUUID(branchId) ? "!inner(branch_id)" : ""
+      }(
         branch_id,
         branch:branches(id, name),
         service:services(name)
       )
-    `,
-    )
+    `)
     .or(dateFilter)
     .order("preferred_date", { ascending: true });
 
-  // Branch filter – only if valid UUID
   if (branchId && isValidUUID(branchId)) {
     query = query.eq("service_branch.branch_id", branchId);
   }
 
-  // Status filter
   if (statusFilter && statusFilter !== "all") {
     if (statusFilter === "confirmed") {
       query = query
@@ -83,7 +81,6 @@ export async function fetchCalendarAppointments(
   const { data, error } = await query;
   if (error) throw error;
 
-  // Transform data
   return (data || []).map((apt) => {
     const date = apt.confirmed_date || apt.preferred_date;
     const time = apt.confirmed_time || apt.preferred_time;
@@ -93,9 +90,8 @@ export async function fetchCalendarAppointments(
       "Unknown Patient";
 
     const serviceBranch = apt.service_branch || {};
-    const branch = serviceBranch.branch || null;
     const branchId = serviceBranch.branch_id || null;
-    const branchName = branch?.name || null;
+    const branchName = serviceBranch.branch?.name || null;
 
     let branchInitial = "•";
     let branchColor = "#888888";
@@ -128,6 +124,7 @@ export async function fetchCalendarAppointments(
       status,
       isOrthodontic: patient.is_orthodontic || false,
       phoneNumber: patient.phone_number || "",
+      isWalkIn: apt.is_walk_in || false,
       appointment: apt,
     };
   });

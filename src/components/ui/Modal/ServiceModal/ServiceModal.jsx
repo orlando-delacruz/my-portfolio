@@ -9,7 +9,15 @@ const ServiceModal = memo(({ service, open, onClose }) => {
 
   if (!service) return null;
 
-  const { title, titleTl, fullDesc, image, imageAlt, price } = service;
+  const { title, titleTl, fullDesc, image, imageAlt, starting_price, maximum_price } = service;
+
+  const getPriceDisplay = () => {
+    if (!starting_price && !maximum_price) return null;
+    if (starting_price === maximum_price) {
+      return `₱${Number(starting_price).toLocaleString()}`;
+    }
+    return `₱${Number(starting_price).toLocaleString()} – ₱${Number(maximum_price).toLocaleString()}`;
+  };
 
   const handleBookThisService = () => {
     navigate("/book");
@@ -43,10 +51,8 @@ const ServiceModal = memo(({ service, open, onClose }) => {
           <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
           {titleTl && <S.ModalTitleTl>{titleTl}</S.ModalTitleTl>}
         </S.ModalTitleGroup>
-        {price && (
-          <S.ModalPrice>
-            Starts at ₱{price.toLocaleString("en-PH")}
-          </S.ModalPrice>
+        {getPriceDisplay() && (
+          <S.ModalPrice>{getPriceDisplay()}</S.ModalPrice>
         )}
         <S.ModalDesc>{fullDesc}</S.ModalDesc>
         <S.ModalFooter>

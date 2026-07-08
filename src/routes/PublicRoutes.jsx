@@ -5,20 +5,21 @@ import ScrollToTop from "../utils/ScrollToTop";
 import ProtectedRoute from "./ProtectedRoute";
 import { useAuthStore } from "../store/authStore";
 import CancelAppointment from '../pages/public/CancelAppointment';
+import Unauthorized from '../pages/auth/Unauthorized';
 
-// ── Lazy pages ────────────────────────────────────────────────────────────────
+// ── Lazy pages ──
 const Home = lazy(() => import("../pages/public/Home"));
 const BookAppointment = lazy(() => import("../pages/public/BookAppointment"));
 const Login = lazy(() => import("../pages/auth"));
 const Dashboard = lazy(() => import("../pages/admin/Dashboard/Dashboard"));
 const Appointment = lazy(() => import("../pages/admin/Appointment"));
 const Patients = lazy(() => import("../pages/admin/Patients"))
-const PageDevelopment = lazy(() => import("../pages/admin/PageDevelopment"));
 const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
 const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
 const Users = lazy(() => import("../pages/admin/Users"))
+const Settings = lazy(() => import("../pages/admin/Settings"));
 
-// ── Fallbacks ─────────────────────────────────────────────────────────────────
+// ── Fallbacks ──
 const PageFallback = () => (
   <div
     style={{ minHeight: "100dvh", background: "#fff" }}
@@ -28,14 +29,20 @@ const PageFallback = () => (
 );
 
 function GuestRoute({ children }) {
-  const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
-  if (loading) return <PageFallback />;
-  if (user) return <Navigate to="/admin" replace />;
+  const isAuthorized = useAuthStore((s) => s.isAuthorized);
+
+  if (loading) {
+    return <PageFallback />;
+  }
+
+  if (isAuthorized) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return children;
 }
 
-// ── Router ────────────────────────────────────────────────────────────────────
 export default function PublicRoutes() {
   return (
     <Suspense fallback={<PageFallback />}>
@@ -45,6 +52,7 @@ export default function PublicRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/book" element={<BookAppointment />} />
         <Route path="/cancel-appointment" element={<CancelAppointment />} />
+        <Route path="/unauthorized" element={<Unauthorized />} /> {/* NEW */}
 
         <Route
           path="/login"
@@ -63,7 +71,7 @@ export default function PublicRoutes() {
           <Route path="clinic-closures" element={<ClinicClosures />} />
           <Route path="patients" element={<Patients />} />
           <Route path="users" element={<Users />} />
-          <Route path="settings" element={<PageDevelopment />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

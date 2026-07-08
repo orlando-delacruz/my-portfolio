@@ -11,8 +11,8 @@ export default function Button({
 }) {
   return (
     <StyledButton
-      variant={variant}
-      size={size}
+      $variant={variant}     // ✅ transient prop
+      $size={size}           // ✅ transient prop
       disabled={disabled || loading}
       {...props}
     >

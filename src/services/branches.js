@@ -16,7 +16,7 @@ export async function fetchActiveBranches() {
   try {
     const { data, error } = await supabase
       .from("branches")
-      .select("id, name, status")
+      .select("id, name, address, status")
       .eq("status", "active")
       .order("name");
 
@@ -29,11 +29,10 @@ export async function fetchActiveBranches() {
     console.warn("[fetchActiveBranches] Supabase client exception:", err);
   }
 
-  // Fallback: direct REST call (no cache buster)
+  // Fallback: direct REST call
   console.log("[fetchActiveBranches] Falling back to direct REST fetch...");
 
-  // ✅ Fixed URL: removed the `_=${cacheBuster}` parameter which was causing errors
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/branches?status=eq.active&select=id,name,status&order=name`;
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/branches?status=eq.active&select=id,name,address,status&order=name`;
   console.log("[fetchActiveBranches] Fetching URL:", url);
 
   const response = await fetch(url, {
@@ -41,7 +40,6 @@ export async function fetchActiveBranches() {
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ""}`,
       "Content-Type": "application/json",
-      // Optional: prevent caching
       "Cache-Control": "no-cache, no-store, must-revalidate",
       Pragma: "no-cache",
     },

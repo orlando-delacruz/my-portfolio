@@ -186,7 +186,7 @@ export const recentActivity = [
   },
 ];
 
-// QUICK ACTIONS BUTTON (now includes icons)
+// QUICK ACTIONS BUTTON (now includes icons and a flag to show/hide tooltip)
 export const quickActions = [
   {
     id: "qa1",
@@ -195,6 +195,7 @@ export const quickActions = [
     bg: "rgba(132,187,242,0.25)",
     path: "/admin/appointments/new",
     icon: MdBookOnline,
+    isComingSoon: false,
   },
   {
     id: "qa2",
@@ -203,14 +204,16 @@ export const quickActions = [
     bg: "rgba(252,152,227,0.25)",
     path: "/admin/messages",
     icon: MdMessage,
+    isComingSoon: true,
   },
   {
     id: "qa3",
     label: "Add Clinic Closure",
     color: "#B75DEB",
     bg: "rgba(207,137,248,0.25)",
-    path: "/admin/clinic-closures/new",
+    path: "/admin/clinic-closures",
     icon: MdEventBusy,
+    isComingSoon: false,
   },
   {
     id: "qa4",
@@ -219,5 +222,6 @@ export const quickActions = [
     bg: "rgba(131,241,204,0.25)",
     path: "/admin/appointments",
     icon: MdListAlt,
+    isComingSoon: false,
   },
 ];

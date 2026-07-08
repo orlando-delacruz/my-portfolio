@@ -1,6 +1,7 @@
 // src/components/admin/Modal/AppointmentModal/AddAppointmentModal.jsx
 import { memo, useEffect, useState } from "react";
 import { Modal, Form } from "antd";
+import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import AppointmentForm from "./AppointmentForm";
 import { getOrthodonticPatients } from "../../../../services/patients";
 import * as S from "./AppointmentModal.styled";
@@ -13,7 +14,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const [orthodonticPatients, setOrthodonticPatients] = useState([]);
   const [loadingOrtho, setLoadingOrtho] = useState(false);
 
-  // Reset form when modal opens (form is mounted)
   useEffect(() => {
     if (open) {
       form.resetFields();
@@ -22,7 +22,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
     }
   }, [open, form]);
 
-  // Fetch orthodontic patients when modal opens and ortho tab is selected
   useEffect(() => {
     if (open && patientType === 'ortho') {
       setLoadingOrtho(true);
@@ -41,7 +40,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
       } else {
         await onSubmit({ ...values, patientType }, form);
       }
-      // Parent onClose will close the modal
     } catch {
       // Ant Design handles field-level errors
     }
@@ -85,13 +83,14 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
         onPatientTypeChange={handlePatientTypeChange}
         onOrthodonticPatientSelect={handleOrthoPatientSelect}
         loadingOrthoPatients={loadingOrtho}
+        excludeAppointmentId={null} // add mode - no exclusion
       />
       <S.FooterRow>
-        <S.CancelBtn onClick={handleCancel} type="button">
-          Cancel
+        <S.CancelBtn onClick={handleCancel} type="button" disabled={loading}>
+          <CloseOutlined /> Cancel
         </S.CancelBtn>
         <S.SubmitBtn onClick={handleOk} disabled={loading} type="button">
-          {loading ? "Adding…" : "Add Appointment"}
+          <SaveOutlined /> {loading ? "Creating…" : "Create Appointment"}
         </S.SubmitBtn>
       </S.FooterRow>
     </Modal>

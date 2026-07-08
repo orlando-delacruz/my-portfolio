@@ -3,7 +3,8 @@ import { memo, useEffect, useState } from 'react';
 import { Modal, Form, Input, Select, DatePicker, Checkbox } from 'antd';
 import dayjs from 'dayjs';
 import { useBranches } from '../../../../hooks/useBranches';
-import { getRawPhoneDigits, formatPhoneDisplay, isValidPhilippinePhone } from '../../../../utils/phoneFormatter';
+import { isValidPhilippinePhone } from '../../../../utils/phoneFormatter';
+import PhoneInput from '../../../ui/PhoneInput/PhoneInput';
 import * as S from './EditPatientModal.styled';
 
 const { Option } = Select;
@@ -22,7 +23,7 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
         firstName: patient.first_name || '',
         middleName: patient.middle_name || '',
         lastName: patient.last_name || '',
-        phoneNumber: patient.phone_number ? formatPhoneDisplay(patient.phone_number) : '',
+        phoneNumber: patient.phone_number || '',
         email: patient.email || '',
         birthDate: patient.birth_date ? dayjs(patient.birth_date) : null,
         gender: patient.gender || '',
@@ -42,10 +43,9 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      const phoneDigits = getRawPhoneDigits(values.phoneNumber);
       await onSave({
         ...values,
-        phoneNumber: phoneDigits,
+        phoneNumber: values.phoneNumber,
         isOrthodontic: values.isOrthodontic || false,
         branchId: values.isOrthodontic ? values.branchId : null,
       });
@@ -59,31 +59,18 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
     onClose();
   };
 
-  const handlePhoneChange = (e) => {
-    const raw = getRawPhoneDigits(e.target.value);
-    if (raw.length > 11) {
-      e.preventDefault();
-      return;
-    }
-    const formatted = formatPhoneDisplay(raw);
-    form.setFieldValue('phoneNumber', formatted);
-  };
-
   const validatePhone = (_, value) => {
     if (!value) {
       return Promise.reject(new Error('Contact number is required.'));
     }
-    const stripped = getRawPhoneDigits(value);
-    if (!isValidPhilippinePhone(stripped)) {
+    if (!isValidPhilippinePhone(value)) {
       return Promise.reject(new Error('Enter a valid PH number (e.g., 0912 345 6789).'));
     }
     return Promise.resolve();
   };
 
   const validateBirthDate = (_, value) => {
-    if (!value) {
-      return Promise.reject(new Error('Please select birthdate.'));
-    }
+    if (!value) return Promise.resolve();
     if (dayjs(value).isAfter(dayjs(), 'day')) {
       return Promise.reject(new Error('Birthdate cannot be in the future.'));
     }
@@ -102,7 +89,6 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
     >
       <Form form={form} layout="vertical" requiredMark={false}>
         <S.FormGrid>
-          {/* Row 1: First Name + Middle Name */}
           <Form.Item
             name="firstName"
             label="First Name"
@@ -119,7 +105,6 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             <Input placeholder="(Optional)" maxLength={80} />
           </Form.Item>
 
-          {/* Row 2: Last Name + Phone Number */}
           <Form.Item
             name="lastName"
             label="Last Name"
@@ -133,23 +118,18 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             label="Contact Number"
             rules={[{ validator: validatePhone }]}
           >
-            <Input
-              placeholder="0912 345 6789"
-              maxLength={16}
-              onChange={handlePhoneChange}
-            />
+            <PhoneInput placeholder="0912 345 6789" />
           </Form.Item>
 
-          {/* Row 3: Birthdate + Gender (aligned) */}
           <Form.Item
             name="birthDate"
-            label="Birthdate"
+            label="Birthdate (Optional)"
             rules={[{ validator: validateBirthDate }]}
           >
             <DatePicker
               style={{ width: '100%' }}
               format="MMM D, YYYY"
-              placeholder="Select birthdate"
+              placeholder="Select birthdate (optional)"
               disabledDate={(current) => current && current > dayjs().endOf('day')}
             />
           </Form.Item>
@@ -167,7 +147,6 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             </Select>
           </Form.Item>
 
-          {/* Row 4: Email (full width) */}
           <S.FullWidth>
             <Form.Item
               name="email"
@@ -181,25 +160,21 @@ const EditPatientModal = memo(({ open, patient, loading, onClose, onSave }) => {
             </Form.Item>
           </S.FullWidth>
 
-          {/* Row 5: Address (full width) */}
           <S.FullWidth>
             <Form.Item
               name="address"
-              label="Complete Address"
-              rules={[{ required: true, message: 'Address is required.' }]}
+              label="Complete Address (Optional)"
             >
-              <Input placeholder="Enter complete address" />
+              <Input placeholder="Enter complete address (optional)" />
             </Form.Item>
           </S.FullWidth>
 
-          {/* Row 6: Orthodontic checkbox (full width) */}
           <S.FullWidth>
             <Form.Item name="isOrthodontic" valuePropName="checked">
               <Checkbox>Orthodontic Patient</Checkbox>
             </Form.Item>
           </S.FullWidth>
 
-          {/* Row 7: Branch (full width, conditional) */}
           {isOrthodontic && (
             <S.FullWidth>
               <Form.Item

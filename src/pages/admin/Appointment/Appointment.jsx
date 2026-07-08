@@ -1,5 +1,6 @@
 // src/pages/admin/Appointment/Appointment.jsx
 import { memo, useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { Modal, message, Spin } from 'antd';
 import { IoTrashBinOutline } from 'react-icons/io5';
@@ -36,8 +37,53 @@ const STATUS_RANK = {
 const getStatusRank = (status) => STATUS_RANK[status] ?? 99;
 
 const Appointment = () => {
-  const { appointments: rawAppointments, loading, refetch } = useAppointments();
   const profile = useAuthStore((s) => s.profile);
+  const [searchParams] = useSearchParams();
+
+  // ── Parse URL parameters ──
+  const initialFilters = useMemo(() => {
+    const filters = {
+      dateRange: null,
+      branch: 'all',
+      status: 'all',
+      search: '',
+      source: 'all',
+    };
+    const dateParam = searchParams.get('date');
+    const statusParam = searchParams.get('status');
+    const typeParam = searchParams.get('type');
+
+    // Date
+    if (dateParam === 'today') {
+      const today = dayjs().startOf('day');
+      filters.dateRange = [today, today];
+    } else if (dateParam === 'upcoming') {
+      const tomorrow = dayjs().add(1, 'day').startOf('day');
+      filters.dateRange = [tomorrow, null];
+    }
+
+    // Status
+    if (statusParam && ['pending', 'confirmed', 'completed', 'cancelled'].includes(statusParam)) {
+      filters.status = statusParam;
+    }
+
+    // Source (walk-in / online)
+    if (typeParam === 'walkin') {
+      filters.source = 'walk-in';
+    } else if (typeParam === 'online') {
+      filters.source = 'online';
+    }
+
+    return { filters };
+  }, [searchParams]);
+
+  const [filters, setFilters] = useState(initialFilters.filters);
+
+  // ── Fetch appointments (no status filter; we apply status filter client-side) ──
+  const { appointments: rawAppointments, loading, refetch } = useAppointments(
+    filters.source === 'all' ? null : filters.source,
+    false // never exclude cancelled by default
+  );
 
   const mappedAppointments = useMemo(
     () => rawAppointments.map(mapAppointmentRow),
@@ -57,13 +103,6 @@ const Appointment = () => {
     });
   }, [mappedAppointments]);
 
-  const [filters, setFilters] = useState({
-    dateRange: null,
-    branch: 'all',
-    status: 'all',
-    search: '',
-  });
-
   const [selected, setSelected] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -81,6 +120,7 @@ const Appointment = () => {
     onRescheduleSuccess: () => refetch(),
   });
 
+  // ── Apply frontend filters (branch, status, date, search) ──
   const filtered = useMemo(() => {
     let result = [...sortedAppointments];
 
@@ -112,6 +152,13 @@ const Appointment = () => {
           !d.isBefore(start, 'day') &&
           !d.isAfter(end, 'day')
         );
+      });
+    } else if (filters.dateRange?.[0] && !filters.dateRange?.[1]) {
+      // Only start date provided: filter from that date onwards
+      const start = filters.dateRange[0];
+      result = result.filter((apt) => {
+        const d = dayjs(apt.date, 'MMM D, YYYY');
+        return d.isValid() && !d.isBefore(start, 'day');
       });
     }
 
@@ -190,6 +237,7 @@ const Appointment = () => {
       branch: 'all',
       status: 'all',
       search: '',
+      source: 'all',
     });
     setSelected(new Set());
     setCurrentPage(1);

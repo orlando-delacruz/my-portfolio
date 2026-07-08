@@ -1,5 +1,6 @@
 // src/pages/admin/ClinicClosures/ClinicClosures.jsx
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Modal, message, Spin } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../components/admin/AdminLayout';
@@ -9,12 +10,13 @@ import ClosureTable from './sections/Table';
 import ClinicClosureModal from '../../../components/admin/Modal/ClinicClosureModal';
 import ClinicClosureDetailsModal from '../../../components/admin/Modal/ClinicClosureDetailsModal';
 import { useClinicClosures } from './useClinicClosures';
-import { createClinicClosure, updateClinicClosure, deleteClinicClosure } from '../../../services/clinicClosures';
+import { createClinicClosure, createClinicClosures, updateClinicClosure, deleteClinicClosure } from '../../../services/clinicClosures';
 import * as S from './ClinicClosures.styled';
 
 const { confirm } = Modal;
 
 const ClinicClosures = () => {
+  const location = useLocation();
   const {
     closures,
     loading,
@@ -27,12 +29,20 @@ const ClinicClosures = () => {
     refetch,
   } = useClinicClosures();
 
-  const [modalOpen, setModalOpen] = useState(false);
+  // ── Use initial state from location to avoid setState in effect ──
+  const [modalOpen, setModalOpen] = useState(() => location.state?.openAddModal || false);
   const [editingClosure, setEditingClosure] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedClosure, setSelectedClosure] = useState(null);
+
+  // ── Clear location state after reading it ──
+  useEffect(() => {
+    if (location.state?.openAddModal) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleAdd = useCallback(() => {
     setEditingClosure(null);
@@ -56,8 +66,14 @@ const ClinicClosures = () => {
         await updateClinicClosure(editingClosure.id, data);
         message.success('Closure updated successfully!');
       } else {
-        await createClinicClosure(data);
-        message.success('Closure created successfully!');
+        const { branch_ids, ...rest } = data;
+        if (branch_ids && branch_ids.length > 0) {
+          await createClinicClosures(rest, branch_ids);
+          message.success(`Closure created for ${branch_ids.length} branch(es).`);
+        } else {
+          await createClinicClosure(data);
+          message.success('Closure created successfully!');
+        }
       }
       handleModalClose();
       refetch();
