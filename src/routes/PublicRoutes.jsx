@@ -6,6 +6,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import { useAuthStore } from "../store/authStore";
 import CancelAppointment from '../pages/public/CancelAppointment';
 import Unauthorized from '../pages/auth/Unauthorized';
+import NotFound from '../pages/NotFound';
 
 // ── Lazy pages ──
 const Home = lazy(() => import("../pages/public/Home"));
@@ -19,7 +20,7 @@ const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/Appointme
 const Users = lazy(() => import("../pages/admin/Users"));
 const Settings = lazy(() => import("../pages/admin/Settings"));
 
-// ── CMS pages (direct imports to avoid lazy destructuring) ──
+// ── CMS pages ──
 const ComingSoon = lazy(() => import("../pages/admin/CMS/ComingSoon"));
 const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 
@@ -90,7 +91,8 @@ export default function PublicRoutes() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 Fallback – must be the last route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );
