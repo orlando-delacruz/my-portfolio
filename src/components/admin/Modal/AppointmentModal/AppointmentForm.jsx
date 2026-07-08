@@ -8,7 +8,8 @@ import { STATUS_OPTIONS_FORM } from "./appointmentFormSchema";
 import { useBranches } from "../../../../hooks/useBranches";
 import { useServiceBranches } from "../../../../hooks/useServiceBranches";
 import { useAppointmentAvailability } from "../../../../hooks/useAppointmentAvailability";
-import { formatPhoneDisplay, getRawPhoneDigits, isValidPhilippinePhone } from "../../../../utils/phoneFormatter";
+import { isValidPhilippinePhone } from "../../../../utils/phoneFormatter";
+import PhoneInput from "../../../ui/PhoneInput/PhoneInput";
 import * as S from "./AppointmentModal.styled";
 
 const { Option } = Select;
@@ -16,8 +17,7 @@ const { Option } = Select;
 // ── Validators ──
 const validatePhone = (_, value) => {
   if (!value) return Promise.reject(new Error("Contact number is required."));
-  const stripped = getRawPhoneDigits(value);
-  if (!isValidPhilippinePhone(stripped)) {
+  if (!isValidPhilippinePhone(value)) {
     return Promise.reject(new Error("Enter a valid PH number (e.g., 0912 345 6789)."));
   }
   return Promise.resolve();
@@ -77,14 +77,6 @@ const AppointmentForm = memo(({
   const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
   const showTimeSelection = selectedDateKey && !isDateUnavailable;
 
-  // ── Handlers ──
-  const handlePhoneChange = useCallback((e) => {
-    const raw = getRawPhoneDigits(e.target.value);
-    if (raw.length > 11) return;
-    const formatted = formatPhoneDisplay(raw);
-    form.setFieldValue("phoneNumber", formatted);
-  }, [form]);
-
   const prevBranchRef = useRef(selectedBranch);
   useEffect(() => {
     if (prevBranchRef.current !== undefined && prevBranchRef.current !== selectedBranch) {
@@ -139,7 +131,12 @@ const AppointmentForm = memo(({
   const isNewPatient = patientType === 'new';
 
   return (
-    <Form form={form} layout="vertical" requiredMark={false}>
+    <Form
+      form={form}
+      layout="vertical"
+      requiredMark={false}
+      initialValues={{ isOrthodontic: false }}
+    >
       <S.FormGrid>
         {/* ── Patient Type Tabs ── */}
         {showPatientSelector && (
@@ -161,16 +158,20 @@ const AppointmentForm = memo(({
                 loading={loadingOrthoPatients}
                 onChange={handleOrthoPatientSelect}
                 showSearch
+                optionFilterProp="label"
                 filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option?.label?.toLowerCase().includes(input.toLowerCase())
                 }
                 value={selectedOrthodonticPatient?.id}
               >
-                {orthodonticPatients.map((p) => (
-                  <Option key={p.id} value={p.id}>
-                    {p.first_name} {p.last_name} {p.phone_number ? `(${p.phone_number})` : ''}
-                  </Option>
-                ))}
+                {orthodonticPatients.map((p) => {
+                  const displayName = `${p.first_name} ${p.last_name}${p.phone_number ? ` (${p.phone_number})` : ''}`.trim();
+                  return (
+                    <Option key={p.id} value={p.id} label={displayName}>
+                      {displayName}
+                    </Option>
+                  );
+                })}
               </Select>
             </Form.Item>
           </S.FullWidth>
@@ -205,8 +206,8 @@ const AppointmentForm = memo(({
           </Form.Item>
         </S.FieldRow>
 
-        <Form.Item name="phoneNumber" label="Mobile Number" rules={[{ validator: validatePhone }]}>
-          <Input placeholder="0912 345 6789" maxLength={16} onChange={handlePhoneChange} disabled={isOrthoSelected} />
+        <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]}>
+          <PhoneInput placeholder="0912 345 6789" disabled={isOrthoSelected} />
         </Form.Item>
 
         <Form.Item name="email" label="Email" rules={[{ validator: validateEmail }]}>
@@ -219,8 +220,12 @@ const AppointmentForm = memo(({
 
         {showPatientSelector && isNewPatient && (
           <S.FullWidth>
-            <Form.Item label="Mark as Orthodontic Patient" valuePropName="checked">
-              <Switch name="isOrthodontic" />
+            <Form.Item
+              name="isOrthodontic"
+              valuePropName="checked"
+              label="Mark as Orthodontic Patient"
+            >
+              <Switch />
             </Form.Item>
           </S.FullWidth>
         )}

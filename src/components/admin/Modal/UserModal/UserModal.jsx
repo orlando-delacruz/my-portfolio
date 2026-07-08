@@ -4,6 +4,7 @@ import { Modal, Form, Input, Select, Row, Col, Button, Upload, Alert, Checkbox }
 import { UploadOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { uploadAvatar } from '../../../../services/storage';
 import { createAdmin, updateAdmin, updateAdminPassword } from '../../../../services/admins';
+import PhoneInput from '../../../ui/PhoneInput/PhoneInput';
 import * as S from './UserModal.styled';
 
 const { Option } = Select;
@@ -47,7 +48,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
           email: user.email,
           full_name: user.full_name,
           username: user.username,
-          phone_number: user.phone_number,
+          phone_number: user.phone_number || '',
           role: user.role,
           status: user.status,
           avatar_url: user.avatar_url,
@@ -86,13 +87,11 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
   };
 
   const handleFinish = async (values) => {
-    // ── Lock check ──
     if (isProcessing || isSubmittingRef.current || submitting) {
       console.warn('⏳ Submission already in progress – ignoring duplicate.');
       return;
     }
 
-    // ── Set all locks ──
     isProcessing = true;
     isSubmittingRef.current = true;
     setSubmitting(true);
@@ -129,7 +128,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
       };
 
       if (user) {
-        // Update existing user
         await updateAdmin(user.id, payload);
         if (changePassword && values.newPassword) {
           const authUserId = user.auth_user_id || null;
@@ -144,7 +142,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         }
         onSave(payload);
       } else {
-        // Create new admin (Auth + Profile)
         const createPayload = {
           ...payload,
           password: values.password,
@@ -153,7 +150,6 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         onSave(createPayload);
       }
 
-      // ── Success: release locks after a short delay ──
       setTimeout(() => {
         isProcessing = false;
         isSubmittingRef.current = false;
@@ -395,7 +391,7 @@ const UserModal = memo(({ open, user, onClose, onSave, loading }) => {
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="phone_number" label="Phone Number">
-              <Input placeholder="+63 912 345 6789" size="large" />
+              <PhoneInput placeholder="0912 345 6789" size="large" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>

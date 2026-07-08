@@ -32,6 +32,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         if (values.patientType === "ortho" && values.selectedOrthodonticPatient) {
           patient = values.selectedOrthodonticPatient;
         } else {
+          // ── Find or create patient with orthodontic flag and branch ──
           patient = await findOrCreatePatient({
             firstName: values.firstName,
             middleName: values.middleName || "",
@@ -42,6 +43,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
             phoneNumber: getRawPhoneDigits(values.phoneNumber),
             address: values.address,
             isOrthodontic: values.isOrthodontic || false,
+            branchId: values.branchId, // ✅ Pass branch from appointment
           });
         }
 
@@ -83,8 +85,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         form.resetFields();
         setAddOpen(false);
         onAddSuccess?.(newRecord);
-
-        // Email sending is removed – no EmailJS integration.
       } catch (err) {
         console.error(err);
         message.error(err.message || "Failed to add appointment. Please try again.");

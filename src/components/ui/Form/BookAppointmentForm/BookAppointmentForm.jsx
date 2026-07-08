@@ -8,6 +8,7 @@ import * as S from "./BookAppointmentForm.styled";
 import SuccessView from "../../SuccessView";
 import { useBookAppointmentForm } from "./useBookAppointmentForm";
 import AvailabilityMessage from "../../AvailabilityMessage";
+import PhoneInput from "../../PhoneInput/PhoneInput";
 import Logo from "../../../../assets/images/logo.webp";
 
 const { TextArea } = Input;
@@ -102,23 +103,11 @@ const BookAppointmentForm = () => {
     }
   };
 
-  const formatPhoneDisplay = (value) => {
-    if (!value) return '';
-    const raw = value.replace(/\D/g, '');
-    if (raw.length > 7) {
-      return raw.slice(0, 4) + ' ' + raw.slice(4, 7) + ' ' + raw.slice(7);
-    }
-    if (raw.length > 4) {
-      return raw.slice(0, 4) + ' ' + raw.slice(4);
-    }
-    return raw;
-  };
-
   // ── Validation functions ──
   const validatePhone = (_, value) => {
     if (!value) return Promise.reject(new Error("Please enter your mobile number."));
-    const stripped = value.replace(/\s/g, '');
-    if (!/^(\+63|0)\d{10}$/.test(stripped)) {
+    const raw = value.replace(/\s/g, '');
+    if (!/^(\+63|0)\d{10}$/.test(raw)) {
       return Promise.reject(new Error("Please enter a valid Philippine mobile number."));
     }
     return Promise.resolve();
@@ -208,12 +197,8 @@ const BookAppointmentForm = () => {
               </Form.Item>
             </S.FieldRow>
 
-            <Form.Item name="phoneNumber" label="Mobile Number" rules={[{ validator: validatePhone }]}>
-              <Input placeholder="0912 345 6789" size="large" onChange={(e) => {
-                const raw = e.target.value.replace(/\D/g, '');
-                if (raw.length > 11) return;
-                e.target.value = formatPhoneDisplay(raw);
-              }} />
+            <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]}>
+              <PhoneInput placeholder="0912 345 6789" size="large" />
             </Form.Item>
 
             <Form.Item name="email" label="Email" rules={[{ type: "email", message: "Please enter a valid email address." }, { required: false }]}>
