@@ -1,56 +1,68 @@
-// src/components/ui/Form/BookAppointmentForm/useBookAppointmentForm.js
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { message } from "antd";
-import dayjs from "dayjs";
-import isBetween from "dayjs/plugin/isBetween";
-import { useBranches } from "../../../../hooks/useBranches";
-import { useServiceBranches } from "../../../../hooks/useServiceBranches";
-import { useAppointmentAvailability } from "../../../../hooks/useAppointmentAvailability";
-import { bookPublicAppointment } from "../../../../services/publicBooking";
-import { getRawPhoneDigits } from "../../../../utils/phoneFormatter";
+// src/pages/public/BookAppointment/useBookAppointmentForm.js
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { message } from 'antd';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import { useBranches } from '../../../hooks/useBranches';
+import { useServiceBranches } from '../../../hooks/useServiceBranches';
+import { useAppointmentAvailability } from '../../../hooks/useAppointmentAvailability';
+import { bookPublicAppointment } from '../../../services/publicBooking';
+import { getRawPhoneDigits } from '../../../utils/phoneFormatter';
+import { useSearchParams } from 'react-router-dom';
 
 dayjs.extend(isBetween);
 
 const INITIAL_STATE = {
-  firstName: "",
-  middleName: "",
-  lastName: "",
-  birthDate: "",
-  gender: "",
-  email: "",
-  phoneNumber: "",
-  address: "",
-  branchId: "",
-  serviceBranchId: "",
-  date: "",
-  time: "",
-  notes: "",
+  firstName: '',
+  middleName: '',
+  lastName: '',
+  birthDate: '',
+  gender: '',
+  email: '',
+  phoneNumber: '',
+  address: '',
+  branchId: '',
+  serviceBranchId: '',
+  date: '',
+  time: '',
+  notes: '',
 };
 
 export function useBookAppointmentForm(form) {
+  const [searchParams] = useSearchParams();
+  const preSelectedServiceId = searchParams.get('serviceId');
+
   const [fields, setFields] = useState(INITIAL_STATE);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const isMounted = useRef(true);
+  const initialPreselectDone = useRef(false);
 
   const { branches, loading: branchesLoading } = useBranches();
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
-  const selectedService = useMemo(() => {
-    if (!fields.serviceBranchId || !services.length) return null;
-    return services.find((s) => s.service_branch_id === fields.serviceBranchId);
-  }, [fields.serviceBranchId, services]);
-
-  const durationMinutes = useMemo(() => {
-    if (selectedService?.duration_minutes) return selectedService.duration_minutes;
-    return 30;
-  }, [selectedService]);
+  // Pre-select service if serviceId is in URL.
+  // This effect runs once when services are loaded and a matching service is found.
+  // The state update is conditional and guarded by a ref, so it does not cause
+  // cascading renders. The ESLint warning is suppressed because it's a controlled
+  // one-time initialization, not a continuous sync.
+  useEffect(() => {
+    if (preSelectedServiceId && !initialPreselectDone.current && !servicesLoading && services.length > 0) {
+      const matchingService = services.find(s => s.service_branch_id === preSelectedServiceId);
+      if (matchingService) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFields(prev => ({ ...prev, serviceBranchId: preSelectedServiceId }));
+        form?.setFieldsValue({ serviceBranchId: preSelectedServiceId });
+        initialPreselectDone.current = true;
+      }
+    }
+  }, [preSelectedServiceId, services, servicesLoading, form]);
 
   const selectedDateRaw = fields.date;
   const selectedDateKey = useMemo(() => {
-    return selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null;
+    return selectedDateRaw ? dayjs(selectedDateRaw).format('YYYY-MM-DD') : null;
   }, [selectedDateRaw]);
 
   const monthKey = useMemo(() => {
@@ -58,7 +70,7 @@ export function useBookAppointmentForm(form) {
   }, [selectedDateKey]);
 
   const {
-    disabledTime,
+    allSlots,
     isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
@@ -70,7 +82,7 @@ export function useBookAppointmentForm(form) {
     fields.branchId,
     selectedDateKey,
     monthKey,
-    durationMinutes
+    null // no exclude for public booking
   );
 
   useEffect(() => {
@@ -84,8 +96,8 @@ export function useBookAppointmentForm(form) {
     (current) => {
       if (!fields.branchId) return true;
       if (!current) return false;
-      if (current.startOf("day").isBefore(dayjs().startOf("day"))) return true;
-      const dateStr = current.format("YYYY-MM-DD");
+      if (current.startOf('day').isBefore(dayjs().startOf('day'))) return true;
+      const dateStr = current.format('YYYY-MM-DD');
       return isClosureDate(dateStr);
     },
     [fields.branchId, isClosureDate]
@@ -100,7 +112,7 @@ export function useBookAppointmentForm(form) {
     if (fields.date && (isSelectedDateClosed || isDateFullyBooked)) {
       if (fields.time && !clearedRef.current) {
         clearedRef.current = true;
-        updateFields({ time: "" });
+        updateFields({ time: '' });
         form?.setFieldsValue({ time: null });
       }
     } else {
@@ -112,11 +124,11 @@ export function useBookAppointmentForm(form) {
     async (values) => {
       const phoneDigits = getRawPhoneDigits(values.phoneNumber);
       if (!phoneDigits) {
-        setErrors({ phoneNumber: "Contact number is required." });
+        setErrors({ phoneNumber: 'Contact number is required.' });
         return;
       }
       if (!/^(\+63|0)\d{10}$/.test(phoneDigits)) {
-        setErrors({ phoneNumber: "Enter a valid Philippine number." });
+        setErrors({ phoneNumber: 'Enter a valid Philippine number.' });
         return;
       }
 
@@ -137,19 +149,18 @@ export function useBookAppointmentForm(form) {
           date: values.date,
           time: values.time,
           notes: values.notes?.trim() || undefined,
-          durationMinutes,
         });
 
-        message.success("Appointment booked successfully!");
+        message.success('Appointment booked successfully!');
         setSubmitted(true);
       } catch (err) {
-        console.error("Booking error:", err);
-        setErrors({ form: err.message || "Failed to book." });
+        console.error('Booking error:', err);
+        setErrors({ form: err.message || 'Failed to book.' });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [durationMinutes]
+    []
   );
 
   const handleReset = useCallback(() => {
@@ -157,6 +168,7 @@ export function useBookAppointmentForm(form) {
     setErrors({});
     setSubmitted(false);
     form?.resetFields();
+    initialPreselectDone.current = false;
   }, [form]);
 
   const loading = isSubmitting || availabilityLoading || branchesLoading || servicesLoading;
@@ -171,14 +183,13 @@ export function useBookAppointmentForm(form) {
     services,
     branchesLoading,
     servicesLoading,
-    disabledTime,
+    allSlots,
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
     closureVersion,
     schedulingVersion,
-    durationMinutes,
     availabilityError,
     handleSubmit,
     handleReset,

@@ -1,11 +1,11 @@
-// src/pages/public/Home/sections/Services/Services.jsx
+// src/pages/public/Home/sections/Services/Sevices.jsx
 import { memo } from "react";
 import * as S from "./Services.styled";
 import SectionTitle from "../../../../../components/common/SectionTitle";
 import { ServiceCard } from "../../../../../components/ui/Card/ServiceCard";
 import { ServiceModal } from "../../../../../components/ui/Modal/ServiceModal";
 import { useServices } from "./useServices";
-import { services } from "../../../../../data/HomePage/services";
+import { services } from "../../../../../data/HomePage/services"; // fallback if needed, but we'll override
 
 const Services = () => {
   const {

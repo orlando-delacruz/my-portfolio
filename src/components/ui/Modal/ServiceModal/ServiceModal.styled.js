@@ -70,32 +70,11 @@ export const ModalFooter = styled.div`
   display: flex;
   justify-content: flex-end;
   padding-top: 8px;
-`;
 
-export const BookButton = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 26px;
-  border-radius: 50px;
-  background: ${theme.colors.primary};
-  color: ${theme.colors.white};
-  font-size: ${theme.typography.size.body};
-  font-weight: ${theme.typography.weight.medium};
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
-
-  &:hover {
-    background: ${theme.colors.primaryDark};
-    color: ${theme.colors.white};
-    transform: translateY(-1px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${theme.colors.primary};
-    outline-offset: 4px;
+  @media (max-width: 480px) {
+    justify-content: stretch;
+    button {
+      width: 100%;
+    }
   }
 `;

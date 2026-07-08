@@ -1,21 +1,94 @@
 // src/components/admin/SideBar/SideBar.jsx
-import { memo, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { sidebarNavItems, sidebarLogout } from "../../../data/admin/sidebar";
-import { useLogoutStore } from "../../../store/useLogoutStore";
-import Logo from "../../../assets/images/logo-white.webp";
-import * as S from "./SideBar.styled";
+import { memo, useCallback, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { DownOutlined } from '@ant-design/icons';
+import { sidebarNavItems, sidebarLogout } from '../../../data/admin/sidebar';
+import { useLogoutStore } from '../../../store/useLogoutStore';
+import Logo from '../../../assets/images/logo-white.webp';
+import * as S from './SideBar.styled';
 
 const SideBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const openLogoutModal = useLogoutStore((s) => s.openLogoutModal);
+  const [expandedKeys, setExpandedKeys] = useState([]);
 
   const handleNav = useCallback((path) => navigate(path), [navigate]);
 
   const handleLogout = useCallback(() => {
     openLogoutModal();
   }, [openLogoutModal]);
+
+  const toggleExpand = useCallback((key) => {
+    setExpandedKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }, []);
+
+  const isActive = useCallback((path) => {
+    if (!path) return false;
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
+  }, [location]);
+
+  const renderNavItem = (item) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedKeys.includes(item.key);
+    const Icon = item.icon;
+
+    if (hasChildren) {
+      return (
+        <S.NavItem key={item.key}>
+          <S.NavLinkBtn
+            $active={false}
+            onClick={() => toggleExpand(item.key)}
+            aria-expanded={isExpanded}
+          >
+            <Icon aria-hidden="true" />
+            <span>{item.label}</span>
+            <S.ExpandIcon $expanded={isExpanded}>
+              <DownOutlined />
+            </S.ExpandIcon>
+          </S.NavLinkBtn>
+          <S.SubNavList $expanded={isExpanded}>
+            {item.children.map((child) => {
+              const ChildIcon = child.icon || (() => null);
+              const active = isActive(child.path);
+              return (
+                <S.NavItem key={child.key}>
+                  <S.NavLinkBtn
+                    $active={active}
+                    onClick={() => handleNav(child.path)}
+                    aria-current={active ? 'page' : undefined}
+                    $nested
+                  >
+                    <ChildIcon aria-hidden="true" />
+                    <span>{child.label}</span>
+                  </S.NavLinkBtn>
+                </S.NavItem>
+              );
+            })}
+          </S.SubNavList>
+        </S.NavItem>
+      );
+    }
+
+    const active = isActive(item.path);
+    return (
+      <S.NavItem key={item.key}>
+        <S.NavLinkBtn
+          $active={active}
+          onClick={() => handleNav(item.path)}
+          aria-current={active ? 'page' : undefined}
+        >
+          <Icon aria-hidden="true" />
+          <span>{item.label}</span>
+        </S.NavLinkBtn>
+      </S.NavItem>
+    );
+  };
 
   return (
     <S.Nav role="navigation" aria-label="Admin navigation">
@@ -25,30 +98,12 @@ const SideBar = () => {
       </S.Brand>
 
       <S.NavList>
-        {sidebarNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            location.pathname === item.path ||
-            (item.path !== "/admin" && location.pathname.startsWith(item.path));
-
-          return (
-            <S.NavItem key={item.key}>
-              <S.NavLinkBtn
-                $active={isActive}
-                onClick={() => handleNav(item.path)}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon aria-hidden="true" />
-                {item.label}
-              </S.NavLinkBtn>
-            </S.NavItem>
-          );
-        })}
+        {sidebarNavItems.map(renderNavItem)}
 
         <S.NavItem>
           <S.NavLinkBtn onClick={handleLogout} aria-label="Log out">
             <sidebarLogout.icon aria-hidden="true" />
-            {sidebarLogout.label}
+            <span>{sidebarLogout.label}</span>
           </S.NavLinkBtn>
         </S.NavItem>
       </S.NavList>

@@ -43,7 +43,7 @@ const BookAppointmentForm = () => {
 
   // Find selected service for price display
   const selectedService = useMemo(() => {
-    if (!fields.serviceBranchId || !services.length) return null;
+    if (!fields.serviceBranchId || !services || services.length === 0) return null;
     return services.find(s => s.service_branch_id === fields.serviceBranchId) || null;
   }, [fields.serviceBranchId, services]);
 
@@ -148,7 +148,7 @@ const BookAppointmentForm = () => {
     return Promise.resolve();
   };
 
-  const noServicesAvailable = fields.branchId && !servicesLoading && services.length === 0;
+  const noServicesAvailable = fields.branchId && !servicesLoading && (!services || services.length === 0);
 
   // ── Summary Card ──
   const showSummary = useMemo(() => {
@@ -247,7 +247,8 @@ const BookAppointmentForm = () => {
 
             <Form.Item name="branchId" label="Branch" rules={[{ required: true, message: "Please select a branch." }]}>
               <Select placeholder="Select a branch" loading={branchesLoading} size="large">
-                {branches.map((b) => <Option key={b.id} value={b.id}>{b.name}</Option>)}
+                {/* Safe fallback: (branches || []) */}
+                {(branches || []).map((b) => <Option key={b.id} value={b.id}>{b.name}</Option>)}
               </Select>
             </Form.Item>
 
@@ -268,10 +269,11 @@ const BookAppointmentForm = () => {
                 <Select
                   placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
                   loading={servicesLoading}
-                  disabled={!fields.branchId || services.length === 0}
+                  disabled={!fields.branchId || !services || services.length === 0}
                   size="large"
                 >
-                  {services.map((s) => (
+                  {/* Safe fallback: (services || []) */}
+                  {(services || []).map((s) => (
                     <Option key={s.service_branch_id} value={s.service_branch_id}>
                       {s.name || "Unnamed"}
                     </Option>
@@ -310,7 +312,8 @@ const BookAppointmentForm = () => {
                     size="large"
                     key={`timeselect-${fields.branchId}-${fields.date}-${closureVersion}-${schedulingVersion}`}
                   >
-                    {allSlots.map((slot) => (
+                    {/* Safe fallback: (allSlots || []) */}
+                    {(allSlots || []).map((slot) => (
                       <Option key={slot.value} value={slot.value} disabled={slot.disabled}>
                         {formatTimeDisplay(slot.value)}
                       </Option>
@@ -336,11 +339,11 @@ const BookAppointmentForm = () => {
                 <S.SummaryGrid>
                   <S.SummaryItem>
                     <FaMapPin style={{ color: '#886217', marginRight: 6 }} />
-                    <strong>Branch:</strong> {branches.find(b => b.id === fields.branchId)?.name}
+                    <strong>Branch:</strong> {(branches || []).find(b => b.id === fields.branchId)?.name || '—'}
                   </S.SummaryItem>
                   <S.SummaryItem>
                     <FaTooth style={{ color: '#886217', marginRight: 6 }} />
-                    <strong>Service:</strong> {selectedService?.name}
+                    <strong>Service:</strong> {selectedService?.name || '—'}
                   </S.SummaryItem>
                   <S.SummaryItem>
                     <FaMoneyBillWave style={{ color: '#886217', marginRight: 6 }} />
@@ -348,7 +351,7 @@ const BookAppointmentForm = () => {
                   </S.SummaryItem>
                   <S.SummaryItem>
                     <FaCalendarAlt style={{ color: '#886217', marginRight: 6 }} />
-                    <strong>Appointment:</strong> {dayjs(fields.date).format('MMMM D, YYYY')}
+                    <strong>Appointment:</strong> {fields.date ? dayjs(fields.date).format('MMMM D, YYYY') : '—'}
                   </S.SummaryItem>
                   <S.SummaryItem>
                     <FaClock style={{ color: '#886217', marginRight: 6 }} />

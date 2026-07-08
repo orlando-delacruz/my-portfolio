@@ -13,11 +13,15 @@ const BookAppointment = lazy(() => import("../pages/public/BookAppointment"));
 const Login = lazy(() => import("../pages/auth"));
 const Dashboard = lazy(() => import("../pages/admin/Dashboard/Dashboard"));
 const Appointment = lazy(() => import("../pages/admin/Appointment"));
-const Patients = lazy(() => import("../pages/admin/Patients"))
-const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"))
+const Patients = lazy(() => import("../pages/admin/Patients"));
+const ClinicClosures = lazy(() => import("../pages/admin/ClinicClosures"));
 const AppointmentCalendar = lazy(() => import("../pages/admin/Calendar/AppointmentCalendar"));
-const Users = lazy(() => import("../pages/admin/Users"))
+const Users = lazy(() => import("../pages/admin/Users"));
 const Settings = lazy(() => import("../pages/admin/Settings"));
+
+// ── CMS pages (direct imports to avoid lazy destructuring) ──
+const ComingSoon = lazy(() => import("../pages/admin/CMS/ComingSoon"));
+const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 
 // ── Fallbacks ──
 const PageFallback = () => (
@@ -52,7 +56,7 @@ export default function PublicRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/book" element={<BookAppointment />} />
         <Route path="/cancel-appointment" element={<CancelAppointment />} />
-        <Route path="/unauthorized" element={<Unauthorized />} /> {/* NEW */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         <Route
           path="/login"
@@ -72,6 +76,18 @@ export default function PublicRoutes() {
           <Route path="patients" element={<Patients />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
+
+          {/* CMS Routes */}
+          <Route path="cms">
+            <Route path="services" element={<Services />} />
+            <Route path="hero" element={<ComingSoon title="Hero Section" />} />
+            <Route path="about" element={<ComingSoon title="About Section" />} />
+            <Route path="why-choose-us" element={<ComingSoon title="Why Choose Us" />} />
+            <Route path="testimonials" element={<ComingSoon title="Testimonials" />} />
+            <Route path="faqs" element={<ComingSoon title="FAQs" />} />
+            <Route path="contact" element={<ComingSoon title="Contact Section" />} />
+            <Route path="footer" element={<ComingSoon title="Footer" />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

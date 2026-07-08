@@ -1,25 +1,36 @@
 // src/components/ui/Modal/ServiceModal.jsx
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Modal } from "antd";
+import { Modal, Button } from "antd";
+import { CalendarOutlined } from "@ant-design/icons";
 import * as S from "./ServiceModal.styled";
+
+const formatPrice = (starting, maximum) => {
+  if (starting === undefined || starting === null) return null;
+  const start = Number(starting);
+  const max = Number(maximum);
+  if (start === max) return `₱${start.toLocaleString()}`;
+  return `₱${start.toLocaleString()} – ₱${max.toLocaleString()}`;
+};
 
 const ServiceModal = memo(({ service, open, onClose }) => {
   const navigate = useNavigate();
-
   if (!service) return null;
 
-  const { title, titleTl, fullDesc, image, imageAlt, starting_price, maximum_price } = service;
+  const {
+    title,
+    titleTl,
+    fullDesc,
+    image,
+    imageAlt,
+    starting_price,
+    maximum_price,
+  } = service;
 
-  const getPriceDisplay = () => {
-    if (!starting_price && !maximum_price) return null;
-    if (starting_price === maximum_price) {
-      return `₱${Number(starting_price).toLocaleString()}`;
-    }
-    return `₱${Number(starting_price).toLocaleString()} – ₱${Number(maximum_price).toLocaleString()}`;
-  };
+  const priceDisplay = formatPrice(starting_price, maximum_price);
 
-  const handleBookThisService = () => {
+  const handleBookNow = () => {
+    // Static navigation to the booking page – no query parameters or state.
     navigate("/book");
     onClose();
   };
@@ -40,7 +51,7 @@ const ServiceModal = memo(({ service, open, onClose }) => {
     >
       <S.ModalImage
         src={image}
-        alt={imageAlt}
+        alt={imageAlt || title}
         loading="lazy"
         decoding="async"
         width={600}
@@ -51,17 +62,23 @@ const ServiceModal = memo(({ service, open, onClose }) => {
           <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
           {titleTl && <S.ModalTitleTl>{titleTl}</S.ModalTitleTl>}
         </S.ModalTitleGroup>
-        {getPriceDisplay() && (
-          <S.ModalPrice>{getPriceDisplay()}</S.ModalPrice>
-        )}
+        {priceDisplay && <S.ModalPrice>{priceDisplay}</S.ModalPrice>}
         <S.ModalDesc>{fullDesc}</S.ModalDesc>
         <S.ModalFooter>
-          <S.BookButton
-            onClick={handleBookThisService}
-            aria-label={`Book an appointment for ${title}`}
+          <Button
+            type="primary"
+            icon={<CalendarOutlined />}
+            onClick={handleBookNow}
+            style={{
+              borderRadius: "50px",
+              height: "44px",
+              padding: "0 28px",
+              background: "#886217",
+              borderColor: "#886217",
+            }}
           >
             Book This Service
-          </S.BookButton>
+          </Button>
         </S.ModalFooter>
       </S.ModalBody>
     </Modal>

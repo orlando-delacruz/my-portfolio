@@ -90,11 +90,23 @@ export const CardDesc = styled.p`
   margin: 0;
   opacity: 0.8;
 
-  /* clamp to 3 lines */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+`;
+
+export const ButtonRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 4px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 export const ViewDetailsButton = styled.button`

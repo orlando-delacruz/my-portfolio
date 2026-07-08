@@ -1,8 +1,7 @@
 // src/components/admin/SideBar/SideBar.styled.js
-import styled from "styled-components";
-import adminTheme from "../../../styles/adminTheme";
+import styled, { css } from 'styled-components';
+import adminTheme from '../../../styles/adminTheme';
 
-// Nav pill fills the 10px-padded SidebarSlot entirely
 export const Nav = styled.nav`
   width: 100%;
   height: 100%;
@@ -15,7 +14,6 @@ export const Nav = styled.nav`
   overflow-y: auto;
   overflow-x: hidden;
 
-  /* Custom scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 
@@ -47,7 +45,7 @@ export const BrandName = styled.span`
   font-size: 18px;
   font-weight: 400;
   color: ${adminTheme.colors.ivory};
-  font-family: "Dancing Script", cursive;
+  font-family: 'Dancing Script', cursive;
   line-height: 1.3;
 `;
 
@@ -82,14 +80,14 @@ export const NavLinkBtn = styled.button`
   font-weight: 400;
   color: ${adminTheme.colors.white};
   background: ${({ $active }) =>
-    $active ? "rgba(255,255,255,0.22)" : "transparent"};
+    $active ? 'rgba(255,255,255,0.22)' : 'transparent'};
   transition: background 0.2s ease;
   text-align: left;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   line-height: 1.5;
 
   svg {
-    font-size: 19px;
+    font-size: 14px;
     flex-shrink: 0;
     opacity: ${({ $active }) => ($active ? 1 : 0.8)};
   }
@@ -102,4 +100,32 @@ export const NavLinkBtn = styled.button`
     outline: 2px solid rgba(255, 255, 255, 0.55);
     outline-offset: 2px;
   }
+
+  ${({ $nested }) =>
+    $nested &&
+    css`
+      padding-left: 40px;
+      font-size: 14px;
+      gap: 10px;
+    `}
+`;
+
+export const ExpandIcon = styled.span`
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: transform 0.25s ease-in-out;
+  color: rgba(255, 255, 255, 0.8);
+  transform: rotate(${({ $expanded }) => ($expanded ? '0deg' : '180deg')});
+`;
+
+export const SubNavList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  max-height: ${({ $expanded }) => ($expanded ? '500px' : '0')};
+  transition: max-height 0.3s ease;
 `;
