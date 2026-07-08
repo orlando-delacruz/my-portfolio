@@ -1,5 +1,5 @@
 // src/pages/admin/Dashboard/Dashboard.jsx
-import React, { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Spin, Alert, Tooltip, message } from "antd";
 import dayjs from "dayjs";
@@ -10,10 +10,10 @@ import {
   MdUpcoming,
   MdCheckCircle,
   MdPendingActions,
-  MdBookOnline,
   MdAssessment,
   MdSchedule,
   MdPersonAdd,
+  MdAccessTime,
 } from "react-icons/md";
 import { BsCalendar2Check } from "react-icons/bs";
 import { FiXCircle } from "react-icons/fi";
@@ -23,7 +23,6 @@ import { useAuthStore } from "../../../store/authStore";
 import useDashboard from "./useDashboard";
 import { useDashboardData } from "../../../hooks/useDashboardData";
 import { useRealtimeAppointments } from "../../../hooks/useRealtimeAppointments";
-import { quickActions } from "../../../data/admin/dashboard";
 import {
   AddAppointmentModal,
   RescheduleModal,
@@ -64,6 +63,9 @@ const ACTIVITY_ICONS = {
   default: BsCalendar2Check,
 };
 
+// Compact preview shows at most this many rows; internal scroll handles the rest.
+const SCHEDULE_PREVIEW_LIMIT = 7;
+
 // ── Status Badge ──
 const StatusBadge = memo(({ status }) => {
   const cfg = STATUS_CONFIG[status] ?? {
@@ -81,10 +83,21 @@ const StatusBadge = memo(({ status }) => {
 StatusBadge.displayName = 'StatusBadge';
 
 // ── Stats Card ──
-const StatCard = memo(({ stat, value }) => {
+const StatCard = memo(({ stat, value, onClick }) => {
   const Icon = stat.icon;
   return (
-    <S.StatCard role="listitem">
+    <S.StatCard
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      aria-label={`${stat.label}: ${value} — click to view filtered appointments`}
+    >
       <S.StatIconWrap $color={stat.iconColor} aria-hidden="true">
         <Icon />
       </S.StatIconWrap>
@@ -110,7 +123,7 @@ const Dashboard = () => {
   useRealtimeAppointments(() => refetch());
 
   const {
-    addOpen, addLoading, openAdd, closeAdd, handleAdd,
+    addOpen, addLoading, closeAdd, handleAdd,
     rescheduleOpen, rescheduleLoading, rescheduleTargetId,
     openReschedule, closeReschedule, handleReschedule,
   } = useAppointmentModal({
@@ -123,17 +136,37 @@ const Dashboard = () => {
 
   const goTo = useCallback((path) => navigate(path), [navigate]);
 
-  const handleQuickAction = useCallback((action) => {
-    if (action.id === 'qa1') {
-      openAdd();
-    } else if (action.id === 'qa4') {
-      goTo('/admin/appointments');
-    } else if (action.id === 'qa3') {
-      navigate('/admin/clinic-closures', { state: { openAddModal: true } });
-    } else {
-      goTo('/admin/dashboard');
+  // ── Navigate to appointments with filters via URL params ──
+  const handleStatClick = useCallback((statId) => {
+    const params = new URLSearchParams();
+    switch (statId) {
+      case 'today':
+        // All appointments for today, regardless of status
+        params.set('date', 'today');
+        break;
+      case 'upcoming':
+        // All appointments from tomorrow onward (no status filter)
+        params.set('date', 'upcoming');
+        break;
+      case 'completed':
+        // Today's completed appointments
+        params.set('date', 'today');
+        params.set('status', 'completed');
+        break;
+      case 'pending':
+        // All pending appointments (regardless of date) – matches dashboard count
+        params.set('status', 'pending');
+        break;
+      case 'walkins':
+        // Today's walk-in appointments
+        params.set('date', 'today');
+        params.set('type', 'walkin');
+        break;
+      default:
+        return;
     }
-  }, [openAdd, goTo, navigate]);
+    navigate(`/admin/appointments?${params.toString()}`);
+  }, [navigate]);
 
   const statsConfig = useMemo(
     () => [
@@ -169,7 +202,7 @@ const Dashboard = () => {
         label: 'Pending',
         icon: MdPendingActions,
         iconColor: '#FFA000',
-        note: 'today',
+        note: 'Pending',
         noteColor: '#FFA000',
         value: data?.stats?.pending ?? 0,
       },
@@ -256,6 +289,7 @@ const Dashboard = () => {
   }
 
   const schedule = data?.schedule ?? [];
+  const displayedSchedule = schedule.slice(0, SCHEDULE_PREVIEW_LIMIT);
   const upcoming = data?.upcoming ?? [];
   const activity = data?.activity ?? [];
   const nextAppointment = data?.nextAppointment ?? {
@@ -271,6 +305,7 @@ const Dashboard = () => {
   return (
     <AdminLayout>
       <S.Page>
+        {/* Row 1: Header */}
         <S.WelcomeBar>
           <S.WelcomeText>
             <S.WelcomeHeading>{greeting}</S.WelcomeHeading>
@@ -287,42 +322,59 @@ const Dashboard = () => {
           </S.DateBadge>
         </S.WelcomeBar>
 
+        {/* Row 2: Stats */}
         <S.StatsGrid role="list" aria-label="Clinic statistics">
           {statsConfig.map((stat) => (
-            <StatCard key={stat.id} stat={stat} value={stat.value} />
+            <StatCard
+              key={stat.id}
+              stat={stat}
+              value={stat.value}
+              onClick={() => handleStatClick(stat.id)}
+            />
           ))}
         </S.StatsGrid>
 
-        <S.TwoColGrid>
+        {/* Row 3: Next Appointment (left) | Today's Schedule (right) */}
+        <S.MainContentGrid>
+          {/* Next Appointment — gradient hero card */}
           <S.NextApptCard aria-label="Next appointment details">
             <S.NextApptLabel>
-              <BsCalendar2Check aria-hidden="true" />
+              <MdAccessTime aria-hidden="true" />
               Next Appointment
             </S.NextApptLabel>
+
+            <S.NextApptTime>{nextAppointment.time}</S.NextApptTime>
+
             <S.NextApptBody>
               <S.AvatarCircle $color={nextAppointment.avatarColor} aria-hidden="true">
                 {nextAppointment.patient?.[0] ?? '?'}
               </S.AvatarCircle>
               <S.NextApptInfo>
                 <S.NextApptName>{nextAppointment.patient}</S.NextApptName>
-                <S.NextApptMeta>
-                  <S.TimeBadge>{nextAppointment.time}</S.TimeBadge>
-                  <S.NextApptDate>{nextAppointment.date}</S.NextApptDate>
-                </S.NextApptMeta>
                 <S.NextApptService>{nextAppointment.service}</S.NextApptService>
+                {nextAppointment.branch && (
+                  <S.NextApptDate>{nextAppointment.branch}</S.NextApptDate>
+                )}
+                {!nextAppointment.branch && nextAppointment.date && (
+                  <S.NextApptDate>{nextAppointment.date}</S.NextApptDate>
+                )}
               </S.NextApptInfo>
             </S.NextApptBody>
-            <div>
-              <S.Divider />
-              <S.ViewApptBtn
-                onClick={handleViewAppointment}
-                disabled={!nextAppointment.id}
-              >
-                View Appointment
-              </S.ViewApptBtn>
-            </div>
+
+            {nextAppointment.status && (
+              <StatusBadge status={nextAppointment.status} />
+            )}
+
+            <S.Divider />
+            <S.ViewApptBtn
+              onClick={handleViewAppointment}
+              disabled={!nextAppointment.id}
+            >
+              View Details
+            </S.ViewApptBtn>
           </S.NextApptCard>
 
+          {/* Today's Schedule — compact preview */}
           <S.ScheduleCard>
             <S.ScheduleHeader>
               <S.ScheduleTitle>
@@ -333,6 +385,9 @@ const Dashboard = () => {
                 View Calendar
               </S.ViewCalendarLink>
             </S.ScheduleHeader>
+            <S.ScheduleSubtitle>
+              Appointments scheduled for today.
+            </S.ScheduleSubtitle>
             <S.ScheduleScrollWrapper>
               <S.ScheduleTable>
                 <S.ScheduleThead>
@@ -344,14 +399,14 @@ const Dashboard = () => {
                   </tr>
                 </S.ScheduleThead>
                 <tbody>
-                  {schedule.length === 0 ? (
+                  {displayedSchedule.length === 0 ? (
                     <tr>
                       <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#888' }}>
                         No appointments scheduled for today
                       </td>
                     </tr>
                   ) : (
-                    schedule.map((row) => (
+                    displayedSchedule.map((row) => (
                       <tr key={row.id}>
                         <S.ScheduleTd>{row.time}</S.ScheduleTd>
                         <S.ScheduleTd>{row.patient}</S.ScheduleTd>
@@ -366,8 +421,9 @@ const Dashboard = () => {
               </S.ScheduleTable>
             </S.ScheduleScrollWrapper>
           </S.ScheduleCard>
-        </S.TwoColGrid>
+        </S.MainContentGrid>
 
+        {/* Row 4: Three columns (Upcoming, Recent Activity, Walk-ins) */}
         <S.ThreeColGrid>
           <S.Panel>
             <S.PanelHeader>
@@ -480,54 +536,6 @@ const Dashboard = () => {
                   </S.ApptRow>
                 ))
               )}
-            </S.PanelContent>
-          </S.Panel>
-
-          <S.Panel>
-            <S.PanelHeader>
-              <S.PanelTitle>
-                <MdBookOnline aria-hidden="true" />
-                Quick Actions
-              </S.PanelTitle>
-            </S.PanelHeader>
-            <S.PanelContent>
-              <S.QuickGrid role="list">
-                {quickActions.map((action) => {
-                  const ActionIcon = action.icon;
-                  const isComingSoon = action.isComingSoon || false;
-                  const hasFunctionality = ['qa1', 'qa3', 'qa4'].includes(action.id);
-                  const handleClick = hasFunctionality
-                    ? () => handleQuickAction(action)
-                    : () => goTo('/admin/dashboard');
-
-                  const button = (
-                    <S.QuickBtn
-                      $color={action.color}
-                      $bg={action.bg}
-                      onClick={handleClick}
-                      aria-label={action.label}
-                      role="listitem"
-                      style={{ opacity: isComingSoon ? 0.5 : 1 }}
-                    >
-                      <ActionIcon aria-hidden="true" />
-                      <span>{action.label}</span>
-                    </S.QuickBtn>
-                  );
-
-                  return isComingSoon ? (
-                    <Tooltip
-                      key={action.id}
-                      title="This feature is coming soon."
-                      placement="top"
-                      color="#886217"
-                    >
-                      {button}
-                    </Tooltip>
-                  ) : (
-                    <React.Fragment key={action.id}>{button}</React.Fragment>
-                  );
-                })}
-              </S.QuickGrid>
             </S.PanelContent>
           </S.Panel>
         </S.ThreeColGrid>

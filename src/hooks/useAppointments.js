@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../services/supabase/supabase";
 
-export function useAppointments(source = null) {
+export function useAppointments(source = null, excludeCancelled = false) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,6 +38,11 @@ export function useAppointments(source = null) {
           }
         }
 
+        // Exclude cancelled appointments if flag is true
+        if (excludeCancelled) {
+          query = query.neq('appointment_status', 'cancelled');
+        }
+
         const { data, error: fetchError } = await query;
         if (cancelled) return;
         if (fetchError) setError(fetchError);
@@ -57,7 +62,7 @@ export function useAppointments(source = null) {
     return () => {
       cancelled = true;
     };
-  }, [fetchTrigger, source]);
+  }, [fetchTrigger, source, excludeCancelled]);
 
   return { appointments, loading, error, refetch };
 }
