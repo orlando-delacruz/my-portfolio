@@ -3,9 +3,6 @@ import { supabase } from "./supabase/supabase";
 import dayjs from "dayjs";
 import { getOperatingHoursForDay } from "../utils/scheduling";
 
-// ── Constants ──
-// No global constant; interval is passed dynamically.
-
 // ── Status Mapping ──
 export const STATUS_TO_DB = {
   pending: { approval_status: "waiting", appointment_status: "scheduled" },
@@ -26,10 +23,7 @@ function timeToMinutes(timeStr) {
   if (!timeStr) return NaN;
   const parts = timeStr.split(":").map(Number);
   if (parts.length < 2) return NaN;
-  const h = parts[0];
-  const m = parts[1];
-  if (isNaN(h) || isNaN(m)) return NaN;
-  return h * 60 + m;
+  return parts[0] * 60 + parts[1];
 }
 
 function formatMinutesToTime(minutes) {
@@ -40,7 +34,7 @@ function formatMinutesToTime(minutes) {
   return dayjs(`2000-01-01T${timeStr}`).format("h:mm A");
 }
 
-// ── Conflict Check (dynamic interval) ──
+// ── Conflict Check ──
 export async function hasBookingConflict({
   date,
   time,
@@ -238,6 +232,7 @@ export async function adminCreateAppointment({
   time,
   adminId,
   intervalMinutes = 30,
+  isWalkIn = false,
 }) {
   if (isPastAppointment(date, time)) {
     throw new Error(
@@ -276,7 +271,8 @@ export async function adminCreateAppointment({
       reference_number: refNumber,
       patient_id: patient.id,
       service_branch_id: serviceBranch.service_branch_id,
-      booked_by: "admin",
+      booked_by: isWalkIn ? "walk-in" : "admin",
+      is_walk_in: isWalkIn,
       preferred_date: date.format("YYYY-MM-DD"),
       preferred_time: time.format("HH:mm:ss"),
       snapshot_service_name: serviceBranch.name,
@@ -321,8 +317,6 @@ export async function adminRescheduleAppointment({
     );
   }
 
-  // We need branchId – fetch appointment first or pass it.
-  // For simplicity, we'll fetch the appointment to get branchId.
   const { data: apt, error: aptError } = await supabase
     .from("appointments")
     .select("service_branch:service_branches(branch_id)")
@@ -418,27 +412,31 @@ export async function adminBulkDeleteAppointments(appointmentIds, adminId) {
     return;
   }
 
+  if (adminId) {
+    const logEntries = appointmentIds.map((id) => ({
+      appointment_id: id,
+      action: "bulk_deleted",
+      description: `Bulk deleted ${appointmentIds.length} appointment(s)`,
+      performed_by: "admin",
+      admin_id: adminId,
+      status: null,
+    }));
+
+    const { error: logError } = await supabase
+      .from("appointment_logs")
+      .insert(logEntries);
+
+    if (logError) {
+      console.error("Failed to log bulk deletion:", logError);
+    }
+  }
+
   const { error: deleteError } = await supabase
     .from("appointments")
     .delete()
     .in("id", appointmentIds);
 
   if (deleteError) throw deleteError;
-
-  if (adminId) {
-    const { error: logError } = await supabase.from("appointment_logs").insert({
-      appointment_id: null,
-      action: "bulk_deleted",
-      description: `Bulk deleted ${appointmentIds.length} appointment(s)`,
-      performed_by: "admin",
-      admin_id: adminId,
-      status: null,
-    });
-
-    if (logError) {
-      console.error("Failed to log bulk deletion:", logError);
-    }
-  }
 }
 
 // ── Get single appointment ──

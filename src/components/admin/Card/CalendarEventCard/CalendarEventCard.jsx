@@ -10,6 +10,7 @@ const CalendarEventCard = memo(({
   onClick,
   branchInitial,
   branchColor,
+  isWalkIn = false,
 }) => {
   const statusInfo = STATUS_MAP[status];
 
@@ -27,6 +28,7 @@ const CalendarEventCard = memo(({
       </S.Row>
       <S.PatientName>{patientName}</S.PatientName>
       <S.StatusRow>
+        {isWalkIn && <S.WalkInBadge>Walk-in</S.WalkInBadge>}
         <S.StatusBadge $color={statusInfo?.color} $bg={statusInfo?.bg}>
           {statusInfo?.label ?? status}
         </S.StatusBadge>

@@ -1,19 +1,17 @@
 // src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.jsx
 import { memo, useState, useEffect, useMemo } from 'react';
-import { Modal, Card, Descriptions, Tag, Dropdown, Button, Spin, Divider, Tooltip } from 'antd';
+import { Modal, Card, Tag, Dropdown, Button, Spin, Divider, Tooltip } from 'antd';
 import {
   UserOutlined,
   PhoneOutlined,
   MailOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
-  ClockCircleOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   ExclamationCircleOutlined,
   ScheduleOutlined,
-  MoreOutlined,
   EditOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -21,7 +19,7 @@ import { getAppointmentById } from '../../../../services/appointments';
 import { dbStatusToForm } from '../../../../services/appointments';
 import * as S from './AppointmentDetailsModal.styled';
 
-// ── Status Badge Component ──
+// ── Status Badge ──
 const StatusBadge = memo(({ status }) => {
   const config = {
     pending: { color: '#F2B90F', icon: <ExclamationCircleOutlined />, label: 'Pending' },
@@ -98,10 +96,11 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
     const age = patient.birth_date ? dayjs().diff(dayjs(patient.birth_date), 'year') : null;
     const dateStr = dayjs(appointment.preferred_date).format('MMMM D, YYYY');
     const timeStr = dayjs(appointment.preferred_time, 'HH:mm:ss').format('h:mm A');
+    const isWalkIn = appointment.is_walk_in || false;
 
     return (
       <S.Content>
-        {/* Header: Patient Info + Action Buttons */}
+        {/* Header */}
         <S.Header>
           <S.PatientInfo>
             <S.PatientName>{fullName || '—'}</S.PatientName>
@@ -114,24 +113,29 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
             </S.PatientMeta>
           </S.PatientInfo>
           <S.ActionBar>
-            <Dropdown
-              menu={{
-                items: statusItems.map((item) => ({
-                  key: item.key,
-                  label: item.label,
-                  onClick: () => handleStatusChange(item.key),
-                })),
-              }}
-              trigger={['click']}
-              placement="bottomRight"
-            >
-              <Button type="primary" size="small">
-                <EditOutlined /> Set Status
-              </Button>
-            </Dropdown>
-            <Button size="small" onClick={() => onReschedule(appointment.id)}>
-              <CalendarOutlined /> Reschedule
-            </Button>
+            <Tooltip title="Set Status">
+              <Dropdown
+                menu={{
+                  items: statusItems.map((item) => ({
+                    key: item.key,
+                    label: item.label,
+                    onClick: () => handleStatusChange(item.key),
+                  })),
+                }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button icon={<EditOutlined />} shape="circle" size="small" />
+              </Dropdown>
+            </Tooltip>
+            <Tooltip title="Reschedule Appointment">
+              <Button
+                icon={<CalendarOutlined />}
+                shape="circle"
+                size="small"
+                onClick={() => onReschedule(appointment.id)}
+              />
+            </Tooltip>
           </S.ActionBar>
         </S.Header>
 
@@ -191,7 +195,13 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
             </S.InfoItem>
             <S.InfoItem>
               <S.InfoLabel>Booking Source</S.InfoLabel>
-              <S.InfoValue>{appointment.booked_by || 'website'}</S.InfoValue>
+              <S.InfoValue>
+                {isWalkIn ? (
+                  <Tag color="purple">Walk-in</Tag>
+                ) : (
+                  <Tag color="blue">Online</Tag>
+                )}
+              </S.InfoValue>
             </S.InfoItem>
             <S.InfoItem>
               <S.InfoLabel>Created At</S.InfoLabel>

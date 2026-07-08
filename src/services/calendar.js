@@ -27,7 +27,6 @@ export async function fetchCalendarAppointments(
 
   const dateFilter = `preferred_date.gte.${startOfMonth},preferred_date.lte.${endOfMonth},confirmed_date.gte.${startOfMonth},confirmed_date.lte.${endOfMonth}`;
 
-  // Build the base query with nested relations, using !inner for branch filtering if needed
   let query = supabase
     .from("appointments")
     .select(`
@@ -40,6 +39,7 @@ export async function fetchCalendarAppointments(
       approval_status,
       appointment_status,
       snapshot_service_name,
+      is_walk_in,
       patient:patients(
         id,
         first_name,
@@ -58,12 +58,10 @@ export async function fetchCalendarAppointments(
     .or(dateFilter)
     .order("preferred_date", { ascending: true });
 
-  // Apply branch filter if a valid UUID is provided
   if (branchId && isValidUUID(branchId)) {
     query = query.eq("service_branch.branch_id", branchId);
   }
 
-  // Apply status filter
   if (statusFilter && statusFilter !== "all") {
     if (statusFilter === "confirmed") {
       query = query
@@ -83,7 +81,6 @@ export async function fetchCalendarAppointments(
   const { data, error } = await query;
   if (error) throw error;
 
-  // Transform data
   return (data || []).map((apt) => {
     const date = apt.confirmed_date || apt.preferred_date;
     const time = apt.confirmed_time || apt.preferred_time;
@@ -127,6 +124,7 @@ export async function fetchCalendarAppointments(
       status,
       isOrthodontic: patient.is_orthodontic || false,
       phoneNumber: patient.phone_number || "",
+      isWalkIn: apt.is_walk_in || false,
       appointment: apt,
     };
   });

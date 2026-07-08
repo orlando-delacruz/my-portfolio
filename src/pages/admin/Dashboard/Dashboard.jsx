@@ -13,6 +13,7 @@ import {
   MdBookOnline,
   MdAssessment,
   MdSchedule,
+  MdPersonAdd,
 } from "react-icons/md";
 import { BsCalendar2Check } from "react-icons/bs";
 import { FiXCircle } from "react-icons/fi";
@@ -33,7 +34,7 @@ import { STATUS_CONFIG } from "../../../data/admin/appointment";
 import { adminUpdateAppointmentStatus } from "../../../services/appointments";
 import * as S from "./Dashboard.styled";
 
-// ── Extend dayjs with relative time plugins ──
+// ── Extend dayjs ──
 dayjs.extend(relativeTime);
 dayjs.extend(updateLocale);
 dayjs.updateLocale('en', {
@@ -54,7 +55,7 @@ dayjs.updateLocale('en', {
   },
 });
 
-// ── Constants ──
+// ── Activity Icons ──
 const ACTIVITY_ICONS = {
   created: BsCalendar2Check,
   status_changed: MdCheckCircle,
@@ -63,7 +64,7 @@ const ACTIVITY_ICONS = {
   default: BsCalendar2Check,
 };
 
-// ── Status Badge Component ──
+// ── Status Badge ──
 const StatusBadge = memo(({ status }) => {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
@@ -79,7 +80,7 @@ const StatusBadge = memo(({ status }) => {
 });
 StatusBadge.displayName = 'StatusBadge';
 
-// ── Stats Card Component ──
+// ── Stats Card ──
 const StatCard = memo(({ stat, value }) => {
   const Icon = stat.icon;
   return (
@@ -104,18 +105,10 @@ const Dashboard = () => {
   const authLoading = useAuthStore((state) => state.loading);
   const user = useAuthStore((state) => state.user);
 
-  // ── Use dynamic greeting hook with profile and auth user ──
   const { greeting, formattedDate, dayName } = useDashboard(profile, user);
-
-  // ── Fetch real dashboard data ──
   const { data, loading: dashboardLoading, error, refetch } = useDashboardData();
+  useRealtimeAppointments(() => refetch());
 
-  // ── Realtime updates ──
-  useRealtimeAppointments(() => {
-    refetch();
-  });
-
-  // ── Modal hook ──
   const {
     addOpen, addLoading, openAdd, closeAdd, handleAdd,
     rescheduleOpen, rescheduleLoading, rescheduleTargetId,
@@ -125,28 +118,23 @@ const Dashboard = () => {
     onRescheduleSuccess: () => refetch(),
   });
 
-  // ── Details Modal state ──
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
-  // ── Navigation helpers ──
   const goTo = useCallback((path) => navigate(path), [navigate]);
 
-  // ── Handle quick action clicks ──
   const handleQuickAction = useCallback((action) => {
     if (action.id === 'qa1') {
       openAdd();
     } else if (action.id === 'qa4') {
       goTo('/admin/appointments');
     } else if (action.id === 'qa3') {
-      // Navigate to Clinic Closures page with state to open add modal
       navigate('/admin/clinic-closures', { state: { openAddModal: true } });
     } else {
       goTo('/admin/dashboard');
     }
   }, [openAdd, goTo, navigate]);
 
-  // ── Stats mapping ──
   const statsConfig = useMemo(
     () => [
       {
@@ -185,11 +173,19 @@ const Dashboard = () => {
         noteColor: '#FFA000',
         value: data?.stats?.pending ?? 0,
       },
+      {
+        id: 'walkins',
+        label: "Today's Walk-ins",
+        icon: MdPersonAdd,
+        iconColor: '#B75DEB',
+        note: 'walk-in patients',
+        noteColor: '#B75DEB',
+        value: data?.walkInCount ?? 0,
+      },
     ],
     [data]
   );
 
-  // ── Handlers for Details Modal ──
   const handleViewAppointment = useCallback(() => {
     const nextAppt = data?.nextAppointment;
     if (nextAppt?.id) {
@@ -230,10 +226,8 @@ const Dashboard = () => {
     [handleCloseDetails, openReschedule]
   );
 
-  // ── Combined loading state ──
   const isLoading = authLoading || dashboardLoading;
 
-  // ── Loading / Error states ──
   if (isLoading) {
     return (
       <AdminLayout>
@@ -252,7 +246,7 @@ const Dashboard = () => {
         <S.Page>
           <Alert
             type="error"
-            message="Failed to load dashboard"
+            title="Failed to load dashboard"
             description={error}
             showIcon
           />
@@ -261,7 +255,6 @@ const Dashboard = () => {
     );
   }
 
-  // ── Extract data with fallbacks ──
   const schedule = data?.schedule ?? [];
   const upcoming = data?.upcoming ?? [];
   const activity = data?.activity ?? [];
@@ -273,11 +266,11 @@ const Dashboard = () => {
     avatarColor: '#888888',
     id: null,
   };
+  const walkIns = data?.walkIns ?? [];
 
   return (
     <AdminLayout>
       <S.Page>
-        {/* ── Welcome bar ── */}
         <S.WelcomeBar>
           <S.WelcomeText>
             <S.WelcomeHeading>{greeting}</S.WelcomeHeading>
@@ -285,7 +278,6 @@ const Dashboard = () => {
               Here's what's happening to your clinic today.
             </S.WelcomeSubtitle>
           </S.WelcomeText>
-
           <S.DateBadge aria-label={`Today: ${formattedDate}, ${dayName}`}>
             <MdCalendarToday aria-hidden="true" />
             <S.DateInfo>
@@ -295,21 +287,18 @@ const Dashboard = () => {
           </S.DateBadge>
         </S.WelcomeBar>
 
-        {/* ── Stat cards ── */}
         <S.StatsGrid role="list" aria-label="Clinic statistics">
           {statsConfig.map((stat) => (
             <StatCard key={stat.id} stat={stat} value={stat.value} />
           ))}
         </S.StatsGrid>
 
-        {/* ── Next Appt + Schedule ── */}
         <S.TwoColGrid>
           <S.NextApptCard aria-label="Next appointment details">
             <S.NextApptLabel>
               <BsCalendar2Check aria-hidden="true" />
               Next Appointment
             </S.NextApptLabel>
-
             <S.NextApptBody>
               <S.AvatarCircle $color={nextAppointment.avatarColor} aria-hidden="true">
                 {nextAppointment.patient?.[0] ?? '?'}
@@ -323,7 +312,6 @@ const Dashboard = () => {
                 <S.NextApptService>{nextAppointment.service}</S.NextApptService>
               </S.NextApptInfo>
             </S.NextApptBody>
-
             <div>
               <S.Divider />
               <S.ViewApptBtn
@@ -335,7 +323,6 @@ const Dashboard = () => {
             </div>
           </S.NextApptCard>
 
-          {/* Today's schedule table */}
           <S.ScheduleCard>
             <S.ScheduleHeader>
               <S.ScheduleTitle>
@@ -381,9 +368,7 @@ const Dashboard = () => {
           </S.ScheduleCard>
         </S.TwoColGrid>
 
-        {/* ── 3-col grid ── */}
         <S.ThreeColGrid>
-          {/* Upcoming appointments */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -396,7 +381,7 @@ const Dashboard = () => {
             </S.PanelHeader>
             <S.PanelContent>
               {upcoming.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontize: '13px' }}>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
                   No upcoming appointments
                 </div>
               ) : (
@@ -421,7 +406,6 @@ const Dashboard = () => {
             </S.PanelContent>
           </S.Panel>
 
-          {/* Recent activity */}
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -431,7 +415,7 @@ const Dashboard = () => {
             </S.PanelHeader>
             <S.PanelContent>
               {activity.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontize: '13px' }}>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
                   No recent activity
                 </div>
               ) : (
@@ -465,7 +449,40 @@ const Dashboard = () => {
             </S.PanelContent>
           </S.Panel>
 
-          {/* Quick actions */}
+          <S.Panel>
+            <S.PanelHeader>
+              <S.PanelTitle>
+                <MdPersonAdd aria-hidden="true" />
+                Today's Walk-ins
+              </S.PanelTitle>
+            </S.PanelHeader>
+            <S.PanelContent>
+              {walkIns.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                  No walk-in patients today.
+                </div>
+              ) : (
+                walkIns.map((walkin) => (
+                  <S.ApptRow key={walkin.id} role="listitem">
+                    <S.ApptLeft>
+                      <S.ApptAvatar $color="#B75DEB" aria-hidden="true">
+                        {walkin.patient_name?.[0] ?? '?'}
+                      </S.ApptAvatar>
+                      <S.ApptDetails>
+                        <S.ApptName>{walkin.patient_name}</S.ApptName>
+                        <S.ApptService>{walkin.service}</S.ApptService>
+                      </S.ApptDetails>
+                    </S.ApptLeft>
+                    <S.ApptRight>
+                      <S.ApptDate>{walkin.time}</S.ApptDate>
+                      <S.ApptTime>{walkin.branch}</S.ApptTime>
+                    </S.ApptRight>
+                  </S.ApptRow>
+                ))
+              )}
+            </S.PanelContent>
+          </S.Panel>
+
           <S.Panel>
             <S.PanelHeader>
               <S.PanelTitle>
@@ -478,10 +495,7 @@ const Dashboard = () => {
                 {quickActions.map((action) => {
                   const ActionIcon = action.icon;
                   const isComingSoon = action.isComingSoon || false;
-                  const isBookAppointment = action.id === 'qa1';
-                  const isAppointmentList = action.id === 'qa4';
-                  const isAddClosure = action.id === 'qa3';
-                  const hasFunctionality = isBookAppointment || isAppointmentList || isAddClosure;
+                  const hasFunctionality = ['qa1', 'qa3', 'qa4'].includes(action.id);
                   const handleClick = hasFunctionality
                     ? () => handleQuickAction(action)
                     : () => goTo('/admin/dashboard');
@@ -519,7 +533,6 @@ const Dashboard = () => {
         </S.ThreeColGrid>
       </S.Page>
 
-      {/* ── Add Appointment Modal ── */}
       <AddAppointmentModal
         open={addOpen}
         loading={addLoading}
@@ -527,7 +540,6 @@ const Dashboard = () => {
         onSubmit={handleAdd}
       />
 
-      {/* ── Reschedule Modal ── */}
       <RescheduleModal
         open={rescheduleOpen}
         appointmentId={rescheduleTargetId}
@@ -536,7 +548,6 @@ const Dashboard = () => {
         onSubmit={handleReschedule}
       />
 
-      {/* ── Appointment Details Modal ── */}
       <AppointmentDetailsModal
         open={detailsModalOpen}
         appointmentId={selectedAppointmentId}

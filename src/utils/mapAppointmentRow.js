@@ -25,8 +25,9 @@ export function mapAppointmentRow(apt) {
     ),
     reason: apt.snapshot_service_name ?? apt.service_branch?.service?.name,
     status: dbStatusToForm(apt.approval_status, apt.appointment_status),
-    rawDate, // for sorting
-    rawTime, // for sorting
-    createdAt: apt.created_at, // ISO timestamp for sorting tie-breaker
+    rawDate,
+    rawTime,
+    createdAt: apt.created_at,
+    isWalkIn: apt.is_walk_in || false,
   };
 }

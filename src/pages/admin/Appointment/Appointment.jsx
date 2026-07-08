@@ -36,8 +36,18 @@ const STATUS_RANK = {
 const getStatusRank = (status) => STATUS_RANK[status] ?? 99;
 
 const Appointment = () => {
-  const { appointments: rawAppointments, loading, refetch } = useAppointments();
   const profile = useAuthStore((s) => s.profile);
+
+  const [filters, setFilters] = useState({
+    dateRange: null,
+    branch: 'all',
+    status: 'all',
+    search: '',
+    source: 'all', // ✅ new filter for appointment source
+  });
+
+  // ── Fetch appointments from hook with source filter ──
+  const { appointments: rawAppointments, loading, refetch } = useAppointments(filters.source);
 
   const mappedAppointments = useMemo(
     () => rawAppointments.map(mapAppointmentRow),
@@ -57,13 +67,6 @@ const Appointment = () => {
     });
   }, [mappedAppointments]);
 
-  const [filters, setFilters] = useState({
-    dateRange: null,
-    branch: 'all',
-    status: 'all',
-    search: '',
-  });
-
   const [selected, setSelected] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -81,6 +84,7 @@ const Appointment = () => {
     onRescheduleSuccess: () => refetch(),
   });
 
+  // ── Apply frontend filters (branch, status, date, search) ──
   const filtered = useMemo(() => {
     let result = [...sortedAppointments];
 
@@ -190,6 +194,7 @@ const Appointment = () => {
       branch: 'all',
       status: 'all',
       search: '',
+      source: 'all',
     });
     setSelected(new Set());
     setCurrentPage(1);

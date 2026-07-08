@@ -1,12 +1,8 @@
 // src/hooks/useDashboardData.js
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../store/authStore";
-import { getDashboardData } from "../services/dashboard";
+import { getDashboardData, getWalkInCount, getTodayWalkIns } from "../services/dashboard";
 
-/**
- * Custom hook for fetching dashboard data with loading/error states
- * Automatically refetches when auth user changes
- */
 export function useDashboardData(branchId = null) {
   const profile = useAuthStore((s) => s.profile);
   const [data, setData] = useState(null);
@@ -31,9 +27,18 @@ export function useDashboardData(branchId = null) {
       setError(null);
 
       try {
-        const result = await getDashboardData(profile.id, branchId);
+        const [mainData, walkInCount, walkIns] = await Promise.all([
+          getDashboardData(profile.id, branchId),
+          getWalkInCount(), // ✅ removed adminId
+          getTodayWalkIns(), // ✅ removed adminId
+        ]);
+
         if (!cancelled) {
-          setData(result);
+          setData({
+            ...mainData,
+            walkInCount,
+            walkIns,
+          });
         }
       } catch (err) {
         console.error("Dashboard fetch error:", err);

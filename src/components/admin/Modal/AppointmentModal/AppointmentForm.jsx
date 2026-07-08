@@ -135,7 +135,7 @@ const AppointmentForm = memo(({
       form={form}
       layout="vertical"
       requiredMark={false}
-      initialValues={{ isOrthodontic: false }}
+      initialValues={{ isOrthodontic: false, isWalkIn: false }}
     >
       <S.FormGrid>
         {/* ── Patient Type Tabs ── */}
@@ -219,15 +219,26 @@ const AppointmentForm = memo(({
         </Form.Item>
 
         {showPatientSelector && isNewPatient && (
-          <S.FullWidth>
-            <Form.Item
-              name="isOrthodontic"
-              valuePropName="checked"
-              label="Mark as Orthodontic Patient"
-            >
-              <Switch />
-            </Form.Item>
-          </S.FullWidth>
+          <>
+            <S.FullWidth>
+              <Form.Item
+                name="isOrthodontic"
+                valuePropName="checked"
+                label="Mark as Orthodontic Patient"
+              >
+                <Switch />
+              </Form.Item>
+            </S.FullWidth>
+            <S.FullWidth>
+              <Form.Item
+                name="isWalkIn"
+                valuePropName="checked"
+                label="Is Walk-in?"
+              >
+                <Switch />
+              </Form.Item>
+            </S.FullWidth>
+          </>
         )}
 
         {/* ── Appointment Information Section ── */}

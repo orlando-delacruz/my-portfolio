@@ -32,7 +32,6 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         if (values.patientType === "ortho" && values.selectedOrthodonticPatient) {
           patient = values.selectedOrthodonticPatient;
         } else {
-          // ── Find or create patient with orthodontic flag and branch ──
           patient = await findOrCreatePatient({
             firstName: values.firstName,
             middleName: values.middleName || "",
@@ -43,7 +42,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
             phoneNumber: getRawPhoneDigits(values.phoneNumber),
             address: values.address,
             isOrthodontic: values.isOrthodontic || false,
-            branchId: values.branchId, // ✅ Pass branch from appointment
+            branchId: values.branchId,
           });
         }
 
@@ -70,6 +69,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           time: dayjs(values.time),
           adminId: profile?.id,
           intervalMinutes,
+          isWalkIn: values.isWalkIn || false,
         });
 
         const newRecord = toAppointmentRow({
