@@ -1,6 +1,6 @@
 // src/components/admin/Modal/AppointmentDetailsModal/AppointmentDetailsModal.jsx
 import { memo, useState, useEffect, useMemo } from 'react';
-import { Modal, Card, Tag, Dropdown, Button, Spin, Divider, Tooltip } from 'antd';
+import { Modal, Card, Tag, Dropdown, Button, Spin, Divider, Tooltip, Typography } from 'antd';
 import {
   UserOutlined,
   PhoneOutlined,
@@ -13,11 +13,14 @@ import {
   ExclamationCircleOutlined,
   ScheduleOutlined,
   EditOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getAppointmentById } from '../../../../services/appointments';
 import { dbStatusToForm } from '../../../../services/appointments';
 import * as S from './AppointmentDetailsModal.styled';
+
+const { Text } = Typography;
 
 // ── Status Badge ──
 const StatusBadge = memo(({ status }) => {
@@ -94,13 +97,19 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
       .join(' ')
       .trim();
     const age = patient.birth_date ? dayjs().diff(dayjs(patient.birth_date), 'year') : null;
-    const dateStr = dayjs(appointment.preferred_date).format('MMMM D, YYYY');
-    const timeStr = dayjs(appointment.preferred_time, 'HH:mm:ss').format('h:mm A');
+
+    // Use confirmed date/time if available, otherwise preferred
+    const displayDate = appointment.confirmed_date || appointment.preferred_date;
+    const displayTime = appointment.confirmed_time || appointment.preferred_time;
+    const dateStr = displayDate ? dayjs(displayDate).format('MMMM D, YYYY') : '—';
+    const timeStr = displayTime ? dayjs(displayTime, 'HH:mm:ss').format('h:mm A') : '—';
+
     const isWalkIn = appointment.is_walk_in || false;
+    const referenceNumber = appointment.reference_number || '—';
 
     return (
       <S.Content>
-        {/* Header */}
+        {/* Header with patient name */}
         <S.Header>
           <S.PatientInfo>
             <S.PatientName>{fullName || '—'}</S.PatientName>
@@ -112,36 +121,99 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
               <span>{dateStr} • {timeStr}</span>
             </S.PatientMeta>
           </S.PatientInfo>
-          <S.ActionBar>
-            <Tooltip title="Set Status">
-              <Dropdown
-                menu={{
-                  items: statusItems.map((item) => ({
-                    key: item.key,
-                    label: item.label,
-                    onClick: () => handleStatusChange(item.key),
-                  })),
-                }}
-                trigger={['click']}
-                placement="bottomRight"
-              >
-                <Button icon={<EditOutlined />} shape="circle" size="small" />
-              </Dropdown>
-            </Tooltip>
-            <Tooltip title="Reschedule Appointment">
-              <Button
-                icon={<CalendarOutlined />}
-                shape="circle"
-                size="small"
-                onClick={() => onReschedule(appointment.id)}
-              />
-            </Tooltip>
-          </S.ActionBar>
         </S.Header>
 
         <Divider style={{ margin: '8px 0 16px' }} />
 
-        {/* Section 1: Patient Information */}
+        {/* ── Action Buttons Container ── */}
+        <S.ActionContainer>
+          <Tooltip title="Set appointment status">
+            <Dropdown
+              menu={{
+                items: statusItems.map((item) => ({
+                  key: item.key,
+                  label: item.label,
+                  onClick: () => handleStatusChange(item.key),
+                })),
+              }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                size="small"
+                style={{ borderRadius: '8px', fontWeight: 500 }}
+              >
+                Set Status
+              </Button>
+            </Dropdown>
+          </Tooltip>
+
+          <Tooltip title="Reschedule this appointment">
+            <Button
+              type="default"
+              icon={<CalendarOutlined />}
+              size="small"
+              onClick={() => onReschedule(appointment.id)}
+              style={{
+                borderRadius: '8px',
+                fontWeight: 500,
+                background: '#f0ad4e',
+                borderColor: '#f0ad4e',
+                color: '#fff',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#ec971f';
+                e.currentTarget.style.borderColor = '#ec971f';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f0ad4e';
+                e.currentTarget.style.borderColor = '#f0ad4e';
+              }}
+            >
+              Reschedule
+            </Button>
+          </Tooltip>
+        </S.ActionContainer>
+
+        {/* Section 1: Appointment Information */}
+        <Card title={<S.SectionTitle><CalendarOutlined /> Appointment Information</S.SectionTitle>} size="small" bordered={false}>
+          <S.InfoGrid>
+            <S.InfoItem>
+              <S.InfoLabel>Reference Number</S.InfoLabel>
+              <S.InfoValue>
+                <Text copyable={{ icon: [<CopyOutlined key="copy" />, <CopyOutlined key="copied" />] }}>
+                  {referenceNumber}
+                </Text>
+              </S.InfoValue>
+            </S.InfoItem>
+            <S.InfoItem>
+              <S.InfoLabel>Appointment Status</S.InfoLabel>
+              <S.InfoValue><StatusBadge status={status} /></S.InfoValue>
+            </S.InfoItem>
+            <S.InfoItem>
+              <S.InfoLabel>Approval Status</S.InfoLabel>
+              <S.InfoValue>{appointment.approval_status || '—'}</S.InfoValue>
+            </S.InfoItem>
+            <S.InfoItem>
+              <S.InfoLabel>Booking Source</S.InfoLabel>
+              <S.InfoValue>
+                {isWalkIn ? (
+                  <Tag color="purple">Walk-in</Tag>
+                ) : (
+                  <Tag color="blue">Online</Tag>
+                )}
+              </S.InfoValue>
+            </S.InfoItem>
+            <S.InfoItem>
+              <S.InfoLabel>Created At</S.InfoLabel>
+              <S.InfoValue>{dayjs(appointment.created_at).format('MMM D, YYYY h:mm A')}</S.InfoValue>
+            </S.InfoItem>
+          </S.InfoGrid>
+        </Card>
+
+        {/* Section 2: Patient Information */}
         <Card title={<S.SectionTitle><UserOutlined /> Patient Information</S.SectionTitle>} size="small" bordered={false}>
           <S.InfoGrid>
             <S.InfoItem>
@@ -174,8 +246,8 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
           </S.InfoGrid>
         </Card>
 
-        {/* Section 2: Appointment Information */}
-        <Card title={<S.SectionTitle><CalendarOutlined /> Appointment Information</S.SectionTitle>} size="small" bordered={false}>
+        {/* Section 3: Appointment Schedule */}
+        <Card title={<S.SectionTitle><ScheduleOutlined /> Appointment Schedule</S.SectionTitle>} size="small" bordered={false}>
           <S.InfoGrid>
             <S.InfoItem>
               <S.InfoLabel>Branch</S.InfoLabel>
@@ -193,31 +265,17 @@ const AppointmentDetailsModal = memo(({ open, appointmentId, onClose, onSetStatu
               <S.InfoLabel>Appointment Time</S.InfoLabel>
               <S.InfoValue>{timeStr}</S.InfoValue>
             </S.InfoItem>
-            <S.InfoItem>
-              <S.InfoLabel>Booking Source</S.InfoLabel>
-              <S.InfoValue>
-                {isWalkIn ? (
-                  <Tag color="purple">Walk-in</Tag>
-                ) : (
-                  <Tag color="blue">Online</Tag>
-                )}
-              </S.InfoValue>
-            </S.InfoItem>
-            <S.InfoItem>
-              <S.InfoLabel>Created At</S.InfoLabel>
-              <S.InfoValue>{dayjs(appointment.created_at).format('MMM D, YYYY h:mm A')}</S.InfoValue>
-            </S.InfoItem>
           </S.InfoGrid>
         </Card>
 
-        {/* Section 3: Clinical Information */}
-        <Card title={<S.SectionTitle><FileTextOutlined /> Clinical Information</S.SectionTitle>} size="small" bordered={false}>
+        {/* Section 4: Notes */}
+        <Card title={<S.SectionTitle><FileTextOutlined /> Notes & Remarks</S.SectionTitle>} size="small" bordered={false}>
           <S.NotesSection>
             <S.NoteLabel>Chief Complaint</S.NoteLabel>
             <S.NoteText>{appointment.chief_complaint || 'No notes provided'}</S.NoteText>
           </S.NotesSection>
           <S.NotesSection>
-            <S.NoteLabel>Notes</S.NoteLabel>
+            <S.NoteLabel>Admin Notes</S.NoteLabel>
             <S.NoteText>{appointment.admin_notes || 'No notes provided'}</S.NoteText>
           </S.NotesSection>
         </Card>

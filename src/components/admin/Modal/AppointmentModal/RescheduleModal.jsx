@@ -1,11 +1,24 @@
 // src/components/admin/Modal/AppointmentModal/RescheduleModal.jsx
 import { memo, useState, useEffect } from "react";
-import { Modal, Form, Spin } from "antd";
+import { Modal, Form, Spin, Alert } from "antd";
 import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import AppointmentForm from "./AppointmentForm";
 import { getAppointmentById } from "../../../../services/appointments";
 import * as S from "./AppointmentModal.styled";
+
+// Helper: normalize time string to "HH:mm:ss"
+const normalizeTime = (time) => {
+  if (!time) return null;
+  const parts = time.split(':');
+  if (parts.length === 2) {
+    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:00`;
+  }
+  if (parts.length === 3) {
+    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
+  }
+  return time;
+};
 
 const RescheduleModal = memo(({ open, appointmentId, loading, onClose, onSubmit }) => {
   const [form] = Form.useForm();
@@ -32,6 +45,14 @@ const RescheduleModal = memo(({ open, appointmentId, loading, onClose, onSubmit 
   useEffect(() => {
     if (open && appointment) {
       const patient = appointment.patient || {};
+
+      // Use confirmed date/time if available, otherwise fallback to preferred
+      const appointmentDate = appointment.confirmed_date || appointment.preferred_date;
+      const appointmentTime = appointment.confirmed_time || appointment.preferred_time;
+
+      const normalizedTime = normalizeTime(appointmentTime);
+      const dateValue = appointmentDate ? dayjs(appointmentDate) : null;
+
       form.setFieldsValue({
         firstName: patient.first_name || "",
         middleName: patient.middle_name || "",
@@ -46,8 +67,8 @@ const RescheduleModal = memo(({ open, appointmentId, loading, onClose, onSubmit 
         status: appointment.approval_status === 'approved' && appointment.appointment_status === 'scheduled' ? 'confirmed' :
           appointment.appointment_status === 'cancelled' ? 'cancelled' :
             appointment.appointment_status === 'completed' ? 'completed' : 'pending',
-        date: appointment.preferred_date ? dayjs(appointment.preferred_date) : null,
-        time: appointment.preferred_time ? dayjs(appointment.preferred_time, "HH:mm:ss") : null,
+        date: dateValue,
+        time: normalizedTime, // Now in "HH:mm:ss"
         notes: appointment.chief_complaint || appointment.admin_notes || "",
       });
     }
@@ -114,7 +135,25 @@ const RescheduleModal = memo(({ open, appointmentId, loading, onClose, onSubmit 
       destroyOnHidden
       aria-label="Reschedule appointment"
     >
-      <AppointmentForm form={form} showStatus={true} />
+      <AppointmentForm
+        form={form}
+        showStatus={true}
+        excludeAppointmentId={appointmentId}
+        patientReadOnly={true}
+      />
+
+      <Alert
+        type="info"
+        showIcon
+        title="Patient information cannot be edited during rescheduling."
+        description={
+          <>
+            To update patient details, go to the <strong>Patients</strong> page.
+          </>
+        }
+        style={{ marginTop: 16, marginBottom: 8 }}
+      />
+
       <S.FooterRow>
         <S.CancelBtn onClick={handleCancel} type="button" disabled={loading}>
           <CloseOutlined /> Cancel

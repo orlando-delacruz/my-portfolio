@@ -1,62 +1,14 @@
 // src/hooks/useScheduling.js
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
-import { getOperatingHoursForBranchDate, isDateClosed } from "../services/scheduling";
+import { generateAvailableSlots, isDateClosed } from "../services/scheduling";
 
-function timeToMinutes(timeStr) {
-  if (!timeStr) return NaN;
-  const parts = timeStr.split(":").map(Number);
-  if (parts.length < 2) return NaN;
-  return parts[0] * 60 + parts[1];
-}
-
-function computeDisabledTimes(hours) {
-  if (!hours || hours.is_closed) {
-    const allHours = Array.from({ length: 24 }, (_, i) => i);
-    return { disabledHours: allHours, disabledMinutesByHour: {} };
-  }
-
-  const openMin = timeToMinutes(hours.open_time);
-  const closeMin = timeToMinutes(hours.close_time);
-  if (isNaN(openMin) || isNaN(closeMin) || openMin >= closeMin) {
-    const allHours = Array.from({ length: 24 }, (_, i) => i);
-    return { disabledHours: allHours, disabledMinutesByHour: {} };
-  }
-
-  const disabledMinutesSet = new Set();
-  for (let m = 0; m < 24 * 60; m++) {
-    if (m < openMin || m >= closeMin) {
-      disabledMinutesSet.add(m);
-    }
-  }
-
-  const disabledHours = [];
-  const disabledMinutesByHour = {};
-  for (let h = 0; h < 24; h++) {
-    const start = h * 60;
-    const end = start + 60;
-    const minutes = [];
-    for (let m = start; m < end; m++) {
-      if (disabledMinutesSet.has(m)) {
-        minutes.push(m - start);
-      }
-    }
-    if (minutes.length === 60) {
-      disabledHours.push(h);
-    } else {
-      disabledMinutesByHour[h] = minutes;
-    }
-  }
-
-  return { disabledHours, disabledMinutesByHour };
-}
-
-export function useScheduling(branchId, selectedDate) {
+export function useScheduling(branchId, selectedDate, excludeAppointmentId = null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isClosed, setIsClosed] = useState(false);
-  const [disabledHours, setDisabledHours] = useState([]);
-  const [disabledMinutesByHour, setDisabledMinutesByHour] = useState({});
+  const [allSlots, setAllSlots] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [schedulingVersion, setSchedulingVersion] = useState(0);
   const isMounted = useRef(true);
 
@@ -71,8 +23,8 @@ export function useScheduling(branchId, selectedDate) {
     const compute = async () => {
       if (!branchId || !dateKey) {
         if (isMounted.current) {
-          setDisabledHours([]);
-          setDisabledMinutesByHour({});
+          setAllSlots([]);
+          setAvailableSlots([]);
           setIsClosed(false);
           setLoading(false);
           setSchedulingVersion(prev => prev + 1);
@@ -84,32 +36,29 @@ export function useScheduling(branchId, selectedDate) {
       setError(null);
       try {
         const dateObj = dayjs(dateKey);
-        const hours = await getOperatingHoursForBranchDate(branchId, dateObj);
         const closed = await isDateClosed(branchId, dateObj);
-        setIsClosed(closed || (hours && hours.is_closed));
+        setIsClosed(closed);
 
-        if (closed || (hours && hours.is_closed)) {
-          const allHours = Array.from({ length: 24 }, (_, i) => i);
-          setDisabledHours(allHours);
-          setDisabledMinutesByHour({});
+        if (closed) {
+          setAllSlots([]);
+          setAvailableSlots([]);
           setSchedulingVersion(prev => prev + 1);
           setLoading(false);
           return;
         }
 
-        const { disabledHours: dHours, disabledMinutesByHour: dMinutes } = computeDisabledTimes(hours);
-
+        const slots = await generateAvailableSlots(branchId, dateObj, excludeAppointmentId);
         if (isMounted.current) {
-          setDisabledHours(dHours);
-          setDisabledMinutesByHour(dMinutes);
+          setAllSlots(slots);
+          setAvailableSlots(slots.filter((s) => !s.disabled));
           setSchedulingVersion(prev => prev + 1);
         }
       } catch (err) {
         console.error("❌ Error fetching schedule:", err);
         if (isMounted.current) {
           setError(err.message || "Failed to load schedule");
-          setDisabledHours([]);
-          setDisabledMinutesByHour({});
+          setAllSlots([]);
+          setAvailableSlots([]);
           setSchedulingVersion(prev => prev + 1);
         }
       } finally {
@@ -120,18 +69,12 @@ export function useScheduling(branchId, selectedDate) {
     };
 
     compute();
-  }, [branchId, dateKey]);
-
-  const disabledTime = useCallback(() => {
-    return {
-      disabledHours: () => disabledHours,
-      disabledMinutes: (hour) => disabledMinutesByHour[hour] || [],
-    };
-  }, [disabledHours, disabledMinutesByHour]);
+  }, [branchId, dateKey, excludeAppointmentId]);
 
   return {
     isClosed,
-    disabledTime,
+    allSlots,
+    availableSlots,
     schedulingVersion,
     loading,
     error,

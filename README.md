@@ -5,6 +5,9 @@ leidi-bud-dentals
 │  ├─ admin
 │  │  └─ users.js
 │  ├─ cancel-appointment.js
+│  ├─ notifications
+│  │  ├─ create.js
+│  │  └─ reminders.js
 │  ├─ send-confirmation.js
 │  ├─ send-faq.js
 │  ├─ send-reminders.js
@@ -73,6 +76,9 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ Search.jsx
 │  │  │  │  │  └─ Search.styled.js
+│  │  │  │  ├─ Source
+│  │  │  │  │  ├─ Source.jsx
+│  │  │  │  │  └─ Source.styled.js
 │  │  │  │  └─ Status
 │  │  │  │     ├─ index.js
 │  │  │  │     ├─ Status.jsx
@@ -122,6 +128,12 @@ leidi-bud-dentals
 │  │  │  │     ├─ index.js
 │  │  │  │     ├─ UserModal.jsx
 │  │  │  │     └─ UserModal.styled.js
+│  │  │  ├─ NotificationDropdown
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ NotificationDropdown.jsx
+│  │  │  │  ├─ NotificationDropdown.styled.js
+│  │  │  │  ├─ NotificationItem.jsx
+│  │  │  │  └─ NotificationItem.styled.js
 │  │  │  ├─ Pagination
 │  │  │  │  ├─ index.js
 │  │  │  │  ├─ Pagination.jsx
@@ -172,6 +184,8 @@ leidi-bud-dentals
 │  │     │     ├─ FaqAccordion.jsx
 │  │     │     ├─ FaqAccordion.styled.js
 │  │     │     └─ index.js
+│  │     ├─ AppointmentTimePicker
+│  │     │  └─ AppointmentTimePicker.jsx
 │  │     ├─ AvailabilityMessage
 │  │     │  ├─ AvailabilityMessage.jsx
 │  │     │  ├─ AvailabilityMessage.styled.js
@@ -226,6 +240,8 @@ leidi-bud-dentals
 │  │     │     ├─ index.js
 │  │     │     ├─ ServiceModal.jsx
 │  │     │     └─ ServiceModal.styled.js
+│  │     ├─ PhoneInput
+│  │     │  └─ PhoneInput.jsx
 │  │     └─ SuccessView
 │  │        ├─ index.js
 │  │        ├─ SuccessView.jsx
@@ -259,10 +275,14 @@ leidi-bud-dentals
 │  │  ├─ useAppointments.js
 │  │  ├─ useBranches.js
 │  │  ├─ useCalendarAppointments.js
+│  │  ├─ useCalendarIndicators.js
+│  │  ├─ useClosureDates.js
 │  │  ├─ useCurrentUser.js
 │  │  ├─ useDashboardData.js
 │  │  ├─ useMobileFilter.js
+│  │  ├─ useNotifications.js
 │  │  ├─ usePatients.js
+│  │  ├─ usePhoneInput.js
 │  │  ├─ useRealtimeAppointments.js
 │  │  ├─ useScheduling.js
 │  │  ├─ useServiceBranches.js
@@ -326,7 +346,6 @@ leidi-bud-dentals
 │  │  │  ├─ Dashboard
 │  │  │  │  ├─ Dashboard.jsx
 │  │  │  │  ├─ Dashboard.styled.js
-│  │  │  │  ├─ sections
 │  │  │  │  └─ useDashboard.js
 │  │  │  ├─ PageDevelopment.jsx
 │  │  │  ├─ Patients
@@ -443,6 +462,7 @@ leidi-bud-dentals
 │  │  ├─ calendar.js
 │  │  ├─ clinicClosures.js
 │  │  ├─ dashboard.js
+│  │  ├─ notificationService.js
 │  │  ├─ operatingHours.js
 │  │  ├─ patients.js
 │  │  ├─ publicBooking.js
@@ -458,6 +478,7 @@ leidi-bud-dentals
 │  │     └─ settings.test.js
 │  ├─ store
 │  │  ├─ authStore.js
+│  │  ├─ notificationStore.js
 │  │  ├─ useAdminStore.js
 │  │  ├─ useCalendarStore.js
 │  │  ├─ useLogoutStore.js
@@ -471,6 +492,7 @@ leidi-bud-dentals
 │     ├─ appointmentMapper.js
 │     ├─ branchUtils.js
 │     ├─ calendarGrid.js
+│     ├─ calendarHelpers.js
 │     ├─ conflictMessage.js
 │     ├─ convert-images.mjs
 │     ├─ dateFormatter.js

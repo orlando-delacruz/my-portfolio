@@ -38,16 +38,6 @@ export function useBookAppointmentForm(form) {
   const { serviceBranches: services, loading: servicesLoading } =
     useServiceBranches(fields.branchId);
 
-  const selectedService = useMemo(() => {
-    if (!fields.serviceBranchId || !services.length) return null;
-    return services.find((s) => s.service_branch_id === fields.serviceBranchId);
-  }, [fields.serviceBranchId, services]);
-
-  const durationMinutes = useMemo(() => {
-    if (selectedService?.duration_minutes) return selectedService.duration_minutes;
-    return 30;
-  }, [selectedService]);
-
   const selectedDateRaw = fields.date;
   const selectedDateKey = useMemo(() => {
     return selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null;
@@ -58,7 +48,7 @@ export function useBookAppointmentForm(form) {
   }, [selectedDateKey]);
 
   const {
-    disabledTime,
+    allSlots,
     isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
@@ -70,7 +60,7 @@ export function useBookAppointmentForm(form) {
     fields.branchId,
     selectedDateKey,
     monthKey,
-    durationMinutes
+    null // no exclude for public booking
   );
 
   useEffect(() => {
@@ -137,7 +127,6 @@ export function useBookAppointmentForm(form) {
           date: values.date,
           time: values.time,
           notes: values.notes?.trim() || undefined,
-          durationMinutes,
         });
 
         message.success("Appointment booked successfully!");
@@ -149,7 +138,7 @@ export function useBookAppointmentForm(form) {
         setIsSubmitting(false);
       }
     },
-    [durationMinutes]
+    []
   );
 
   const handleReset = useCallback(() => {
@@ -171,14 +160,13 @@ export function useBookAppointmentForm(form) {
     services,
     branchesLoading,
     servicesLoading,
-    disabledTime,
+    allSlots,
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
     closureVersion,
     schedulingVersion,
-    durationMinutes,
     availabilityError,
     handleSubmit,
     handleReset,

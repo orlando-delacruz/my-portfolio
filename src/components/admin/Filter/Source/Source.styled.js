@@ -47,6 +47,10 @@ export const StyledSelect = styled(Select)`
     box-shadow: none !important;
   }
 
+  .ant-select-content {
+    padding-left: 20px;
+  }
+
   .ant-select-selection-item {
     font-size: 10px !important;
     line-height: 15px !important;

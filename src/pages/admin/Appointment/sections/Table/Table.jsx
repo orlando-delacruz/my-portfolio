@@ -185,7 +185,7 @@ const AppointmentTable = ({
                       aria-label={`Select appointment ${apt.referenceNo}`}
                     />
                   </S.TD>
-                  <S.TD>{apt.referenceNo}</S.TD>
+                  {/* Reference number column removed */}
                   <S.TD>{apt.patientName}</S.TD>
                   <S.TD>{formatPhoneDisplay(apt.contactNumber)}</S.TD>
                   <S.TD>

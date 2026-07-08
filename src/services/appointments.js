@@ -3,6 +3,8 @@ import { supabase } from "./supabase/supabase";
 import dayjs from "dayjs";
 import { getOperatingHoursForDay } from "../utils/scheduling";
 
+const DEFAULT_INTERVAL = 15;
+
 // ── Status Mapping ──
 export const STATUS_TO_DB = {
   pending: { approval_status: "waiting", appointment_status: "scheduled" },
@@ -40,7 +42,7 @@ export async function hasBookingConflict({
   time,
   excludeAppointmentId,
   branchId,
-  intervalMinutes = 30,
+  intervalMinutes = DEFAULT_INTERVAL,
 }) {
   const dateStr = date.format("YYYY-MM-DD");
   const requestedMinutes = time.hour() * 60 + time.minute();
@@ -87,7 +89,7 @@ export async function getConflictingAppointments({
   time,
   excludeAppointmentId,
   branchId,
-  intervalMinutes = 30,
+  intervalMinutes = DEFAULT_INTERVAL,
 }) {
   const dateStr = dayjs(date).format("YYYY-MM-DD");
   const requestedMinutes = time.hour() * 60 + time.minute();
@@ -139,7 +141,7 @@ export async function checkBookingConflictWithDetails({
   date,
   time,
   excludeAppointmentId,
-  intervalMinutes = 30,
+  intervalMinutes = DEFAULT_INTERVAL,
 }) {
   const conflicts = await getConflictingAppointments({
     date,
@@ -231,7 +233,7 @@ export async function adminCreateAppointment({
   date,
   time,
   adminId,
-  intervalMinutes = 30,
+  intervalMinutes = DEFAULT_INTERVAL,
   isWalkIn = false,
 }) {
   if (isPastAppointment(date, time)) {
@@ -309,7 +311,7 @@ export async function adminRescheduleAppointment({
   time,
   status,
   adminId,
-  intervalMinutes = 30,
+  intervalMinutes = DEFAULT_INTERVAL,
 }) {
   if (isPastAppointment(date, time)) {
     throw new Error(

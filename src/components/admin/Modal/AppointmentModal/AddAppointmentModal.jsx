@@ -14,7 +14,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
   const [orthodonticPatients, setOrthodonticPatients] = useState([]);
   const [loadingOrtho, setLoadingOrtho] = useState(false);
 
-  // Reset form when modal opens
   useEffect(() => {
     if (open) {
       form.resetFields();
@@ -23,7 +22,6 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
     }
   }, [open, form]);
 
-  // Fetch orthodontic patients when modal opens and ortho tab is selected
   useEffect(() => {
     if (open && patientType === 'ortho') {
       setLoadingOrtho(true);
@@ -85,6 +83,7 @@ const AddAppointmentModal = memo(({ open, loading, onClose, onSubmit }) => {
         onPatientTypeChange={handlePatientTypeChange}
         onOrthodonticPatientSelect={handleOrthoPatientSelect}
         loadingOrthoPatients={loadingOrtho}
+        excludeAppointmentId={null} // add mode - no exclusion
       />
       <S.FooterRow>
         <S.CancelBtn onClick={handleCancel} type="button" disabled={loading}>

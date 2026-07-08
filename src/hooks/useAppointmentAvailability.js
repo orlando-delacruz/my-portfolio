@@ -3,7 +3,6 @@ import { useEffect, useCallback, useMemo, useReducer, useRef } from "react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { useScheduling } from "./useScheduling";
-import { getFullyBookedDatesInMonth } from "../services/scheduling";
 import { supabase } from "../services/supabase/supabase";
 
 dayjs.extend(isBetween);
@@ -23,7 +22,6 @@ function fetchReducer(state, action) {
         loading: false,
         error: null,
         closures: action.payload.closures,
-        fullyBooked: action.payload.fullyBooked,
         version: action.payload.version,
       };
     case FETCH_ACTIONS.ERROR:
@@ -37,38 +35,34 @@ const INITIAL_FETCH_STATE = {
   loading: false,
   error: null,
   closures: [],
-  fullyBooked: [],
   version: 0,
 };
 
-export function useAppointmentAvailability(
-  branchId,
-  selectedDateKey,
-  monthKey,
-  durationMinutes = 30
-) {
+export function useAppointmentAvailability(branchId, selectedDateKey, monthKey, excludeAppointmentId = null) {
   const selectedDate = useMemo(() => {
     return selectedDateKey ? dayjs(selectedDateKey) : null;
   }, [selectedDateKey]);
 
   const {
-    disabledTime,
+    allSlots,
+    availableSlots,
     isClosed: schedulingIsClosed,
     schedulingVersion,
     loading: schedulingLoading,
     error: schedulingError,
-  } = useScheduling(branchId, selectedDate);
+  } = useScheduling(branchId, selectedDate, excludeAppointmentId);
 
   const [fetchState, dispatch] = useReducer(fetchReducer, INITIAL_FETCH_STATE);
 
   const stableMonthKey = monthKey;
   const versionRef = useRef(0);
 
+  // ── Fetch clinic closures for the month (used by `isClosureDate`) ──
   useEffect(() => {
     if (!branchId || !stableMonthKey) {
       dispatch({
         type: FETCH_ACTIONS.SUCCESS,
-        payload: { closures: [], fullyBooked: [], version: versionRef.current++ },
+        payload: { closures: [], version: versionRef.current++ },
       });
       return;
     }
@@ -96,14 +90,11 @@ export function useAppointmentAvailability(
 
         if (closureError) throw closureError;
 
-        const fullyBookedData = await getFullyBookedDatesInMonth(branchId, monthDate, durationMinutes);
-
         if (isMounted) {
           dispatch({
             type: FETCH_ACTIONS.SUCCESS,
             payload: {
               closures: closuresData || [],
-              fullyBooked: fullyBookedData || [],
               version: versionRef.current++,
             },
           });
@@ -125,8 +116,9 @@ export function useAppointmentAvailability(
       isMounted = false;
       abortController.abort();
     };
-  }, [branchId, stableMonthKey, durationMinutes]);
+  }, [branchId, stableMonthKey]);
 
+  // ── Compute `isClosureDate` from fetched closures ──
   const isClosureDate = useCallback(
     (dateStr) => {
       if (!dateStr) return false;
@@ -142,12 +134,13 @@ export function useAppointmentAvailability(
     [fetchState.closures]
   );
 
-  const isDateFullyBooked = useCallback(
-    (dateStr) => {
-      return fetchState.fullyBooked.includes(dateStr);
-    },
-    [fetchState.fullyBooked]
-  );
+  // ── Derive `isDateFullyBooked` from scheduling result ──
+  const isDateFullyBooked = useMemo(() => {
+    if (!selectedDateKey || !branchId) return false;
+    if (schedulingLoading) return false;
+    // If not closed and there are no available slots, it's fully booked
+    return !schedulingIsClosed && availableSlots.length === 0;
+  }, [selectedDateKey, branchId, schedulingIsClosed, availableSlots.length, schedulingLoading]);
 
   const isSelectedDateClosed = useMemo(() => {
     if (!selectedDateKey || !branchId) return false;
@@ -157,17 +150,13 @@ export function useAppointmentAvailability(
     return false;
   }, [selectedDateKey, branchId, schedulingIsClosed, schedulingLoading, isClosureDate]);
 
-  const isDateFullyBookedSelected = useMemo(() => {
-    if (!selectedDateKey || !branchId) return false;
-    return isDateFullyBooked(selectedDateKey);
-  }, [selectedDateKey, branchId, isDateFullyBooked]);
-
   const loading = schedulingLoading || fetchState.loading;
   const error = schedulingError || fetchState.error;
 
   return {
-    disabledTime,
-    isDateFullyBooked: isDateFullyBookedSelected,
+    allSlots,
+    availableSlots,
+    isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
     closureVersion: fetchState.version,

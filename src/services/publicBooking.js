@@ -4,19 +4,8 @@ import dayjs from "dayjs";
 import { hasBookingConflict, STATUS_TO_DB } from "./appointments";
 import { findOrCreatePatient } from "./patients";
 import { fetchServiceBranchById } from "./serviceBranches";
-import { createNotificationsForAdmins } from "./notificationService";
 
-async function getAllAdminIds() {
-  const { data, error } = await supabase
-    .from("admins")
-    .select("id")
-    .eq("status", "active");
-  if (error) {
-    console.error("Failed to fetch admin IDs:", error);
-    return [];
-  }
-  return data.map(a => a.id);
-}
+const DEFAULT_INTERVAL = 15;
 
 function isPastAppointment(date, time) {
   const now = dayjs();
@@ -41,7 +30,6 @@ export async function bookPublicAppointment({
   date,
   time,
   notes,
-  durationMinutes = 30,
 }) {
   // 1. Validate required fields
   if (
@@ -103,17 +91,17 @@ export async function bookPublicAppointment({
     }
   }
 
-  // 4. Check conflict with dynamic interval
+  // 4. Check conflict with fixed 15-minute interval
   const conflict = await hasBookingConflict({
     date: dateObj,
     time: timeObj,
     branchId: branchId,
-    intervalMinutes: durationMinutes,
+    intervalMinutes: DEFAULT_INTERVAL,
   });
 
   if (conflict) {
     throw new Error(
-      `The selected time is too close to an existing appointment. Please choose a time at least ${durationMinutes} minutes apart.`
+      `The selected time is too close to an existing appointment. Please choose a time at least ${DEFAULT_INTERVAL} minutes apart.`
     );
   }
 
@@ -157,7 +145,7 @@ export async function bookPublicAppointment({
       preferred_time: timeObj.format("HH:mm:ss"),
       chief_complaint: notes || null,
       snapshot_service_name: serviceBranch.name,
-      snapshot_duration_minutes: durationMinutes,
+      snapshot_duration_minutes: DEFAULT_INTERVAL,
       snapshot_starting_price: serviceBranch.starting_price,
       snapshot_maximum_price: serviceBranch.maximum_price,
       approval_status,
@@ -177,28 +165,6 @@ export async function bookPublicAppointment({
     admin_id: null,
     status: "pending",
   });
-
-  // ── 10. Create notifications for all admins using direct Supabase insert ──
-  try {
-    const adminIds = await getAllAdminIds();
-    if (adminIds.length > 0) {
-      const notificationData = {
-        type: "NEW_BOOKING",
-        title: "New Appointment Request",
-        message: `${firstName} ${lastName} requested a ${serviceBranch.name} appointment.`,
-        appointment_id: appointment.id,
-        metadata: {
-          patient_name: `${firstName} ${lastName}`,
-          service: serviceBranch.name,
-          date: dateObj.format("YYYY-MM-DD"),
-          time: timeObj.format("HH:mm:ss"),
-        },
-      };
-      await createNotificationsForAdmins(adminIds, notificationData);
-    }
-  } catch (err) {
-    console.error("Failed to create notifications:", err);
-  }
 
   return appointment;
 }

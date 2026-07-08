@@ -1,6 +1,6 @@
 // src/components/admin/Modal/AppointmentModal/AppointmentForm.jsx
 import { memo, useEffect, useCallback, useRef, useMemo } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Switch, Radio } from "antd";
+import { Form, Input, Select, DatePicker, Switch, Radio } from "antd";
 import dayjs from "dayjs";
 import { MdEventBusy } from "react-icons/md";
 import { UserOutlined, CalendarOutlined, FileTextOutlined } from "@ant-design/icons";
@@ -39,6 +39,11 @@ const validateEmail = (_, value) => {
   return Promise.resolve();
 };
 
+// ── Disable future dates for Birthdate ──
+const disabledBirthDate = (current) => {
+  return current && current > dayjs().endOf('day');
+};
+
 // ── Component ──
 const AppointmentForm = memo(({
   form,
@@ -50,29 +55,26 @@ const AppointmentForm = memo(({
   onPatientTypeChange,
   onOrthodonticPatientSelect,
   loadingOrthoPatients = false,
+  excludeAppointmentId = null,
+  patientReadOnly = false, // ✅ new prop
 }) => {
   const { branches, loading: branchesLoading } = useBranches();
   const selectedBranch = Form.useWatch("branchId", form);
-  const selectedServiceBranchId = Form.useWatch("serviceBranchId", form);
   const selectedDateRaw = Form.useWatch("date", form);
   const selectedDateKey = useMemo(() => selectedDateRaw ? dayjs(selectedDateRaw).format("YYYY-MM-DD") : null, [selectedDateRaw]);
   const monthKey = useMemo(() => selectedDateKey ? selectedDateKey.slice(0, 7) : null, [selectedDateKey]);
   const selectedDate = useMemo(() => selectedDateKey ? dayjs(selectedDateKey) : null, [selectedDateKey]);
 
   const { serviceBranches, loading: servicesLoading } = useServiceBranches(selectedBranch);
-  const selectedService = useMemo(() => {
-    if (!selectedServiceBranchId || !serviceBranches.length) return null;
-    return serviceBranches.find(s => s.service_branch_id === selectedServiceBranchId);
-  }, [selectedServiceBranchId, serviceBranches]);
-  const durationMinutes = useMemo(() => selectedService?.duration_minutes || 30, [selectedService]);
 
   const {
-    disabledTime,
+    allSlots,
     isDateFullyBooked,
     isSelectedDateClosed,
     closureVersion,
     schedulingVersion,
-  } = useAppointmentAvailability(selectedBranch, selectedDateKey, monthKey, durationMinutes);
+    loading: availabilityLoading,
+  } = useAppointmentAvailability(selectedBranch, selectedDateKey, monthKey, excludeAppointmentId);
 
   const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
   const showTimeSelection = selectedDateKey && !isDateUnavailable;
@@ -97,6 +99,7 @@ const AppointmentForm = memo(({
 
   // ── Patient type change ──
   const handlePatientTypeChange = (e) => {
+    if (patientReadOnly) return; // ✅ prevent changes when read-only
     const value = e.target.value;
     onPatientTypeChange?.(value);
     form.setFieldsValue({
@@ -108,6 +111,7 @@ const AppointmentForm = memo(({
   };
 
   const handleOrthoPatientSelect = (patientId) => {
+    if (patientReadOnly) return; // ✅ prevent changes when read-only
     if (!patientId) { onOrthodonticPatientSelect?.(null); return; }
     const patient = orthodonticPatients.find(p => p.id === patientId);
     if (patient) {
@@ -130,6 +134,17 @@ const AppointmentForm = memo(({
   const isOrthoSelected = patientType === 'ortho' && selectedOrthodonticPatient !== null;
   const isNewPatient = patientType === 'new';
 
+  // Format time for display
+  const formatTimeDisplay = (timeStr) => {
+    if (!timeStr) return '';
+    return dayjs(timeStr, 'HH:mm:ss').format('h:mm A');
+  };
+
+  const isTimeDisabled = !selectedBranch || !selectedDate || allSlots.length === 0 || isDateUnavailable;
+
+  // ── Determine if patient fields should be disabled ──
+  const isPatientDisabled = patientReadOnly || isOrthoSelected;
+
   return (
     <Form
       form={form}
@@ -142,7 +157,12 @@ const AppointmentForm = memo(({
         {showPatientSelector && (
           <S.FullWidth>
             <Form.Item label="Patient Type" required>
-              <Radio.Group value={patientType} onChange={handlePatientTypeChange} buttonStyle="solid">
+              <Radio.Group
+                value={patientType}
+                onChange={handlePatientTypeChange}
+                buttonStyle="solid"
+                disabled={patientReadOnly}
+              >
                 <Radio.Button value="new">New Patient</Radio.Button>
                 <Radio.Button value="ortho">Orthodontic Patient</Radio.Button>
               </Radio.Group>
@@ -163,6 +183,7 @@ const AppointmentForm = memo(({
                   option?.label?.toLowerCase().includes(input.toLowerCase())
                 }
                 value={selectedOrthodonticPatient?.id}
+                disabled={patientReadOnly}
               >
                 {orthodonticPatients.map((p) => {
                   const displayName = `${p.first_name} ${p.last_name}${p.phone_number ? ` (${p.phone_number})` : ''}`.trim();
@@ -182,19 +203,19 @@ const AppointmentForm = memo(({
 
         <S.FieldRow>
           <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "First name is required." }]}>
-            <Input placeholder="Enter first name" maxLength={80} disabled={isOrthoSelected} />
+            <Input placeholder="Enter first name" maxLength={80} disabled={isPatientDisabled} />
           </Form.Item>
           <Form.Item name="middleName" label="Middle Name" rules={[{ required: false }]}>
-            <Input placeholder="(Optional)" maxLength={80} disabled={isOrthoSelected} />
+            <Input placeholder="(Optional)" maxLength={80} disabled={isPatientDisabled} />
           </Form.Item>
           <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Last name is required." }]}>
-            <Input placeholder="Enter last name" maxLength={80} disabled={isOrthoSelected} />
+            <Input placeholder="Enter last name" maxLength={80} disabled={isPatientDisabled} />
           </Form.Item>
         </S.FieldRow>
 
         <S.FieldRow>
           <Form.Item name="gender" label="Gender" rules={[{ required: true, message: "Please select gender." }]}>
-            <Select placeholder="Select gender" disabled={isOrthoSelected}>
+            <Select placeholder="Select gender" disabled={isPatientDisabled}>
               <Option value="male">Male</Option>
               <Option value="female">Female</Option>
               <Option value="other">Other</Option>
@@ -202,23 +223,29 @@ const AppointmentForm = memo(({
             </Select>
           </Form.Item>
           <Form.Item name="birthDate" label="Birthdate" rules={[{ validator: validateBirthDate }]}>
-            <DatePicker style={{ width: "100%" }} format="MMM D, YYYY" placeholder="Select birthdate (optional)" disabled={isOrthoSelected} />
+            <DatePicker
+              style={{ width: "100%" }}
+              format="MMM D, YYYY"
+              placeholder="Select birthdate (optional)"
+              disabled={isPatientDisabled}
+              disabledDate={disabledBirthDate}
+            />
           </Form.Item>
         </S.FieldRow>
 
         <Form.Item name="phoneNumber" label="Contact Number" rules={[{ validator: validatePhone }]}>
-          <PhoneInput placeholder="0912 345 6789" disabled={isOrthoSelected} />
+          <PhoneInput placeholder="0912 345 6789" disabled={isPatientDisabled} />
         </Form.Item>
 
         <Form.Item name="email" label="Email" rules={[{ validator: validateEmail }]}>
-          <Input placeholder="Enter email (optional)" maxLength={256} disabled={isOrthoSelected} />
+          <Input placeholder="Enter email (optional)" maxLength={256} disabled={isPatientDisabled} />
         </Form.Item>
 
         <Form.Item name="address" label="Address" rules={[{ required: false }]}>
-          <Input placeholder="Enter address (optional)" disabled={isOrthoSelected} />
+          <Input placeholder="Enter address (optional)" disabled={isPatientDisabled} />
         </Form.Item>
 
-        {showPatientSelector && isNewPatient && (
+        {showPatientSelector && isNewPatient && !patientReadOnly && (
           <>
             <S.FullWidth>
               <Form.Item
@@ -278,19 +305,18 @@ const AppointmentForm = memo(({
           ) : (
             showTimeSelection && (
               <Form.Item name="time" label="Appointment Time" rules={[{ required: true, message: "Please pick a time." }]}>
-                <TimePicker
-                  style={{ width: "100%" }}
-                  format="h:mm A"
-                  use12Hours
-                  placeholder="Select time"
-                  disabledTime={disabledTime}
-                  minuteStep={1}
-                  hideDisabledOptions={true}
-                  disabled={!selectedBranch || !selectedDate}
-                  popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                  popupClassName="time-picker-no-scrollbar"
-                  key={`admin-timepicker-${selectedBranch}-${selectedDateKey}-${durationMinutes}-${closureVersion}-${schedulingVersion}`}
-                />
+                <Select
+                  placeholder={isTimeDisabled ? "No available slots" : "Select time"}
+                  loading={servicesLoading || availabilityLoading}
+                  disabled={isTimeDisabled}
+                  key={`admin-timeselect-${selectedBranch}-${selectedDateKey}-${closureVersion}-${schedulingVersion}`}
+                >
+                  {allSlots.map((slot) => (
+                    <Option key={slot.value} value={slot.value} disabled={slot.disabled}>
+                      {formatTimeDisplay(slot.value)}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             )
           )}

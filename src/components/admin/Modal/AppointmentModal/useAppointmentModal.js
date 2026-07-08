@@ -47,12 +47,12 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
         }
 
         const serviceBranch = await fetchServiceBranchById(values.serviceBranchId);
-        const intervalMinutes = serviceBranch.duration_minutes || 30;
+        const intervalMinutes = 15; // fixed
 
         const conflictCheck = await checkBookingConflictWithDetails({
           branchId: values.branchId,
           date: dayjs(values.date),
-          time: dayjs(values.time),
+          time: dayjs(values.time, "HH:mm:ss"), // ✅ parse with format
           intervalMinutes,
         });
         if (conflictCheck.hasConflict) {
@@ -66,7 +66,7 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           patient,
           serviceBranch,
           date: dayjs(values.date),
-          time: dayjs(values.time),
+          time: dayjs(values.time, "HH:mm:ss"), // ✅ parse with format
           adminId: profile?.id,
           intervalMinutes,
           isWalkIn: values.isWalkIn || false,
@@ -119,10 +119,10 @@ const useAppointmentModal = ({ onAddSuccess, onRescheduleSuccess } = {}) => {
           appointmentId: rescheduleTargetId,
           branchId: values.branchId,
           date: dayjs(values.date),
-          time: dayjs(values.time),
+          time: dayjs(values.time, "HH:mm:ss"), // ✅ parse with format
           status: values.status,
           adminId: profile?.id,
-          intervalMinutes: 30,
+          intervalMinutes: 15,
         });
 
         const row = toAppointmentRow(updated);

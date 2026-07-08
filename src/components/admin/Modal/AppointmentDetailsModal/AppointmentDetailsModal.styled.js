@@ -41,10 +41,24 @@ export const PatientMeta = styled.div`
   color: ${adminTheme.colors.gray};
 `;
 
-export const ActionBar = styled.div`
+// ── Action Container ──
+export const ActionContainer = styled.div`
   display: flex;
-  gap: 8px;
+  justify-content: flex-end;
   align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 0 0 12px 0;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 export const SectionTitle = styled.span`

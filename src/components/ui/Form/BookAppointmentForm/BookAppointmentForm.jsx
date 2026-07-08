@@ -1,8 +1,9 @@
 // src/components/ui/Form/BookAppointmentForm/BookAppointmentForm.jsx
 import { memo, useEffect, useMemo } from "react";
-import { Form, Input, Select, DatePicker, TimePicker, Button, Alert, Card } from "antd";
+import { Form, Input, Select, DatePicker, Button, Alert, Card } from "antd";
 import { AiOutlineSend } from "react-icons/ai";
 import { UserOutlined, CalendarOutlined, FileTextOutlined } from "@ant-design/icons";
+import { FaMapPin, FaTooth, FaMoneyBillWave, FaCalendarAlt, FaClock } from "react-icons/fa";
 import dayjs from "dayjs";
 import * as S from "./BookAppointmentForm.styled";
 import SuccessView from "../../SuccessView";
@@ -26,17 +27,30 @@ const BookAppointmentForm = () => {
     services,
     branchesLoading,
     servicesLoading,
-    disabledTime,
+    allSlots,
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
     closureVersion,
     schedulingVersion,
-    durationMinutes,
     handleSubmit,
     handleReset,
     updateFields,
   } = useBookAppointmentForm(form);
+
+  const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
+  const isTimeDisabled = !fields.branchId || !fields.date || allSlots.length === 0 || isDateUnavailable;
+
+  // Find selected service for price display
+  const selectedService = useMemo(() => {
+    if (!fields.serviceBranchId || !services.length) return null;
+    return services.find(s => s.service_branch_id === fields.serviceBranchId) || null;
+  }, [fields.serviceBranchId, services]);
+
+  // ── Disable future dates for Birthdate ──
+  const disabledBirthDate = (current) => {
+    return current && current > dayjs().endOf('day');
+  };
 
   useEffect(() => {
     form.setFieldsValue({
@@ -51,7 +65,7 @@ const BookAppointmentForm = () => {
       branchId: fields.branchId || undefined,
       serviceBranchId: fields.serviceBranchId || undefined,
       date: fields.date ? dayjs(fields.date) : null,
-      time: fields.time ? dayjs(fields.time, "HH:mm:ss") : null,
+      time: fields.time || undefined,
       notes: fields.notes,
     });
   }, [fields, form]);
@@ -69,7 +83,7 @@ const BookAppointmentForm = () => {
       newFields.time = "";
     }
     if (changedValues.time !== undefined) {
-      newFields.time = changedValues.time ? changedValues.time.format("HH:mm:ss") : "";
+      newFields.time = changedValues.time || "";
     }
     if (changedValues.serviceBranchId !== undefined) {
       newFields.serviceBranchId = changedValues.serviceBranchId;
@@ -87,7 +101,7 @@ const BookAppointmentForm = () => {
       ...values,
       birthDate: values.birthDate ? dayjs(values.birthDate).format("YYYY-MM-DD") : undefined,
       date: values.date ? dayjs(values.date).format("YYYY-MM-DD") : undefined,
-      time: values.time ? values.time.format("HH:mm:ss") : undefined,
+      time: values.time,
     };
     await handleSubmit(submitData);
   };
@@ -134,7 +148,6 @@ const BookAppointmentForm = () => {
     return Promise.resolve();
   };
 
-  const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
   const noServicesAvailable = fields.branchId && !servicesLoading && services.length === 0;
 
   // ── Summary Card ──
@@ -149,6 +162,18 @@ const BookAppointmentForm = () => {
       </S.FormCard>
     );
   }
+
+  // Format time for display
+  const formatTimeDisplay = (timeStr) => {
+    if (!timeStr) return '';
+    return dayjs(timeStr, 'HH:mm:ss').format('h:mm A');
+  };
+
+  // Format price
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return null;
+    return `₱${Number(price).toLocaleString()}`;
+  };
 
   return (
     <S.FormCard>
@@ -193,7 +218,13 @@ const BookAppointmentForm = () => {
                 </Select>
               </Form.Item>
               <Form.Item name="birthDate" label="Birthdate" rules={[{ validator: validateBirthDate }]}>
-                <DatePicker style={{ width: "100%" }} format="MMM D, YYYY" placeholder="Select birthdate (optional)" size="large" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="MMM D, YYYY"
+                  placeholder="Select birthdate (optional)"
+                  size="large"
+                  disabledDate={disabledBirthDate}
+                />
               </Form.Item>
             </S.FieldRow>
 
@@ -213,11 +244,41 @@ const BookAppointmentForm = () => {
           {/* ── Appointment Information Section ── */}
           <S.FormSection>
             <S.SectionTitle><CalendarOutlined /> Appointment Information</S.SectionTitle>
+
             <Form.Item name="branchId" label="Branch" rules={[{ required: true, message: "Please select a branch." }]}>
               <Select placeholder="Select a branch" loading={branchesLoading} size="large">
                 {branches.map((b) => <Option key={b.id} value={b.id}>{b.name}</Option>)}
               </Select>
             </Form.Item>
+
+            {noServicesAvailable ? (
+              <Alert
+                type="info"
+                showIcon
+                title="No services available for online booking"
+                description="This branch does not currently offer any services that can be booked online. Please contact the clinic for assistance."
+                style={{ marginBottom: 16 }}
+              />
+            ) : (
+              <Form.Item
+                name="serviceBranchId"
+                label="Service"
+                rules={[{ required: true, message: "Please select a service." }]}
+              >
+                <Select
+                  placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
+                  loading={servicesLoading}
+                  disabled={!fields.branchId || services.length === 0}
+                  size="large"
+                >
+                  {services.map((s) => (
+                    <Option key={s.service_branch_id} value={s.service_branch_id}>
+                      {s.name || "Unnamed"}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            )}
 
             <S.FieldRow>
               <Form.Item name="date" label="Appointment Date" rules={[{ validator: validatePreferredDate }]}>
@@ -227,11 +288,6 @@ const BookAppointmentForm = () => {
                   placeholder="Select preferred date"
                   disabledDate={disabledDate}
                   disabled={!fields.branchId}
-                  onPanelChange={(value, mode) => {
-                    if (mode === 'date') {
-                      // handled by hook
-                    }
-                  }}
                   key={`datepicker-${fields.branchId}-${closureVersion}`}
                   size="large"
                 />
@@ -247,49 +303,22 @@ const BookAppointmentForm = () => {
                   label="Appointment Time"
                   rules={[{ validator: validatePreferredTime }]}
                 >
-                  <TimePicker
-                    style={{ width: "100%" }}
-                    format="h:mm A"
-                    use12Hours
-                    placeholder={fields.date ? "Select preferred time" : "Select a date first"}
-                    disabledTime={disabledTime}
-                    minuteStep={1}
-                    hideDisabledOptions={true}
-                    disabled={!fields.branchId || !fields.date}
-                    popupStyle={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    popupClassName="time-picker-no-scrollbar"
-                    key={`timepicker-${fields.branchId}-${fields.date}-${durationMinutes}-${closureVersion}-${schedulingVersion}`}
-                  />
+                  <Select
+                    placeholder={isTimeDisabled ? "No available slots" : "Select preferred time"}
+                    loading={servicesLoading}
+                    disabled={isTimeDisabled}
+                    size="large"
+                    key={`timeselect-${fields.branchId}-${fields.date}-${closureVersion}-${schedulingVersion}`}
+                  >
+                    {allSlots.map((slot) => (
+                      <Option key={slot.value} value={slot.value} disabled={slot.disabled}>
+                        {formatTimeDisplay(slot.value)}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               )}
             </S.FieldRow>
-
-            {noServicesAvailable ? (
-              <S.FullWidth>
-                <Alert
-                  type="info"
-                  showIcon
-                  message="No services available for online booking"
-                  description="This branch does not currently offer any services that can be booked online. Please contact the clinic for assistance."
-                  style={{ marginBottom: 16 }}
-                />
-              </S.FullWidth>
-            ) : (
-              <Form.Item
-                name="serviceBranchId"
-                label="Service"
-                rules={[{ required: true, message: "Please select a service." }]}
-              >
-                <Select
-                  placeholder={fields.branchId ? "Select a service" : "Select a branch first"}
-                  loading={servicesLoading}
-                  disabled={!fields.branchId || services.length === 0 || isDateUnavailable}
-                  size="large"
-                >
-                  {services.map((s) => <Option key={s.service_branch_id} value={s.service_branch_id}>{s.name || "Unnamed"}</Option>)}
-                </Select>
-              </Form.Item>
-            )}
           </S.FormSection>
 
           {/* ── Additional Information Section ── */}
@@ -303,14 +332,28 @@ const BookAppointmentForm = () => {
           {/* ── Summary Card ── */}
           {showSummary && (
             <S.SummaryCard>
-              <Card title="Appointment Summary" size="small" bordered={false}>
+              <Card title="Booking Summary" size="small" bordered={false}>
                 <S.SummaryGrid>
-                  <S.SummaryItem><strong>Branch:</strong> {branches.find(b => b.id === fields.branchId)?.name}</S.SummaryItem>
-                  <S.SummaryItem><strong>Service:</strong> {services.find(s => s.service_branch_id === fields.serviceBranchId)?.name}</S.SummaryItem>
-                  <S.SummaryItem><strong>Date:</strong> {dayjs(fields.date).format('MMMM D, YYYY')}</S.SummaryItem>
-                  <S.SummaryItem><strong>Time:</strong> {dayjs(fields.time, 'HH:mm:ss').format('h:mm A')}</S.SummaryItem>
-                  <S.SummaryItem><strong>Patient:</strong> {fields.firstName} {fields.lastName}</S.SummaryItem>
-                  <S.SummaryItem><strong>Contact:</strong> {fields.phoneNumber}</S.SummaryItem>
+                  <S.SummaryItem>
+                    <FaMapPin style={{ color: '#886217', marginRight: 6 }} />
+                    <strong>Branch:</strong> {branches.find(b => b.id === fields.branchId)?.name}
+                  </S.SummaryItem>
+                  <S.SummaryItem>
+                    <FaTooth style={{ color: '#886217', marginRight: 6 }} />
+                    <strong>Service:</strong> {selectedService?.name}
+                  </S.SummaryItem>
+                  <S.SummaryItem>
+                    <FaMoneyBillWave style={{ color: '#886217', marginRight: 6 }} />
+                    <strong>Price:</strong> {selectedService?.price ? formatPrice(selectedService.price) : '—'}
+                  </S.SummaryItem>
+                  <S.SummaryItem>
+                    <FaCalendarAlt style={{ color: '#886217', marginRight: 6 }} />
+                    <strong>Appointment:</strong> {dayjs(fields.date).format('MMMM D, YYYY')}
+                  </S.SummaryItem>
+                  <S.SummaryItem>
+                    <FaClock style={{ color: '#886217', marginRight: 6 }} />
+                    <strong>Time:</strong> {formatTimeDisplay(fields.time)}
+                  </S.SummaryItem>
                 </S.SummaryGrid>
               </Card>
             </S.SummaryCard>

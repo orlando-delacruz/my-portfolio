@@ -30,8 +30,8 @@ export const STATUS_CONFIG = {
   },
 };
 
+// Reference Number column removed
 export const TABLE_COLUMNS = [
-  { key: "referenceNo", label: "Reference No" },
   { key: "patientName", label: "Patient Name" },
   { key: "contactNumber", label: "Contact Number" },
   { key: "branch", label: "Branch" },

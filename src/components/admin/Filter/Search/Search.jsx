@@ -1,15 +1,9 @@
+// src/components/admin/Filter/Search/Search.jsx
 import { memo } from "react";
 import { IoSearchOutline } from "react-icons/io5";
 import * as S from "./Search.styled";
 
-/**
- * Search
- * Searches by: patient name, phone number, reference ID, or reason.
- *
- * @param {string}   value
- * @param {function} onChange
- */
-const Search = ({ value, onChange }) => (
+const Search = ({ value, onChange, placeholder }) => (
   <S.Wrapper>
     <S.Label htmlFor="filter-search">Search</S.Label>
     <S.InputWrapper>
@@ -21,8 +15,8 @@ const Search = ({ value, onChange }) => (
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Name, phone, ID or reason…"
-        aria-label="Search by patient name, phone number, reference ID, or reason"
+        placeholder={placeholder || "Search patient name or mobile number…"}
+        aria-label="Search by patient name or phone number"
         autoComplete="off"
       />
     </S.InputWrapper>
