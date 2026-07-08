@@ -138,10 +138,13 @@ const Dashboard = () => {
       openAdd();
     } else if (action.id === 'qa4') {
       goTo('/admin/appointments');
+    } else if (action.id === 'qa3') {
+      // Navigate to Clinic Closures page with state to open add modal
+      navigate('/admin/clinic-closures', { state: { openAddModal: true } });
     } else {
       goTo('/admin/dashboard');
     }
-  }, [openAdd, goTo]);
+  }, [openAdd, goTo, navigate]);
 
   // ── Stats mapping ──
   const statsConfig = useMemo(
@@ -271,7 +274,6 @@ const Dashboard = () => {
     id: null,
   };
 
-  // ── Render ──
   return (
     <AdminLayout>
       <S.Page>
@@ -394,7 +396,7 @@ const Dashboard = () => {
             </S.PanelHeader>
             <S.PanelContent>
               {upcoming.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontize: '13px' }}>
                   No upcoming appointments
                 </div>
               ) : (
@@ -429,7 +431,7 @@ const Dashboard = () => {
             </S.PanelHeader>
             <S.PanelContent>
               {activity.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '13px' }}>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#888', fontize: '13px' }}>
                   No recent activity
                 </div>
               ) : (
@@ -475,14 +477,14 @@ const Dashboard = () => {
               <S.QuickGrid role="list">
                 {quickActions.map((action) => {
                   const ActionIcon = action.icon;
+                  const isComingSoon = action.isComingSoon || false;
                   const isBookAppointment = action.id === 'qa1';
                   const isAppointmentList = action.id === 'qa4';
-                  const hasFunctionality = isBookAppointment || isAppointmentList;
+                  const isAddClosure = action.id === 'qa3';
+                  const hasFunctionality = isBookAppointment || isAppointmentList || isAddClosure;
                   const handleClick = hasFunctionality
                     ? () => handleQuickAction(action)
                     : () => goTo('/admin/dashboard');
-
-                  const showTooltip = !hasFunctionality;
 
                   const button = (
                     <S.QuickBtn
@@ -491,13 +493,14 @@ const Dashboard = () => {
                       onClick={handleClick}
                       aria-label={action.label}
                       role="listitem"
+                      style={{ opacity: isComingSoon ? 0.5 : 1 }}
                     >
                       <ActionIcon aria-hidden="true" />
                       <span>{action.label}</span>
                     </S.QuickBtn>
                   );
 
-                  return showTooltip ? (
+                  return isComingSoon ? (
                     <Tooltip
                       key={action.id}
                       title="This feature is coming soon."
