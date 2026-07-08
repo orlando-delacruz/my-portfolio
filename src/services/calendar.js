@@ -27,10 +27,10 @@ export async function fetchCalendarAppointments(
 
   const dateFilter = `preferred_date.gte.${startOfMonth},preferred_date.lte.${endOfMonth},confirmed_date.gte.${startOfMonth},confirmed_date.lte.${endOfMonth}`;
 
+  // Build the base query with nested relations, using !inner for branch filtering if needed
   let query = supabase
     .from("appointments")
-    .select(
-      `
+    .select(`
       id,
       reference_number,
       preferred_date,
@@ -48,22 +48,22 @@ export async function fetchCalendarAppointments(
         email,
         is_orthodontic
       ),
-      service_branch:service_branches(
+      service_branch:service_branches${branchId && isValidUUID(branchId) ? "!inner(branch_id)" : ""
+      }(
         branch_id,
         branch:branches(id, name),
         service:services(name)
       )
-    `,
-    )
+    `)
     .or(dateFilter)
     .order("preferred_date", { ascending: true });
 
-  // Branch filter – only if valid UUID
+  // Apply branch filter if a valid UUID is provided
   if (branchId && isValidUUID(branchId)) {
     query = query.eq("service_branch.branch_id", branchId);
   }
 
-  // Status filter
+  // Apply status filter
   if (statusFilter && statusFilter !== "all") {
     if (statusFilter === "confirmed") {
       query = query
@@ -93,9 +93,8 @@ export async function fetchCalendarAppointments(
       "Unknown Patient";
 
     const serviceBranch = apt.service_branch || {};
-    const branch = serviceBranch.branch || null;
     const branchId = serviceBranch.branch_id || null;
-    const branchName = branch?.name || null;
+    const branchName = serviceBranch.branch?.name || null;
 
     let branchInitial = "•";
     let branchColor = "#888888";
