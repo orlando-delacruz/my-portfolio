@@ -9,7 +9,7 @@ export const Card = styled.article`
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  height: 100%;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -23,6 +23,7 @@ export const Card = styled.article`
 export const ImageWrapper = styled.div`
   position: relative;
   padding: 10px;
+  flex-shrink: 0;
 `;
 
 export const CardImage = styled.img`
@@ -48,17 +49,18 @@ export const PriceBadge = styled.span`
 `;
 
 export const CardBody = styled.div`
-  padding: 0 20px 20px;
+  padding: 0 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
   flex: 1;
+  gap: 12px;
 `;
 
 export const CardTextGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 14px;
+  flex: 1;
 `;
 
 export const TitleGroup = styled.div`
@@ -68,10 +70,10 @@ export const TitleGroup = styled.div`
 `;
 
 export const CardTitle = styled.h3`
-  font-size: ${theme.typography.heading.h3};
-  font-weight: ${theme.typography.weight.medium};
+  font-size: ${theme.typography.heading.h5};
+  font-weight: ${theme.typography.weight.semibold};
   color: ${theme.colors.black};
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0;
 `;
 
@@ -100,13 +102,9 @@ export const ButtonRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
-  margin-top: 4px;
-
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid ${theme.colors.gray};
 `;
 
 export const ViewDetailsButton = styled.button`

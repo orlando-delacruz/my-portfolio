@@ -38,6 +38,7 @@ const ServiceCard = memo(({ service, onViewDetails }) => {
           </S.TitleGroup>
           <S.CardDesc>{shortDesc}</S.CardDesc>
         </S.CardTextGroup>
+
         <S.ButtonRow>
           <S.ViewDetailsButton onClick={() => onViewDetails(service)}>
             View Details <FiArrowRight aria-hidden="true" />

@@ -7,7 +7,7 @@ import { useBranches } from '../../../../hooks/useBranches';
 
 const { TextArea } = Input;
 
-// Helper to convert a URL to an UploadFile object
+// Helper: convert a URL to an UploadFile object
 const urlToUploadFile = (url) => {
   if (!url) return null;
   return {
@@ -22,6 +22,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
   const [form] = Form.useForm();
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [fileList, setFileList] = useState([]);
   const uploadImage = useUploadCmsImage();
   const { branches, loading: branchesLoading } = useBranches();
 
@@ -36,17 +37,16 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
     };
   }, [imagePreview]);
 
+  // Initialize form and file list when modal opens
   useEffect(() => {
     if (open && service) {
-      // Convert existing featured_image to UploadFile array if present
-      const fileList = service.featured_image ? [urlToUploadFile(service.featured_image)] : [];
+      const existingFileList = service.featured_image ? [urlToUploadFile(service.featured_image)] : [];
       form.setFieldsValue({
         title: service.title,
         title_tagalog: service.title_tagalog || '',
         slug: service.slug,
         short_description: service.short_description,
         full_description: service.full_description || '',
-        featured_image: fileList,
         starting_price: service.starting_price || 0,
         maximum_price: service.maximum_price || 0,
         display_order: service.display_order || 0,
@@ -54,6 +54,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
         show_on_homepage: service.show_on_homepage !== undefined ? service.show_on_homepage : true,
         branch_ids: service.branch_ids || [],
       });
+      setFileList(existingFileList);
       setImagePreview(service.featured_image || null);
       setImageFile(null);
     } else if (open && !service) {
@@ -65,19 +66,17 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
         starting_price: 0,
         maximum_price: 0,
         branch_ids: [],
-        featured_image: [], // empty array for new service
       });
+      setFileList([]);
       setImagePreview(null);
       setImageFile(null);
     }
   }, [open, service, form]);
 
-  const handleImageChange = ({ file, fileList }) => {
-    // fileList is the new array of UploadFile objects
-    // Update form field with the new fileList
-    form.setFieldsValue({ featured_image: fileList });
+  const handleImageChange = ({ file, fileList: newFileList }) => {
+    setFileList(newFileList);
 
-    // Update preview and imageFile for upload
+    // If file is removed, clear preview and imageFile
     if (file.status === 'removed') {
       setImageFile(null);
       setImagePreview(null);
@@ -95,7 +94,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
       // Existing image from server
       setImagePreview(file.url);
     }
-    return false;
+    return false; // prevent auto upload
   };
 
   const handleFinish = async (values) => {
@@ -108,8 +107,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
 
       let featuredImage = null;
 
-      // Check if a new image was uploaded (fileList contains a file with originFileObj)
-      const fileList = values.featured_image || [];
+      // Determine the image to save: if there's a new file, upload it; otherwise keep existing
       const newFile = fileList.find(f => f.originFileObj);
       if (newFile) {
         // Upload the new image
@@ -120,6 +118,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
         featuredImage = fileList[0].url;
       }
 
+      // Validate pricing
       if (values.starting_price > values.maximum_price) {
         message.error('Starting price cannot be greater than maximum price.');
         return;
@@ -132,6 +131,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
 
       await onSave(payload);
       form.resetFields();
+      setFileList([]);
       setImageFile(null);
       setImagePreview(null);
     } catch (error) {
@@ -141,6 +141,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
 
   const handleCancel = () => {
     form.resetFields();
+    setFileList([]);
     setImageFile(null);
     setImagePreview(null);
     onCancel();
@@ -250,30 +251,41 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
           />
         </Form.Item>
 
-        {/* Media */}
+        {/* Media Section – Upload Thumbnail */}
         <h3 style={{ marginTop: 24, marginBottom: 16 }}>Media</h3>
         <Form.Item
-          name="featured_image"
           label="Featured Image"
-          valuePropName="fileList"
-          getValueFromEvent={(e) => e && e.fileList}
+          required={!isEditing}
+          rules={[
+            {
+              validator: () => {
+                if (!isEditing && (!fileList || fileList.length === 0)) {
+                  return Promise.reject(new Error('Please upload a featured image.'));
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
         >
           <Upload
             listType="picture-card"
-            showUploadList={true}
-            beforeUpload={() => false}
+            fileList={fileList}
             onChange={handleImageChange}
-            accept="image/*"
+            beforeUpload={() => false} // prevent auto upload
+            accept="image/png,image/jpeg,image/webp"
             maxCount={1}
           >
-            {form.getFieldValue('featured_image')?.length === 0 && (
+            {fileList.length === 0 && (
               <div>
                 <PlusOutlined />
                 <div style={{ marginTop: 8 }}>Upload</div>
               </div>
             )}
           </Upload>
-          {imageFile && <div style={{ marginTop: 4 }}>Image selected. Upload on save.</div>}
+          {imageFile && <div style={{ marginTop: 4, color: '#888' }}>Image selected. Upload on save.</div>}
+          <div style={{ marginTop: 4, fontSize: 12, color: '#888' }}>
+            Supported: PNG, JPG, JPEG, WEBP (Max 5MB)
+          </div>
         </Form.Item>
 
         {/* Visibility */}

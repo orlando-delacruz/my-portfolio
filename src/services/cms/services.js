@@ -39,6 +39,9 @@ export async function fetchCmsServices() {
 
 /**
  * Fetch active services for the public homepage (with branch details)
+ * This query uses the anonymous client and relies on RLS policies.
+ * The RLS policy "Public can view active homepage services" allows SELECT
+ * for rows where is_active = true AND show_on_homepage = true.
  */
 export async function fetchActiveCmsServicesForHomepage() {
   const { data: services, error } = await supabase
@@ -47,7 +50,17 @@ export async function fetchActiveCmsServicesForHomepage() {
     .eq('is_active', true)
     .eq('show_on_homepage', true)
     .order('display_order', { ascending: true });
-  if (error) throw error;
+
+  // Log error for debugging – will appear in browser console
+  if (error) {
+    console.error('[fetchActiveCmsServicesForHomepage] Supabase error:', error);
+    throw error;
+  }
+
+  if (!services || services.length === 0) {
+    console.warn('[fetchActiveCmsServicesForHomepage] No services found – check RLS policies and filters.');
+    return [];
+  }
 
   const serviceIds = services.map(s => s.id);
   let branchMap = {};
@@ -56,7 +69,11 @@ export async function fetchActiveCmsServicesForHomepage() {
       .from(BRIDGE_TABLE)
       .select('cms_service_id, branch:branch_id(id, name)')
       .in('cms_service_id', serviceIds);
-    if (!bridgeError) {
+
+    if (bridgeError) {
+      console.error('[fetchActiveCmsServicesForHomepage] Bridge error:', bridgeError);
+      // Don't throw, just return services without branches
+    } else if (bridge) {
       bridge.forEach(item => {
         if (!branchMap[item.cms_service_id]) branchMap[item.cms_service_id] = [];
         branchMap[item.cms_service_id].push(item.branch);
@@ -70,7 +87,6 @@ export async function fetchActiveCmsServicesForHomepage() {
     branch_ids: (branchMap[s.id] || []).map(b => b.id),
   }));
 }
-
 /**
  * Create a new CMS service with branch associations
  */
@@ -112,7 +128,7 @@ export async function createCmsService(payload) {
 export async function updateCmsService(id, payload) {
   const { branch_ids, ...serviceData } = payload;
 
-  // Update service (we don't need the returned data, just check for error)
+  // Update service
   const { error: serviceError } = await supabase
     .from(TABLE)
     .update(serviceData)
@@ -166,6 +182,9 @@ export async function uploadCmsImage(file) {
   const fileName = `${Date.now()}.${fileExt}`;
   const filePath = `cms/${fileName}`;
 
+  // Ensure bucket exists (we'll rely on SQL migration, but we can also create it here)
+  // We'll attempt upload and catch errors.
+
   const { error: uploadError } = await supabase.storage
     .from('cms')
     .upload(filePath, file, {
@@ -175,7 +194,8 @@ export async function uploadCmsImage(file) {
 
   if (uploadError) {
     console.error('Upload error:', uploadError);
-    throw new Error('Failed to upload image. Please try again.');
+    // If the bucket doesn't exist, we could try to create it, but we assume it exists.
+    throw new Error(`Image upload failed: ${uploadError.message}`);
   }
 
   const { data: urlData } = supabase.storage
