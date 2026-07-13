@@ -23,6 +23,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const uploadImage = useUploadCmsImage();
   const { branches, loading: branchesLoading } = useBranches();
 
@@ -110,12 +111,24 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
       // Determine the image to save: if there's a new file, upload it; otherwise keep existing
       const newFile = fileList.find(f => f.originFileObj);
       if (newFile) {
-        // Upload the new image
-        const result = await uploadImage.mutateAsync(newFile.originFileObj);
-        featuredImage = result;
+        setUploading(true);
+        try {
+          const result = await uploadImage.mutateAsync(newFile.originFileObj);
+          featuredImage = result;
+        } catch (uploadErr) {
+          console.error('Upload error:', uploadErr);
+          message.error(uploadErr.message || 'Image upload failed. Please try again.');
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
       } else if (fileList.length > 0 && fileList[0].url) {
         // Keep existing image URL
         featuredImage = fileList[0].url;
+      } else if (!isEditing) {
+        // For new service, image is required
+        message.error('Please upload a featured image.');
+        return;
       }
 
       // Validate pricing
@@ -135,6 +148,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
       setImageFile(null);
       setImagePreview(null);
     } catch (error) {
+      console.error('Save error:', error);
       message.error(error.message || 'Failed to save service');
     }
   };
@@ -271,7 +285,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
             listType="picture-card"
             fileList={fileList}
             onChange={handleImageChange}
-            beforeUpload={() => false} // prevent auto upload
+            beforeUpload={() => false}
             accept="image/png,image/jpeg,image/webp"
             maxCount={1}
           >
@@ -282,7 +296,8 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
               </div>
             )}
           </Upload>
-          {imageFile && <div style={{ marginTop: 4, color: '#888' }}>Image selected. Upload on save.</div>}
+          {uploading && <div style={{ marginTop: 4, color: '#1890ff' }}>Uploading...</div>}
+          {imageFile && !uploading && <div style={{ marginTop: 4, color: '#888' }}>Image selected. Upload on save.</div>}
           <div style={{ marginTop: 4, fontSize: 12, color: '#888' }}>
             Supported: PNG, JPG, JPEG, WEBP (Max 5MB)
           </div>
@@ -337,7 +352,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
           <Button onClick={handleCancel} style={{ marginRight: 8 }}>
             Cancel
           </Button>
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button type="primary" htmlType="submit" loading={loading || uploading}>
             {isEditing ? 'Update' : 'Create'}
           </Button>
         </Form.Item>
