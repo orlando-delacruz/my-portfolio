@@ -55,6 +55,7 @@ export const sidebarNavItems = [
     icon: MdWeb,
     children: [
       { key: "cms-hero", label: "Hero Section", path: "/admin/cms/hero" },
+      { key: "cms-about", label: "About Section", path: "/admin/cms/about" },
       {
         key: "cms-services",
         label: "Services Section",
