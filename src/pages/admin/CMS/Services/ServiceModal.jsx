@@ -18,6 +18,23 @@ const urlToUploadFile = (url) => {
   };
 };
 
+// Helper: get the actual File object from an UploadFile or File
+const getFileObject = (file) => {
+  // If it's an UploadFile and has originFileObj, use it
+  if (file.originFileObj && file.originFileObj instanceof File) {
+    return file.originFileObj;
+  }
+  // If it's already a File, return it
+  if (file instanceof File) {
+    return file;
+  }
+  // If it's an UploadFile with a url, it's an existing image
+  if (file.url) {
+    return null;
+  }
+  return null;
+};
+
 const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
   const [form] = Form.useForm();
   const [imageFile, setImageFile] = useState(null);
@@ -84,8 +101,25 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
       return;
     }
 
-    const fileObj = file.originFileObj;
-    if (fileObj && fileObj instanceof File) {
+    // Try to get the actual File object
+    const fileObj = getFileObject(file);
+    if (fileObj) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+      if (!allowedTypes.includes(fileObj.type)) {
+        message.error('Unsupported file format. Please upload a JPG, PNG, or WEBP image.');
+        // Remove the file from the list
+        setFileList(newFileList.filter(f => f.uid !== file.uid));
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (fileObj.size > 5 * 1024 * 1024) {
+        message.error('File size exceeds 5MB limit. Please choose a smaller image.');
+        setFileList(newFileList.filter(f => f.uid !== file.uid));
+        return;
+      }
+
       setImageFile(fileObj);
       if (imagePreview && imagePreview.startsWith('blob:')) {
         URL.revokeObjectURL(imagePreview);
@@ -94,6 +128,9 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
     } else if (file.url) {
       // Existing image from server
       setImagePreview(file.url);
+    } else {
+      // Fallback: if we can't get a File, log a warning
+      console.warn('Unable to extract File object from upload:', file);
     }
     return false; // prevent auto upload
   };
@@ -109,19 +146,28 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
       let featuredImage = null;
 
       // Determine the image to save: if there's a new file, upload it; otherwise keep existing
-      const newFile = fileList.find(f => f.originFileObj);
-      if (newFile) {
-        setUploading(true);
-        try {
-          const result = await uploadImage.mutateAsync(newFile.originFileObj);
-          featuredImage = result;
-        } catch (uploadErr) {
-          console.error('Upload error:', uploadErr);
-          message.error(uploadErr.message || 'Image upload failed. Please try again.');
+      // We need to check if there is a new file in fileList (with originFileObj or a File object)
+      const newFileEntry = fileList.find(f => f.originFileObj || f instanceof File);
+      if (newFileEntry) {
+        const fileObj = getFileObject(newFileEntry);
+        if (fileObj) {
+          setUploading(true);
+          try {
+            const result = await uploadImage.mutateAsync(fileObj);
+            featuredImage = result;
+          } catch (uploadErr) {
+            console.error('Upload error:', uploadErr);
+            message.error(uploadErr.message || 'Image upload failed. Please try again.');
+            setUploading(false);
+            return;
+          }
           setUploading(false);
-          return;
+        } else {
+          // If we can't get a File object, it might be an existing image URL
+          if (newFileEntry.url) {
+            featuredImage = newFileEntry.url;
+          }
         }
-        setUploading(false);
       } else if (fileList.length > 0 && fileList[0].url) {
         // Keep existing image URL
         featuredImage = fileList[0].url;
@@ -286,7 +332,7 @@ const ServiceModal = memo(({ open, service, onSave, onCancel, loading }) => {
             fileList={fileList}
             onChange={handleImageChange}
             beforeUpload={() => false}
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
             maxCount={1}
           >
             {fileList.length === 0 && (
