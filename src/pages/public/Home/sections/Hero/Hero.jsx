@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { BsTelephoneOutboundFill } from "react-icons/bs";
 import { MdMedicalServices } from "react-icons/md";
 import { FaAward, FaStar, FaUsers } from "react-icons/fa";
+import { Alert } from "antd";
 import * as S from "./Hero.styled";
-import Button from "../../../../../components/ui/Button/Button";
+import Button from "../../../../../components/ui/Button";
 import { useHero } from "../../../../../hooks/cms/useHero";
-import { Spin, Alert } from "antd";
+import Loading from "../../../../../components/common/Loading";
 
 // Map icon strings to components with a safe fallback
 const iconMap = {
@@ -24,13 +25,7 @@ const Hero = () => {
   const { data: hero, isLoading, error } = useHero();
 
   if (isLoading) {
-    return (
-      <S.HeroSection id="home" aria-labelledby="hero-heading">
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <Spin size="large" />
-        </div>
-      </S.HeroSection>
-    );
+    return <Loading fullscreen />;
   }
 
   if (error || !hero) {
@@ -47,7 +42,6 @@ const Hero = () => {
 
   // Map cards from CMS to the format expected by the UI
   const stats = hero.cards?.map((card, index) => {
-    // Safely get the icon component; fallback to FallbackIcon if invalid
     const IconComponent = iconMap[card.icon] || FallbackIcon;
     return {
       id: card.id,
