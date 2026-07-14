@@ -22,6 +22,7 @@ const Settings = lazy(() => import("../pages/admin/Settings"));
 
 // ── CMS pages ──
 const ComingSoon = lazy(() => import("../pages/admin/CMS/ComingSoon"));
+const Hero = lazy(() => import("../pages/admin/CMS/Hero/Hero"));
 const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 
 // ── Fallbacks ──
@@ -81,7 +82,7 @@ export default function PublicRoutes() {
           {/* CMS Routes */}
           <Route path="cms">
             <Route path="services" element={<Services />} />
-            <Route path="hero" element={<ComingSoon title="Hero Section" />} />
+            <Route path="hero" element={<Hero />} />
             <Route path="about" element={<ComingSoon title="About Section" />} />
             <Route path="why-choose-us" element={<ComingSoon title="Why Choose Us" />} />
             <Route path="testimonials" element={<ComingSoon title="Testimonials" />} />

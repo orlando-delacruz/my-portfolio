@@ -6,57 +6,68 @@ import { MdMedicalServices } from "react-icons/md";
 import { FaAward, FaStar, FaUsers } from "react-icons/fa";
 import * as S from "./Hero.styled";
 import Button from "../../../../../components/ui/Button/Button";
-import { hero } from "../../../../../data/HomePage/hero";
+import { useHero } from "../../../../../hooks/cms/useHero";
+import { Spin, Alert } from "antd";
 
-const statIcons = {
-  award: <FaAward aria-hidden="true" />,
-  star: <FaStar aria-hidden="true" />,
-  users: <FaUsers aria-hidden="true" />,
+// Map icon strings to components with a safe fallback
+const iconMap = {
+  FaAward,
+  FaStar,
+  FaUsers,
 };
+const FallbackIcon = FaStar;
 
-const statPositionClass = {
-  experience: "stat--experience",
-  rating: "stat--rating",
-  patients: "stat--patients",
-};
+const statClasses = ['stat--experience', 'stat--rating', 'stat--patients'];
 
-const StatBadges = memo(({ stats }) =>
-  stats.map(({ id, icon, label }) => (
-    <S.StatBadge
-      key={id}
-      className={statPositionClass[id]}
-      role="img"
-      aria-label={label}
-    >
-      {statIcons[icon]}
-      <span>{label}</span>
-    </S.StatBadge>
-  ))
-);
-StatBadges.displayName = "StatBadges";
-
-// MAIN COMPONENT
 const Hero = () => {
   const navigate = useNavigate();
-  const { badge, headingStart, headingAccent, description, primaryCta, secondaryCta, image, stats } =
-    hero;
+  const { data: hero, isLoading, error } = useHero();
+
+  if (isLoading) {
+    return (
+      <S.HeroSection id="home" aria-labelledby="hero-heading">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+          <Spin size="large" />
+        </div>
+      </S.HeroSection>
+    );
+  }
+
+  if (error || !hero) {
+    return (
+      <S.HeroSection id="home" aria-labelledby="hero-heading">
+        <Alert type="error" message="Failed to load hero content" showIcon />
+      </S.HeroSection>
+    );
+  }
 
   const handleBookAppointment = () => {
-    navigate("/book");
+    navigate(hero.primary_button_link || "/book");
   };
+
+  // Map cards from CMS to the format expected by the UI
+  const stats = hero.cards?.map((card, index) => {
+    // Safely get the icon component; fallback to FallbackIcon if invalid
+    const IconComponent = iconMap[card.icon] || FallbackIcon;
+    return {
+      id: card.id,
+      icon: IconComponent,
+      label: `${card.value} ${card.title}`,
+      className: statClasses[index] || '',
+    };
+  }) || [];
 
   return (
     <S.HeroSection id="home" aria-labelledby="hero-heading">
-      {/* Left Content*/}
       <S.HeroContent>
-        <S.Badge aria-label="Section label">{badge}</S.Badge>
+        <S.Badge aria-label="Section label">{hero.bio_badge}</S.Badge>
 
         <S.HeadingGroup>
           <S.Heading id="hero-heading">
-            {headingStart}
-            <span className="accent">{headingAccent}</span>
+            {hero.heading}
+            <span className="accent">{hero.highlight_text}</span>
           </S.Heading>
-          <S.Description>{description}</S.Description>
+          <S.Description>{hero.subheading}</S.Description>
         </S.HeadingGroup>
 
         <S.CtaGroup>
@@ -64,9 +75,9 @@ const Hero = () => {
             variant="primary"
             size="sm"
             onClick={handleBookAppointment}
-            aria-label={primaryCta.ariaLabel}
+            aria-label={hero.primary_button_text}
           >
-            {primaryCta.label}
+            {hero.primary_button_text}
             <BsTelephoneOutboundFill aria-hidden="true" />
           </Button>
 
@@ -74,28 +85,46 @@ const Hero = () => {
             variant="outline"
             size="sm"
             as="a"
-            href={secondaryCta.href}
-            aria-label={secondaryCta.ariaLabel}
+            href="#services"
+            aria-label="View our services"
           >
-            {secondaryCta.label}
+            View Services
             <MdMedicalServices aria-hidden="true" />
           </Button>
         </S.CtaGroup>
       </S.HeroContent>
 
-      {/* Right Content */}
       <S.HeroImageStage aria-hidden="true">
         <S.ImageGlow />
-        <S.HeroImage
-          src={image.src}
-          alt={image.alt}
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-          width={800}
-          height={600}
-        />
-        <StatBadges stats={stats} />
+        {hero.hero_image ? (
+          <S.HeroImage
+            src={hero.hero_image}
+            alt="Hero"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            width={800}
+            height={600}
+          />
+        ) : (
+          <div style={{ width: '100%', maxWidth: 580, height: 'auto', aspectRatio: '4/3', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 20, color: '#aaa', fontSize: 18, padding: 20 }}>
+            No Image Available
+          </div>
+        )}
+        {stats.map((stat) => {
+          const IconComponent = stat.icon;
+          return (
+            <S.StatBadge
+              key={stat.id}
+              className={stat.className}
+              role="img"
+              aria-label={stat.label}
+            >
+              <IconComponent aria-hidden="true" />
+              <span>{stat.label}</span>
+            </S.StatBadge>
+          );
+        })}
       </S.HeroImageStage>
     </S.HeroSection>
   );

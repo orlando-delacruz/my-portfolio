@@ -36,12 +36,16 @@ const ServiceCard = memo(({ service, onEdit, onDelete, onPreview, onDuplicate })
       <Card
         hoverable
         cover={
-          <div style={{ height: 160, overflow: 'hidden' }}>
-            <img
-              src={featured_image || 'https://via.placeholder.com/300x160?text=No+Image'}
-              alt={title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+          <div style={{ height: 160, overflow: 'hidden', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {featured_image ? (
+              <img
+                src={featured_image}
+                alt={title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <span style={{ color: '#aaa', fontSize: 14 }}>No Image</span>
+            )}
           </div>
         }
         actions={[

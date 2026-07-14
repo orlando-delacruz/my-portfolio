@@ -38,6 +38,24 @@ const SideBar = () => {
     const isExpanded = expandedKeys.includes(item.key);
     const Icon = item.icon;
 
+    // Handle external link
+    if (item.external) {
+      return (
+        <S.NavItem key={item.key}>
+          <S.NavLink
+            as="a"
+            href={item.path}
+            target="_blank"
+            rel="noopener noreferrer"
+            $active={false}
+          >
+            <Icon aria-hidden="true" />
+            <span>{item.label}</span>
+          </S.NavLink>
+        </S.NavItem>
+      );
+    }
+
     if (hasChildren) {
       return (
         <S.NavItem key={item.key}>

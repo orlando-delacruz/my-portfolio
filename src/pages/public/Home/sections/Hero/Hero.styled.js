@@ -12,7 +12,7 @@ const floatY = keyframes`
   50%       { transform: translateY(-8px); }
 `;
 
-/* ─── Section wrapper ─────────────────────────────────── */
+// ── Section wrapper ───────────────────────────────────
 export const HeroSection = styled.section`
   background: ${theme.colors.background};
   display: grid;
@@ -20,6 +20,7 @@ export const HeroSection = styled.section`
   gap: 40px;
   align-items: center;
   overflow: hidden;
+  padding: 50px 65px 80px;
 
   @media ${theme.media.tablet} {
     grid-template-columns: 1fr;
@@ -33,7 +34,7 @@ export const HeroSection = styled.section`
   }
 `;
 
-/* ─── Left column ─────────────────────────────────────── */
+// ── Left column ───────────────────────────────────────
 export const HeroContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -81,7 +82,6 @@ export const Description = styled.p`
   opacity: 0.85;
 `;
 
-/* ─── CTA row ─────────────────────────────────────────── */
 export const CtaGroup = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -93,7 +93,7 @@ export const CtaGroup = styled.div`
   }
 `;
 
-/* ─── Right column — image stage ─────────────────────── */
+// ── Right column — image stage ───────────────────────
 export const HeroImageStage = styled.div`
   position: relative;
   display: flex;
@@ -131,7 +131,7 @@ export const HeroImage = styled.img`
   display: block;
 `;
 
-/* ─── Floating stat badges ─────────────────────────────── */
+// ── Floating stat badges ───────────────────────────────
 export const StatBadge = styled.div`
   position: absolute;
   z-index: 2;
@@ -155,19 +155,22 @@ export const StatBadge = styled.div`
     flex-shrink: 0;
   }
 
-  &:nth-child(1) { animation-delay: 0s; }
-  &:nth-child(2) { animation-delay: 1.3s; }
-  &:nth-child(3) { animation-delay: 2.6s; }
+  &:nth-child(1) {
+    animation-delay: 0s;
+  }
+  &:nth-child(2) {
+    animation-delay: 1.3s;
+  }
+  &:nth-child(3) {
+    animation-delay: 2.6s;
+  }
 
-  /* Positions */
   &.stat--experience {
     top: 18%;
     right: -6%;
-
     @media ${theme.media.tablet} {
       right: 2%;
     }
-
     @media ${theme.media.mobile} {
       right: -10px;
       padding: 5px 10px;
@@ -179,11 +182,9 @@ export const StatBadge = styled.div`
   &.stat--rating {
     bottom: 20%;
     right: -6%;
-
     @media ${theme.media.tablet} {
       right: 2%;
     }
-
     @media ${theme.media.mobile} {
       right: -10px;
       padding: 5px 10px;
@@ -195,11 +196,9 @@ export const StatBadge = styled.div`
   &.stat--patients {
     top: 30%;
     left: -4%;
-
     @media ${theme.media.tablet} {
       left: 2%;
     }
-
     @media ${theme.media.mobile} {
       left: -10px;
       top: 50%;

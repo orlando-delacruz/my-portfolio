@@ -27,7 +27,13 @@ const ServiceCard = memo(({ service, onViewDetails }) => {
   return (
     <S.Card>
       <S.ImageWrapper>
-        <S.CardImage src={image} alt={imageAlt || title} loading="lazy" decoding="async" />
+        {image ? (
+          <S.CardImage src={image} alt={imageAlt || title} loading="lazy" decoding="async" />
+        ) : (
+          <div style={{ height: 180, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, color: '#aaa' }}>
+            No Image
+          </div>
+        )}
         {priceDisplay && <S.PriceBadge>{priceDisplay}</S.PriceBadge>}
       </S.ImageWrapper>
       <S.CardBody>
