@@ -146,7 +146,8 @@ export const GalleryImage = styled.img`
   width: 100%;
   height: 220px;
   border-radius: 35px;
-  object-fit: cover;
+  object-fit: contain;
+  background: #f5f5f5;
   display: block;
   flex-shrink: 0;
   margin-bottom: 10px;
