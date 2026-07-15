@@ -1,19 +1,13 @@
 // src/pages/admin/CMS/Hero/Hero.jsx
 import { memo, useState, useEffect } from 'react';
-import { Form, Input, Button, message, Spin, Alert, Upload, Card, Row, Col, Select, InputNumber } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Input, Button, message, Spin, Alert, Upload, Card, Row, Col, Space, Tooltip } from 'antd';
+import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { Icon } from '@iconify/react';
 import AdminLayout from '../../../../components/admin/AdminLayout';
 import { useHeroAdmin, useUpdateHero, uploadHeroImage } from '../../../../hooks/cms/useHero';
 import * as S from './Hero.styled';
 
 const { TextArea } = Input;
-const { Option } = Select;
-
-const ICON_OPTIONS = [
-  { value: 'FaAward', label: '🏆 Award' },
-  { value: 'FaStar', label: '⭐ Star' },
-  { value: 'FaUsers', label: '👥 Users' },
-];
 
 // Helper: convert a URL to an UploadFile object
 const urlToUploadFile = (url) => {
@@ -26,33 +20,75 @@ const urlToUploadFile = (url) => {
   };
 };
 
+// Card item component with icon and value only
+const CardItem = ({ field, index, total, onDelete, onMoveUp, onMoveDown }) => {
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12}>
+          <Form.Item
+            name={[field.name, 'icon']}
+            fieldKey={[field.fieldKey, 'icon']}
+            label="Icon"
+            rules={[{ required: true, message: 'Icon is required' }]}
+            style={{ marginBottom: 0 }}
+          >
+            <Input
+              placeholder="Iconify icon (e.g., mdi:star, mdi:award)"
+              suffix={
+                <Form.Item shouldUpdate={(prev, curr) => prev?.cards?.[index]?.icon !== curr?.cards?.[index]?.icon} noStyle>
+                  {({ getFieldValue }) => {
+                    const icon = getFieldValue(['cards', index, 'icon']);
+                    return icon ? <Icon icon={icon} style={{ fontSize: 20, color: '#886217' }} /> : null;
+                  }}
+                </Form.Item>
+              }
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item
+            name={[field.name, 'value']}
+            fieldKey={[field.fieldKey, 'value']}
+            label="Value"
+            rules={[{ required: true, message: 'Value is required' }]}
+            style={{ marginBottom: 0 }}
+          >
+            <Input placeholder="e.g., 10+ Years Experience" />
+          </Form.Item>
+        </Col>
+        <Col xs={24}>
+          <Space>
+            <Tooltip title="Move up">
+              <Button icon={<ArrowUpOutlined />} size="small" disabled={index === 0} onClick={onMoveUp} />
+            </Tooltip>
+            <Tooltip title="Move down">
+              <Button icon={<ArrowDownOutlined />} size="small" disabled={index === total - 1} onClick={onMoveDown} />
+            </Tooltip>
+            <Button icon={<DeleteOutlined />} size="small" danger onClick={onDelete} />
+          </Space>
+        </Col>
+      </Row>
+    </Card>
+  );
+};
+
 const Hero = () => {
   const { data: heroData, isLoading, error, refetch } = useHeroAdmin();
   const updateHero = useUpdateHero();
   const [form] = Form.useForm();
 
-  // User‑selected file (new upload) or removal flag
+  // These states are only for the image upload – they are not needed in the effect
   const [selectedFile, setSelectedFile] = useState(null);
   const [isRemoved, setIsRemoved] = useState(false);
-
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Derive fileList and imagePreview directly from state + heroData (no useMemo needed – cheap computations)
   const fileList = (() => {
     if (selectedFile) {
-      return [
-        {
-          uid: '-2',
-          name: selectedFile.name,
-          status: 'done',
-          originFileObj: selectedFile,
-        },
-      ];
+      return [{ uid: '-2', name: selectedFile.name, status: 'done', originFileObj: selectedFile }];
     }
-    if (isRemoved) {
-      return [];
-    }
+    if (isRemoved) return [];
     if (heroData?.hero_image) {
       const file = urlToUploadFile(heroData.hero_image);
       return file ? [file] : [];
@@ -61,16 +97,11 @@ const Hero = () => {
   })();
 
   const imagePreview = (() => {
-    if (selectedFile) {
-      return URL.createObjectURL(selectedFile);
-    }
-    if (isRemoved) {
-      return null;
-    }
+    if (selectedFile) return URL.createObjectURL(selectedFile);
+    if (isRemoved) return null;
     return heroData?.hero_image || null;
   })();
 
-  // Cleanup blob URL when it changes
   useEffect(() => {
     return () => {
       if (imagePreview && imagePreview.startsWith('blob:')) {
@@ -79,7 +110,7 @@ const Hero = () => {
     };
   }, [imagePreview]);
 
-  // Populate form with hero data (safe – external system update)
+  // Populate form with hero data – this is a one‑time sync
   useEffect(() => {
     if (heroData) {
       form.setFieldsValue({
@@ -91,17 +122,16 @@ const Hero = () => {
         primary_button_link: heroData.primary_button_link || '',
         cards: heroData.cards || [],
       });
+      // No need to reset selectedFile/isRemoved here – they are derived from heroData
     }
   }, [heroData, form]);
 
   const handleImageChange = ({ file }) => {
-    // file.status === 'removed' when user clicks remove icon
     if (file.status === 'removed') {
       setSelectedFile(null);
       setIsRemoved(true);
       return;
     }
-
     const fileObj = file.originFileObj || file;
     if (fileObj instanceof File) {
       setSelectedFile(fileObj);
@@ -111,14 +141,13 @@ const Hero = () => {
 
   const handleFinish = async (values) => {
     setSaving(true);
+    console.log('🔍 Form values before submit:', values);
     try {
       let heroImage = null;
 
       if (isRemoved) {
-        // User explicitly removed the image
         heroImage = null;
       } else if (selectedFile) {
-        // User selected a new image – upload it
         setUploading(true);
         try {
           heroImage = await uploadHeroImage(selectedFile);
@@ -130,17 +159,19 @@ const Hero = () => {
         }
         setUploading(false);
       } else {
-        // Keep existing image if any
         heroImage = heroData?.hero_image || null;
       }
 
+      // Ensure each card has value and icon; title is set to value (fallback to empty string)
       const cards = (values.cards || []).map((card, index) => ({
-        title: card.title,
-        value: card.value,
+        title: card.value || '',
+        value: card.value || '',
         icon: card.icon || null,
         display_order: card.display_order !== undefined ? card.display_order : index,
         is_active: true,
       }));
+
+      console.log('📦 Payload cards:', cards);
 
       const payload = {
         id: heroData.id,
@@ -155,16 +186,15 @@ const Hero = () => {
         cards,
       };
 
+      console.log('📦 Full payload:', payload);
+
       await updateHero.mutateAsync(payload);
       message.success('Hero section updated successfully');
-
-      // Reset user actions after successful save
       setSelectedFile(null);
       setIsRemoved(false);
-
       refetch();
     } catch (err) {
-      console.error(err);
+      console.error('❌ Save error:', err);
       message.error(err.message || 'Failed to update hero section');
     } finally {
       setSaving(false);
@@ -297,63 +327,20 @@ const Hero = () => {
 
             <S.SectionTitle>Floating Cards</S.SectionTitle>
             <Form.List name="cards">
-              {(fields, { add, remove }) => (
+              {(fields, { add, move, remove }) => (
                 <>
-                  {fields.map((field) => (
-                    <Card
+                  {fields.map((field, index) => (
+                    <CardItem
                       key={field.key}
-                      style={{ marginBottom: 16 }}
-                      actions={[
-                        <DeleteOutlined key="delete" onClick={() => remove(field.name)} />
-                      ]}
-                    >
-                      <Row gutter={[16, 16]}>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'title']}
-                            fieldKey={[field.fieldKey, 'title']}
-                            label="Title"
-                            rules={[{ required: true, message: 'Title is required' }]}
-                          >
-                            <Input placeholder="e.g., Experienced Dentists" />
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'value']}
-                            fieldKey={[field.fieldKey, 'value']}
-                            label="Value"
-                            rules={[{ required: true, message: 'Value is required' }]}
-                          >
-                            <Input placeholder="e.g., 10+" />
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'icon']}
-                            fieldKey={[field.fieldKey, 'icon']}
-                            label="Icon"
-                          >
-                            <Select placeholder="Select icon" allowClear>
-                              {ICON_OPTIONS.map(opt => (
-                                <Option key={opt.value} value={opt.value}>{opt.label}</Option>
-                              ))}
-                            </Select>
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'display_order']}
-                            fieldKey={[field.fieldKey, 'display_order']}
-                            label="Display Order"
-                          >
-                            <InputNumber min={0} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                    </Card>
+                      field={field}
+                      index={index}
+                      total={fields.length}
+                      onDelete={() => remove(field.name)}
+                      onMoveUp={() => move(index, index - 1)}
+                      onMoveDown={() => move(index, index + 1)}
+                    />
                   ))}
-                  <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
+                  <Button type="dashed" onClick={() => add({ icon: '', value: '' })} icon={<PlusOutlined />} block>
                     Add Card
                   </Button>
                 </>
