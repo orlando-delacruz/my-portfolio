@@ -1,43 +1,24 @@
 // src/pages/public/Home/sections/Gallery/Gallery.jsx
 import { memo, useMemo } from 'react';
 import { Alert } from 'antd';
+import { Icon } from '@iconify/react';
 import * as S from './Gallery.styled';
 import SectionTitle from '../../../../../components/common/SectionTitle';
 import { useGallery } from '../../../../../hooks/cms/useGallery';
 import Loading from '../../../../../components/common/Loading';
 
-import {
-  FaUserFriends,
-  FaTooth,
-  FaTag,
-  FaClinicMedical,
-  FaHeart,
-  FaAward,
-  FaStar,
-  FaUsers,
-} from 'react-icons/fa';
-
-const iconMap = {
-  FaUserFriends,
-  FaTooth,
-  FaTag,
-  FaClinicMedical,
-  FaHeart,
-  FaAward,
-  FaStar,
-  FaUsers,
-};
-const FallbackIcon = FaStar;
+const FallbackIcon = 'mdi:star';
 
 const HighlightList = memo(({ highlights }) => {
   if (!highlights || highlights.length === 0) return null;
   return (
     <S.HighlightList>
       {highlights.map(({ id, icon, label }) => {
-        const IconComponent = iconMap[icon] || FallbackIcon;
+        const iconName = icon || FallbackIcon;
+        const finalIcon = iconName.includes(':') ? iconName : FallbackIcon;
         return (
           <S.HighlightItem key={id}>
-            <IconComponent aria-hidden="true" />
+            <Icon icon={finalIcon} style={{ fontSize: 20, color: '#886217', flexShrink: 0 }} />
             <span>{label}</span>
           </S.HighlightItem>
         );
@@ -47,18 +28,18 @@ const HighlightList = memo(({ highlights }) => {
 });
 HighlightList.displayName = 'HighlightList';
 
-// ── Infinite Scroller Component ──────────────────────────────────────────────
-// Seamless loop strategy: build one "padded" copy of the images that is long
-// enough to always exceed the viewport height, then render that padded copy
-// TWICE back-to-back and animate translateY(0) -> translateY(-50%) with a
-// CSS keyframe. Because the two halves are pixel-identical, the wrap point
-// is exact by construction — no runtime measurement, no drift, no blank gap.
+// ── Infinite Scroller ────────────────────────────────────────────────────
+// Loop strategy: pad the image list to a minimum length, then render that
+// padded copy THREE times back-to-back. Because all three copies are
+// pixel-identical, animating exactly 0 -> -33.3333% (or the reverse) loops
+// with zero seam. The extra (3rd) copy also gives buffer above/below so the
+// mask fade never reveals a duplicate/seam edge.
 const MIN_LOOP_ITEMS = 8;
 const PX_PER_SECOND = 28; // approximate scroll speed used to size the animation duration
 const APPROX_ITEM_HEIGHT = 230; // image height + margin-bottom, close enough for pacing
 
-const InfiniteScroller = memo(({ images, direction }) => {
-  const loopImages = useMemo(() => {
+const InfiniteColumn = memo(({ images, direction }) => {
+  const paddedImages = useMemo(() => {
     if (!images || images.length === 0) return [];
     const filled = [];
     while (filled.length < MIN_LOOP_ITEMS) {
@@ -68,22 +49,22 @@ const InfiniteScroller = memo(({ images, direction }) => {
   }, [images]);
 
   const trackImages = useMemo(
-    () => [...loopImages, ...loopImages],
-    [loopImages]
+    () => [...paddedImages, ...paddedImages, ...paddedImages],
+    [paddedImages]
   );
 
   const duration = useMemo(() => {
-    const copyHeight = loopImages.length * APPROX_ITEM_HEIGHT;
+    const copyHeight = paddedImages.length * APPROX_ITEM_HEIGHT;
     return Math.max(15, copyHeight / PX_PER_SECOND);
-  }, [loopImages.length]);
+  }, [paddedImages.length]);
 
-  if (images.length === 0) {
+  if (!images || images.length === 0) {
     return <S.EmptyColumn />;
   }
 
   return (
     <S.ScrollViewport>
-      <S.ScrollTrack className="scroll-track" $direction={direction} $duration={duration}>
+      <S.ScrollTrack $direction={direction} $duration={duration}>
         {trackImages.map(({ id, image_url }, index) => (
           <S.GalleryImage
             key={`${id}-${index}`}
@@ -91,14 +72,14 @@ const InfiniteScroller = memo(({ images, direction }) => {
             alt="Gallery image"
             loading="lazy"
             decoding="async"
-            fetchPriority={index < 4 ? 'high' : 'auto'}
+            fetchpriority={index < 4 ? 'high' : 'auto'}
           />
         ))}
       </S.ScrollTrack>
     </S.ScrollViewport>
   );
 });
-InfiniteScroller.displayName = 'InfiniteScroller';
+InfiniteColumn.displayName = 'InfiniteColumn';
 
 const Gallery = () => {
   const { data: gallery, isLoading, error } = useGallery();
@@ -141,9 +122,9 @@ const Gallery = () => {
         <HighlightList highlights={highlights} />
       </S.GalleryHeader>
 
-      <S.GalleryColumns>
-        <InfiniteScroller images={columnUp} direction="up" />
-        <InfiniteScroller images={columnDown} direction="down" />
+      <S.GalleryColumns aria-label="Clinic gallery images">
+        <InfiniteColumn images={columnUp} direction="up" />
+        <InfiniteColumn images={columnDown} direction="down" />
       </S.GalleryColumns>
     </S.GallerySection>
   );

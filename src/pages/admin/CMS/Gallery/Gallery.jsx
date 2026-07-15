@@ -11,7 +11,6 @@ import {
   Tabs,
   Space,
   Tooltip,
-  Select,
 } from 'antd';
 import {
   PlusOutlined,
@@ -20,25 +19,15 @@ import {
   ArrowDownOutlined,
   InboxOutlined,
 } from '@ant-design/icons';
+import { Icon } from '@iconify/react';
 import AdminLayout from '../../../../components/admin/AdminLayout';
 import { useGalleryAdmin, useUpdateGallery, uploadGalleryImage } from '../../../../hooks/cms/useGallery';
 import * as S from './Gallery.styled';
 
-import {
-  FaUserFriends,
-  FaTooth,
-  FaTag,
-  FaClinicMedical,
-  FaHeart,
-  FaAward,
-  FaStar,
-  FaUsers,
-} from 'react-icons/fa';
-
 const { TextArea } = Input;
 const { TabPane } = Tabs;
-const { Option } = Select;
 
+// Image item component
 const ImageItem = ({ item, index, total, onDelete, onMoveUp, onMoveDown, isNew }) => {
   const src = isNew ? URL.createObjectURL(item.file) : item.image_url;
 
@@ -61,42 +50,22 @@ const ImageItem = ({ item, index, total, onDelete, onMoveUp, onMoveDown, isNew }
   );
 };
 
+// Highlight item component with Iconify input + preview
 const HighlightItem = ({ item, index, total, onDelete, onMoveUp, onMoveDown, onChange }) => {
-  const iconOptions = [
-    { value: 'FaUserFriends', label: 'User Friends', icon: FaUserFriends },
-    { value: 'FaTooth', label: 'Tooth', icon: FaTooth },
-    { value: 'FaTag', label: 'Tag', icon: FaTag },
-    { value: 'FaClinicMedical', label: 'Clinic', icon: FaClinicMedical },
-    { value: 'FaHeart', label: 'Heart', icon: FaHeart },
-    { value: 'FaAward', label: 'Award', icon: FaAward },
-    { value: 'FaStar', label: 'Star', icon: FaStar },
-    { value: 'FaUsers', label: 'Users', icon: FaUsers },
-  ];
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, border: '1px solid #f0f0f0', borderRadius: 8, marginBottom: 8 }}>
       <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Select
-          placeholder="Select icon"
-          value={item.icon || undefined}
-          onChange={(value) => onChange(index, 'icon', value)}
-          style={{ width: 200 }}
-          allowClear
-          showSearch
-          optionFilterProp="children"
-        >
-          {iconOptions.map((opt) => {
-            const IconComp = opt.icon;
-            return (
-              <Option key={opt.value} value={opt.value}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <IconComp style={{ fontSize: 16 }} />
-                  {opt.label}
-                </span>
-              </Option>
-            );
-          })}
-        </Select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 200 }}>
+          <Input
+            placeholder="Iconify icon (e.g., mdi:tooth-outline)"
+            value={item.icon || ''}
+            onChange={(e) => onChange(index, 'icon', e.target.value)}
+            style={{ flex: 1 }}
+          />
+          {item.icon && (
+            <Icon icon={item.icon} style={{ fontSize: 24, color: '#886217', flexShrink: 0 }} />
+          )}
+        </div>
         <Input
           placeholder="Label"
           value={item.label || ''}

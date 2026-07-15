@@ -99,27 +99,24 @@ export const ScrollViewport = styled.div`
     black 92%,
     transparent 100%
   );
-
-  &:hover .scroll-track {
-    animation-play-state: paused;
-  }
 `;
 
-// Track renders the image list TWICE back-to-back (see Gallery.jsx). Because
-// both halves are identical, animating exactly 0 -> -50% (or the reverse)
-// loops with zero seam — there's nothing to measure or get out of sync.
+// Track renders the padded image list THREE times back-to-back (see
+// Gallery.jsx). Because all three copies are identical, animating exactly
+// 0 -> -33.3333% (or the reverse) loops with zero seam — the third copy
+// is buffer so the mask fade never exposes the wrap point.
 const scrollUp = keyframes`
   from {
     transform: translateY(0);
   }
   to {
-    transform: translateY(-50%);
+    transform: translateY(-33.3333%);
   }
 `;
 
 const scrollDown = keyframes`
   from {
-    transform: translateY(-50%);
+    transform: translateY(-33.3333%);
   }
   to {
     transform: translateY(0);
@@ -137,6 +134,12 @@ export const ScrollTrack = styled.div`
   animation-duration: ${({ $duration }) => $duration || 30}s;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+
+  /* Hovering any image inside still counts as hovering this element,
+     since :hover applies to the element and all its descendants. */
+  &:hover {
+    animation-play-state: paused;
+  }
 `;
 
 export const GalleryImage = styled.img`
