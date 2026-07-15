@@ -61,6 +61,11 @@ export const sidebarNavItems = [
         label: "Services Section",
         path: "/admin/cms/services",
       },
+      {
+        key: "cms-gallery",
+        label: "Gallery Section",
+        path: "/admin/cms/gallery",
+      },
     ],
   },
   {
