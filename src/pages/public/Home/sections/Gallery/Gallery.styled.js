@@ -99,6 +99,10 @@ export const ScrollViewport = styled.div`
     black 92%,
     transparent 100%
   );
+
+  &:hover .scroll-track {
+    animation-play-state: paused;
+  }
 `;
 
 // Track renders the image list TWICE back-to-back (see Gallery.jsx). Because

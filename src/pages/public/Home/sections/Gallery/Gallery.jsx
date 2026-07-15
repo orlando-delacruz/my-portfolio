@@ -83,7 +83,7 @@ const InfiniteScroller = memo(({ images, direction }) => {
 
   return (
     <S.ScrollViewport>
-      <S.ScrollTrack $direction={direction} $duration={duration}>
+      <S.ScrollTrack className="scroll-track" $direction={direction} $duration={duration}>
         {trackImages.map(({ id, image_url }, index) => (
           <S.GalleryImage
             key={`${id}-${index}`}
