@@ -91,7 +91,7 @@ const InfiniteScroller = memo(({ images, direction }) => {
             alt="Gallery image"
             loading="lazy"
             decoding="async"
-            fetchpriority={index < 4 ? 'high' : 'auto'}
+            fetchPriority={index < 4 ? 'high' : 'auto'}
           />
         ))}
       </S.ScrollTrack>

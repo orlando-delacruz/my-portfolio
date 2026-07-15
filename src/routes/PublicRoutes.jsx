@@ -25,6 +25,7 @@ const ComingSoon = lazy(() => import("../pages/admin/CMS/ComingSoon"));
 const Hero = lazy(() => import("../pages/admin/CMS/Hero/Hero"));
 const About = lazy(() => import("../pages/admin/CMS/About"));
 const Gallery = lazy(() => import("../pages/admin/CMS/Gallery"));
+const WhyChooseUs = lazy(() => import("../pages/admin/CMS/WhyChooseUs"));
 const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 
 // ── Fallbacks ──
@@ -87,7 +88,7 @@ export default function PublicRoutes() {
             <Route path="hero" element={<Hero />} />
             <Route path="about" element={<About />} />
             <Route path="gallery" element={<Gallery />} />
-            <Route path="why-choose-us" element={<ComingSoon title="Why Choose Us" />} />
+            <Route path="why-choose-us" element={<WhyChooseUs />} />
             <Route path="testimonials" element={<ComingSoon title="Testimonials" />} />
             <Route path="faqs" element={<ComingSoon title="FAQs" />} />
             <Route path="contact" element={<ComingSoon title="Contact Section" />} />

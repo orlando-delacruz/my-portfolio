@@ -66,6 +66,11 @@ export const sidebarNavItems = [
         label: "Gallery Section",
         path: "/admin/cms/gallery",
       },
+      {
+        key: "cms-why-choose-us",
+        label: "Why Us Section",
+        path: "/admin/cms/why-choose-us",
+      },
     ],
   },
   {
