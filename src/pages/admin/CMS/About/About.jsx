@@ -1,24 +1,13 @@
 // src/pages/admin/CMS/About/About.jsx
 import { memo, useState, useRef, useEffect } from 'react';
-import { Form, Input, Button, message, Spin, Alert, Upload, Card, Row, Col, Select, InputNumber, Switch } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Input, Button, message, Spin, Alert, Upload, Card, Row, Col, InputNumber, Switch, Space, Tooltip } from 'antd';
+import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { Icon } from '@iconify/react';
 import AdminLayout from '../../../../components/admin/AdminLayout';
 import { useAboutAdmin, useUpdateAbout, uploadAboutImage } from '../../../../hooks/cms/useAbout';
 import * as S from './About.styled';
 
 const { TextArea } = Input;
-const { Option } = Select;
-
-const ICON_OPTIONS = [
-  { value: 'FaUserFriends', label: '👥 User Friends' },
-  { value: 'FaTooth', label: '🦷 Tooth' },
-  { value: 'FaTag', label: '🏷️ Tag' },
-  { value: 'FaClinicMedical', label: '🏥 Clinic' },
-  { value: 'FaHeart', label: '❤️ Heart' },
-  { value: 'FaAward', label: '🏆 Award' },
-  { value: 'FaStar', label: '⭐ Star' },
-  { value: 'FaUsers', label: '👥 Users' },
-];
 
 // Helper: convert URL to UploadFile
 const urlToUploadFile = (url) => {
@@ -29,6 +18,80 @@ const urlToUploadFile = (url) => {
     status: 'done',
     url,
   };
+};
+
+// Feature item component with Iconify input + preview
+const FeatureItem = ({ field, index, total, onDelete, onMoveUp, onMoveDown }) => {
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={8}>
+          <Form.Item
+            name={[field.name, 'icon']}
+            fieldKey={[field.fieldKey, 'icon']}
+            label="Icon"
+            rules={[{ required: true, message: 'Icon is required' }]}
+            style={{ marginBottom: 0 }}
+          >
+            <Input
+              placeholder="Iconify icon (e.g., mdi:tooth-outline)"
+              suffix={
+                <Form.Item shouldUpdate={(prev, curr) => prev?.features?.[index]?.icon !== curr?.features?.[index]?.icon} noStyle>
+                  {({ getFieldValue }) => {
+                    const icon = getFieldValue(['features', index, 'icon']);
+                    return icon ? <Icon icon={icon} style={{ fontSize: 20, color: '#886217' }} /> : null;
+                  }}
+                </Form.Item>
+              }
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item
+            name={[field.name, 'title']}
+            fieldKey={[field.fieldKey, 'title']}
+            label="Title"
+            rules={[{ required: true, message: 'Title is required' }]}
+            style={{ marginBottom: 0 }}
+          >
+            <Input placeholder="e.g., Modern Equipment" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item
+            name={[field.name, 'display_order']}
+            fieldKey={[field.fieldKey, 'display_order']}
+            label="Display Order"
+            style={{ marginBottom: 0 }}
+          >
+            <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item
+            name={[field.name, 'is_active']}
+            fieldKey={[field.fieldKey, 'is_active']}
+            label="Active"
+            valuePropName="checked"
+            style={{ marginBottom: 0 }}
+          >
+            <Switch defaultChecked />
+          </Form.Item>
+        </Col>
+        <Col xs={24}>
+          <Space>
+            <Tooltip title="Move up">
+              <Button icon={<ArrowUpOutlined />} size="small" disabled={index === 0} onClick={onMoveUp} />
+            </Tooltip>
+            <Tooltip title="Move down">
+              <Button icon={<ArrowDownOutlined />} size="small" disabled={index === total - 1} onClick={onMoveDown} />
+            </Tooltip>
+            <Button icon={<DeleteOutlined />} size="small" danger onClick={onDelete} />
+          </Space>
+        </Col>
+      </Row>
+    </Card>
+  );
 };
 
 const About = () => {
@@ -56,7 +119,6 @@ const About = () => {
   }, [aboutData, form]);
 
   const handleImageChange = ({ fileList }) => {
-    // Update the ref with the current file list
     fileListRef.current = fileList;
   };
 
@@ -65,11 +127,9 @@ const About = () => {
     try {
       let image = null;
 
-      // Read the current file list from the ref
       const currentFileList = fileListRef.current;
       const newFile = currentFileList.find(f => f.originFileObj);
       if (newFile) {
-        // User selected a new image – upload it
         setUploading(true);
         try {
           image = await uploadAboutImage(newFile.originFileObj);
@@ -81,16 +141,14 @@ const About = () => {
         }
         setUploading(false);
       } else if (currentFileList.length > 0 && currentFileList[0].url) {
-        // Keep existing image
         image = currentFileList[0].url;
       } else {
-        // No image (fileList empty) – set to null
         image = null;
       }
 
       const features = (values.features || []).map((f, index) => ({
-        title: f.title,
         icon: f.icon || null,
+        title: f.title,
         display_order: f.display_order !== undefined ? f.display_order : index,
         is_active: f.is_active !== undefined ? f.is_active : true,
       }));
@@ -137,7 +195,6 @@ const About = () => {
     );
   }
 
-  // Build default file list from aboutData.image
   const defaultFileList = aboutData?.image ? [urlToUploadFile(aboutData.image)].filter(Boolean) : [];
 
   return (
@@ -221,63 +278,20 @@ const About = () => {
 
             <S.SectionTitle>Features</S.SectionTitle>
             <Form.List name="features">
-              {(fields, { add, remove }) => (
+              {(fields, { add, move, remove }) => (
                 <>
-                  {fields.map((field) => (
-                    <Card
+                  {fields.map((field, index) => (
+                    <FeatureItem
                       key={field.key}
-                      style={{ marginBottom: 16 }}
-                      actions={[
-                        <DeleteOutlined key="delete" onClick={() => remove(field.name)} />
-                      ]}
-                    >
-                      <Row gutter={[16, 16]}>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'title']}
-                            fieldKey={[field.fieldKey, 'title']}
-                            label="Title"
-                            rules={[{ required: true, message: 'Title is required' }]}
-                          >
-                            <Input placeholder="e.g., Friendly Dental Team" />
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'icon']}
-                            fieldKey={[field.fieldKey, 'icon']}
-                            label="Icon"
-                          >
-                            <Select placeholder="Select icon" allowClear>
-                              {ICON_OPTIONS.map(opt => (
-                                <Option key={opt.value} value={opt.value}>{opt.label}</Option>
-                              ))}
-                            </Select>
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'display_order']}
-                            fieldKey={[field.fieldKey, 'display_order']}
-                            label="Display Order"
-                          >
-                            <InputNumber min={0} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                        <Col xs={24} sm={12} md={6}>
-                          <Form.Item
-                            name={[field.name, 'is_active']}
-                            fieldKey={[field.fieldKey, 'is_active']}
-                            label="Active"
-                            valuePropName="checked"
-                          >
-                            <Switch defaultChecked />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                    </Card>
+                      field={field}
+                      index={index}
+                      total={fields.length}
+                      onDelete={() => remove(field.name)}
+                      onMoveUp={() => move(index, index - 1)}
+                      onMoveDown={() => move(index, index + 1)}
+                    />
                   ))}
-                  <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
+                  <Button type="dashed" onClick={() => add({ icon: '', title: '', display_order: 0, is_active: true })} icon={<PlusOutlined />} block>
                     Add Feature
                   </Button>
                 </>

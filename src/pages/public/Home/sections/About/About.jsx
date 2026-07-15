@@ -1,39 +1,49 @@
 // src/pages/public/Home/sections/About/About.jsx
 import { memo } from "react";
 import { Alert } from "antd";
+import { Icon } from '@iconify/react';
 import * as S from "./About.styled";
 import SectionTitle from "../../../../../components/common/SectionTitle";
 import { useAbout } from "../../../../../hooks/cms/useAbout";
 import Loading from "../../../../../components/common/Loading";
 
-// Map icon strings to actual icon components
-import { FaUserFriends, FaTooth, FaTag, FaClinicMedical, FaHeart, FaAward, FaStar, FaUsers } from "react-icons/fa";
-
-const iconMap = {
-  FaUserFriends,
-  FaTooth,
-  FaTag,
-  FaClinicMedical,
-  FaHeart,
-  FaAward,
-  FaStar,
-  FaUsers,
+// Legacy icon name mapping (for backward compatibility)
+const legacyIconMap = {
+  FaUserFriends: 'mdi:account-group',
+  FaTooth: 'mdi:tooth-outline',
+  FaTag: 'mdi:tag',
+  FaClinicMedical: 'mdi:medical-bag',
+  FaHeart: 'mdi:heart',
+  FaAward: 'mdi:award',
+  FaStar: 'mdi:star',
+  FaUsers: 'mdi:account-group',
 };
-const FallbackIcon = FaStar;
+const FallbackIcon = 'mdi:star';
 
-const HighlightList = memo(({ highlights }) => (
-  <S.HighlightList>
-    {highlights.map(({ id, icon, title }) => {
-      const IconComponent = iconMap[icon] || FallbackIcon;
-      return (
-        <S.HighlightItem key={id}>
-          <IconComponent aria-hidden="true" />
-          <span>{title}</span>
-        </S.HighlightItem>
-      );
-    })}
-  </S.HighlightList>
-));
+const HighlightList = memo(({ highlights }) => {
+  if (!highlights || highlights.length === 0) return null;
+  return (
+    <S.HighlightList>
+      {highlights.map(({ id, icon, title }) => {
+        // Support both legacy and Iconify names
+        let iconName = icon || FallbackIcon;
+        if (legacyIconMap[iconName]) {
+          iconName = legacyIconMap[iconName];
+        }
+        // If it doesn't contain ':', treat as legacy and fallback
+        if (!iconName.includes(':')) {
+          iconName = FallbackIcon;
+        }
+        return (
+          <S.HighlightItem key={id}>
+            <Icon icon={iconName} style={{ fontSize: 20, color: '#886217' }} />
+            <span>{title}</span>
+          </S.HighlightItem>
+        );
+      })}
+    </S.HighlightList>
+  );
+});
 HighlightList.displayName = "HighlightList";
 
 const About = () => {
@@ -46,7 +56,7 @@ const About = () => {
   if (error || !about) {
     return (
       <S.AboutSection id="about" aria-labelledby="about-heading">
-        <Alert type="error" message="Failed to load about content" showIcon />
+        <Alert type="error" title="Failed to load about content" showIcon />
       </S.AboutSection>
     );
   }
