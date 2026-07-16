@@ -1,24 +1,42 @@
-// src/pages/admin/CMS/FAQs/FAQs.jsx
+// ================================================================
+// FILE: src/pages/admin/CMS/FAQs/FAQs.jsx
+// ================================================================
+
 import { memo, useState, useEffect } from "react";
-import { Form, Input, Button, message, Spin, Alert, Tooltip } from "antd";
-import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, EditOutlined } from "@ant-design/icons";
+import { Form, Input, Button, message, Spin, Alert, Tooltip, Upload } from "antd";
+import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, EditOutlined, SaveOutlined } from "@ant-design/icons";
+import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "../../../../components/admin/AdminLayout";
-import { useFaqsAdmin, useUpdateFaqs } from "../../../../hooks/cms/useFaqs";
+import { useFaqsAdmin, useUpdateFaqs, uploadFaqFormImage, FAQS_QUERY_KEY } from "../../../../hooks/cms/useFaqs";
 import FaqItemModal from "../../../../components/admin/Modal/FaqItemModal";
 import * as S from "./FAQs.styled";
 
+// Helper: convert URL to UploadFile
+const urlToUploadFile = (url) => {
+  if (!url) return null;
+  return {
+    uid: "-1",
+    name: url.split("/").pop() || "image",
+    status: "done",
+    url,
+  };
+};
 
 const FAQs = () => {
   const { data: sectionData, isLoading, error, refetch } = useFaqsAdmin();
   const updateMutation = useUpdateFaqs();
+  const queryClient = useQueryClient();
   const [form] = Form.useForm();
 
   const [items, setItems] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
 
+  // Populate form when data loads
   useEffect(() => {
     if (sectionData) {
       form.setFieldsValue({
@@ -28,8 +46,21 @@ const FAQs = () => {
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(sectionData.items || []);
+
+      // Set image file list
+      if (sectionData.form_image) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFileList([urlToUploadFile(sectionData.form_image)]);
+      } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFileList([]);
+      }
     }
   }, [sectionData, form]);
+
+  const handleImageChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+  };
 
   const handleAddItem = () => {
     setEditingItem(null);
@@ -100,6 +131,24 @@ const FAQs = () => {
 
     setSaving(true);
     try {
+      // Upload image if new file
+      let form_image = sectionData.form_image || null;
+      const newFile = fileList.find(f => f.originFileObj);
+      if (newFile) {
+        setUploading(true);
+        try {
+          form_image = await uploadFaqFormImage(newFile.originFileObj);
+        } catch (uploadErr) {
+          message.error(uploadErr.message || "Image upload failed");
+          setUploading(false);
+          setSaving(false);
+          return;
+        }
+        setUploading(false);
+      } else if (fileList.length === 0) {
+        form_image = null;
+      }
+
       if (items.length === 0) {
         message.error("Please add at least one FAQ.");
         setSaving(false);
@@ -120,6 +169,7 @@ const FAQs = () => {
         pre_title: values.pre_title,
         title: values.title,
         highlight_text: values.highlight_text,
+        form_image,
         is_active: true,
         items: items.map((item, index) => ({
           question: item.question,
@@ -131,6 +181,10 @@ const FAQs = () => {
       };
 
       await updateMutation.mutateAsync(payload);
+
+      // Force immediate refetch of the public query using the queryClient directly
+      await queryClient.refetchQueries({ queryKey: [FAQS_QUERY_KEY], type: "active" });
+
       message.success("FAQs section updated successfully!");
       await refetch();
     } catch (err) {
@@ -206,12 +260,13 @@ const FAQs = () => {
         <S.Card>
           <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
             <S.SectionTitle>Section Content</S.SectionTitle>
+
             <Form.Item
               name="pre_title"
               label="Pre-title"
               rules={[{ required: true, message: "Pre-title is required." }]}
             >
-              <Input placeholder="e.g., FAQ" />
+              <Input placeholder="e.g., FAQ" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -219,7 +274,7 @@ const FAQs = () => {
               label="Title"
               rules={[{ required: true, message: "Title is required." }]}
             >
-              <Input placeholder="e.g., Frequently Asked " />
+              <Input placeholder="e.g., Frequently Asked " size="large" />
             </Form.Item>
 
             <Form.Item
@@ -227,7 +282,43 @@ const FAQs = () => {
               label="Highlight Text"
               rules={[{ required: true, message: "Highlight text is required." }]}
             >
-              <Input placeholder="e.g., Questions" />
+              <Input placeholder="e.g., Questions" size="large" />
+            </Form.Item>
+
+            <S.SectionTitle>FAQ Form Image</S.SectionTitle>
+
+            <Form.Item
+              label="Image above the 'Send Your Questions' form"
+              rules={[
+                {
+                  validator: () => {
+                    if (fileList.length === 0 && !sectionData?.form_image) {
+                      return Promise.reject(new Error("Please upload an image."));
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Upload
+                listType="picture-card"
+                fileList={fileList}
+                onChange={handleImageChange}
+                beforeUpload={() => false}
+                accept="image/*"
+                maxCount={1}
+              >
+                {fileList.length === 0 && (
+                  <div>
+                    <PlusOutlined />
+                    <div style={{ marginTop: 8 }}>Upload</div>
+                  </div>
+                )}
+              </Upload>
+              {uploading && <div style={{ marginTop: 4, color: "#1890ff" }}>Uploading...</div>}
+              <div style={{ marginTop: 4, fontSize: 12, color: "#888" }}>
+                Supported: PNG, JPG, JPEG, WEBP (Max 5MB)
+              </div>
             </Form.Item>
 
             <S.SectionTitle>FAQs</S.SectionTitle>
@@ -246,7 +337,7 @@ const FAQs = () => {
             </S.AddButtonWrapper>
 
             <Form.Item style={{ marginTop: 24, textAlign: "right" }}>
-              <Button type="primary" htmlType="submit" loading={saving}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving || uploading}>
                 Save Changes
               </Button>
             </Form.Item>

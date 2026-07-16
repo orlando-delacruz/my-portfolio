@@ -1,14 +1,18 @@
-// src\components\ui\Form\FaqForm\FaqForm.jsx
+// ================================================================
+// FILE: src/components/ui/Form/FaqForm/FaqForm.jsx
+// ================================================================
+
 import { memo, useState } from "react";
 import { Form, message } from "antd";
 import * as S from "./FaqForm.styled";
 
-
 /**
  * FaqForm
  * Ask-a-question panel rendered beside the FAQ accordion.
+ *
+ * @param {string} imageSrc - The image URL to display at the top of the form
  */
-const FaqForm = memo(() => {
+const FaqForm = memo(({ imageSrc }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +41,15 @@ const FaqForm = memo(() => {
     }
   };
 
+  // Fallback image if none provided
+  const defaultImage = "https://picsum.photos/seed/dental-clinic/638/271";
+
+  // Build the image URL with cache-busting to force the browser to load the latest version
+  const imageUrl = imageSrc || defaultImage;
+  const cacheBustedUrl = imageUrl.includes("?")
+    ? imageUrl + "&t=" + Date.now()
+    : imageUrl + "?t=" + Date.now();
+
   return (
     <S.FormWrapper>
       <S.FormHeader>
@@ -45,7 +58,7 @@ const FaqForm = memo(() => {
       </S.FormHeader>
 
       <S.ClinicImage
-        src="https://picsum.photos/seed/dental-clinic/638/271"
+        src={cacheBustedUrl}
         alt="Leidi Bud Dentals clinic interior"
         width={638}
         height={271}

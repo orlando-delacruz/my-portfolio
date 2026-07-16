@@ -29,13 +29,13 @@ export const FormWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
- 
+
   /* Ant Design label override */
   .ant-form-item-label > label {
     color: ${theme.colors.black};
     font-weight: ${theme.typography.weight.medium};
   }
- 
+
   /* Remove default Ant bottom margin on last item */
   .ant-form-item:last-child {
     margin-bottom: 0;
@@ -70,7 +70,7 @@ export const FormSubtitle = styled.p`
 export const ClinicImage = styled.img`
   width: 100%;
   height: 220px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 14px;
 `;
 
@@ -93,11 +93,11 @@ export const StyledTextArea = styled(TextArea)`
   color: ${theme.colors.black} !important;
   background: ${theme.colors.white} !important;
   resize: none !important;
- 
+
   &::placeholder {
     color: #b2b2b2 !important;
   }
- 
+
   &:hover,
   &:focus {
     border-color: ${theme.colors.primaryDark} !important;
@@ -118,15 +118,17 @@ export const SubmitButton = styled(Button)`
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease, transform 0.15s ease;
- 
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+
     &:hover,
     &:focus {
       background: ${theme.colors.primaryDark} !important;
       border-color: ${theme.colors.primaryDark} !important;
       color: ${theme.colors.white} !important;
     }
- 
+
     &:active {
       transform: scale(0.97);
     }

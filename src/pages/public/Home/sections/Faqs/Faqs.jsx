@@ -1,5 +1,8 @@
-// src/pages/public/Home/sections/Faqs/Faqs.jsx
-import { memo } from "react";
+// ================================================================
+// FILE: src/pages/public/Home/sections/Faqs/Faqs.jsx
+// ================================================================
+
+import { memo, useEffect, useRef } from "react";
 import { Alert } from "antd";
 
 import SectionTitle from "../../../../../components/common/SectionTitle";
@@ -10,7 +13,16 @@ import { useFaqs } from "../../../../../hooks/cms/useFaqs";
 import * as S from "./Faqs.styled";
 
 const Faqs = () => {
-  const { data: section, isLoading, error } = useFaqs();
+  const { data: section, isLoading, error, refetch } = useFaqs();
+  const hasRefetched = useRef(false);
+
+  // Force a refetch on mount to ensure fresh data
+  useEffect(() => {
+    if (!hasRefetched.current) {
+      hasRefetched.current = true;
+      refetch();
+    }
+  }, [refetch]);
 
   if (isLoading) {
     return <Loading fullscreen />;
@@ -24,14 +36,16 @@ const Faqs = () => {
     );
   }
 
-  const { pre_title, title, highlight_text, items = [] } = section;
+  const { pre_title, title, highlight_text, form_image, items = [] } = section;
 
-  // Transform CMS items to the shape expected by FaqAccordion
   const faqItems = items.map((item) => ({
     id: item.id,
     question: item.question,
     answer: item.answer,
   }));
+
+  // Use the image URL as the key – it changes when the image updates
+  const formKey = form_image || "default";
 
   return (
     <S.Section id="faqs" aria-labelledby="faqs-heading">
@@ -47,7 +61,7 @@ const Faqs = () => {
       ) : (
         <S.SectionInner>
           <FaqAccordion items={faqItems} />
-          <FaqForm />
+          <FaqForm key={formKey} imageSrc={form_image} />
         </S.SectionInner>
       )}
     </S.Section>
