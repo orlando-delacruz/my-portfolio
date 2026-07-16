@@ -78,7 +78,6 @@ const Hero = () => {
   const updateHero = useUpdateHero();
   const [form] = Form.useForm();
 
-  // These states are only for the image upload – they are not needed in the effect
   const [selectedFile, setSelectedFile] = useState(null);
   const [isRemoved, setIsRemoved] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -110,7 +109,7 @@ const Hero = () => {
     };
   }, [imagePreview]);
 
-  // Populate form with hero data – this is a one‑time sync
+  // Populate form with hero data – one‑time sync, excluding primary button fields
   useEffect(() => {
     if (heroData) {
       form.setFieldsValue({
@@ -118,11 +117,8 @@ const Hero = () => {
         heading: heroData.heading || '',
         highlight_text: heroData.highlight_text || '',
         subheading: heroData.subheading || '',
-        primary_button_text: heroData.primary_button_text || '',
-        primary_button_link: heroData.primary_button_link || '',
         cards: heroData.cards || [],
       });
-      // No need to reset selectedFile/isRemoved here – they are derived from heroData
     }
   }, [heroData, form]);
 
@@ -141,7 +137,6 @@ const Hero = () => {
 
   const handleFinish = async (values) => {
     setSaving(true);
-    console.log('🔍 Form values before submit:', values);
     try {
       let heroImage = null;
 
@@ -162,7 +157,6 @@ const Hero = () => {
         heroImage = heroData?.hero_image || null;
       }
 
-      // Ensure each card has value and icon; title is set to value (fallback to empty string)
       const cards = (values.cards || []).map((card, index) => ({
         title: card.value || '',
         value: card.value || '',
@@ -171,22 +165,16 @@ const Hero = () => {
         is_active: true,
       }));
 
-      console.log('📦 Payload cards:', cards);
-
       const payload = {
         id: heroData.id,
         bio_badge: values.bio_badge,
         heading: values.heading,
         highlight_text: values.highlight_text,
         subheading: values.subheading,
-        primary_button_text: values.primary_button_text,
-        primary_button_link: values.primary_button_link,
         hero_image: heroImage,
         is_active: true,
         cards,
       };
-
-      console.log('📦 Full payload:', payload);
 
       await updateHero.mutateAsync(payload);
       message.success('Hero section updated successfully');
@@ -263,28 +251,6 @@ const Hero = () => {
             >
               <TextArea placeholder="e.g., We provide professional, gentle, and modern dental care..." rows={3} />
             </Form.Item>
-
-            <S.SectionTitle>Primary Button</S.SectionTitle>
-            <Row gutter={16}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="primary_button_text"
-                  label="Button Text"
-                  rules={[{ required: true, message: 'Button text is required' }]}
-                >
-                  <Input placeholder="e.g., Book an Appointment" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="primary_button_link"
-                  label="Button Link"
-                  rules={[{ required: true, message: 'Button link is required' }]}
-                >
-                  <Input placeholder="e.g., /book" />
-                </Form.Item>
-              </Col>
-            </Row>
 
             <S.SectionTitle>Hero Image</S.SectionTitle>
             <Form.Item
