@@ -160,6 +160,10 @@ leidi-bud-dentals
 │  │  │     ├─ TopBar.jsx
 │  │  │     └─ TopBar.styled.js
 │  │  ├─ common
+│  │  │  ├─ Loading
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ Loading.jsx
+│  │  │  │  └─ Loading.styled.js
 │  │  │  └─ SectionTitle
 │  │  │     ├─ index.js
 │  │  │     ├─ SectionTitle.jsx
@@ -271,6 +275,12 @@ leidi-bud-dentals
 │  │  └─ navbar.js
 │  ├─ guards
 │  ├─ hooks
+│  │  ├─ cms
+│  │  │  ├─ useAbout.js
+│  │  │  ├─ useCmsServices.js
+│  │  │  ├─ useGallery.js
+│  │  │  ├─ useHero.js
+│  │  │  └─ useWhyChooseUs.js
 │  │  ├─ useAppointmentAvailability.js
 │  │  ├─ useAppointments.js
 │  │  ├─ useBranches.js
@@ -343,6 +353,30 @@ leidi-bud-dentals
 │  │  │  │  │     ├─ Table.jsx
 │  │  │  │  │     └─ Table.styled.js
 │  │  │  │  └─ useClinicClosures.js
+│  │  │  ├─ CMS
+│  │  │  │  ├─ About
+│  │  │  │  │  ├─ About.jsx
+│  │  │  │  │  ├─ About.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ ComingSoon.jsx
+│  │  │  │  ├─ Gallery
+│  │  │  │  │  ├─ Gallery.jsx
+│  │  │  │  │  ├─ Gallery.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ Hero
+│  │  │  │  │  ├─ Hero.jsx
+│  │  │  │  │  ├─ Hero.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ index.js
+│  │  │  │  ├─ Services
+│  │  │  │  │  ├─ ServiceCard.jsx
+│  │  │  │  │  ├─ ServiceModal.jsx
+│  │  │  │  │  ├─ Services.jsx
+│  │  │  │  │  └─ Services.styled.js
+│  │  │  │  └─ WhyChooseUs
+│  │  │  │     ├─ index.js
+│  │  │  │     ├─ WhyChooseUs.jsx
+│  │  │  │     └─ WhyChooseUs.styled.js
 │  │  │  ├─ Dashboard
 │  │  │  │  ├─ Dashboard.jsx
 │  │  │  │  ├─ Dashboard.styled.js
@@ -403,11 +437,16 @@ leidi-bud-dentals
 │  │  │  ├─ Login.styled.js
 │  │  │  ├─ Unauthorized.jsx
 │  │  │  └─ useLogin.js
+│  │  ├─ NotFound
+│  │  │  ├─ index.js
+│  │  │  ├─ NotFound.jsx
+│  │  │  └─ NotFound.styled.js
 │  │  └─ public
 │  │     ├─ BookAppointment
 │  │     │  ├─ BookAppointment.jsx
 │  │     │  ├─ BookAppointment.styled.js
-│  │     │  └─ index.js
+│  │     │  ├─ index.js
+│  │     │  └─ useBookAppointmentForm.js
 │  │     ├─ CancelAppointment
 │  │     │  ├─ CancelAppointment.jsx
 │  │     │  ├─ CancelAppointment.styled.js
@@ -461,6 +500,12 @@ leidi-bud-dentals
 │  │  ├─ branches.js
 │  │  ├─ calendar.js
 │  │  ├─ clinicClosures.js
+│  │  ├─ cms
+│  │  │  ├─ about.js
+│  │  │  ├─ gallery.js
+│  │  │  ├─ hero.js
+│  │  │  ├─ services.js
+│  │  │  └─ whyChooseUs.js
 │  │  ├─ dashboard.js
 │  │  ├─ notificationService.js
 │  │  ├─ operatingHours.js

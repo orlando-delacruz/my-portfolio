@@ -1,13 +1,8 @@
+// src/components/ui/Card/BranchCard/BranchCard.jsx
 import { memo, useCallback, useId } from "react";
 import { FiArrowRight } from "react-icons/fi";
 import * as S from "./BranchCard.styled";
 
-/**
- * BranchCard
- *
- * @param {object}   branch   - Branch data object
- * @param {function} onOpen   - Callback fired when card or "View Details" is clicked
- */
 const BranchCard = memo(({ branch, onOpen }) => {
   const cardId = useId();
   const headingId = `${cardId}-heading`;
@@ -32,7 +27,6 @@ const BranchCard = memo(({ branch, onOpen }) => {
       onClick={handleOpen}
       onKeyDown={handleKeyDown}
     >
-      {/* Map Preview */}
       <S.MapFrame
         src={branch.mapSrc}
         title={`Map of ${branch.name}`}
@@ -42,12 +36,10 @@ const BranchCard = memo(({ branch, onOpen }) => {
         style={{ pointerEvents: "none" }}
       />
 
-      {/* Branch Name */}
       <S.CardName id={headingId}>
         {branch.name} — {branch.location}
       </S.CardName>
 
-      {/* Contact Info */}
       <S.CardBlock>
         <S.BlockLabel>Contact Info</S.BlockLabel>
         {branch.contact.map(({ icon: Icon, label, value, href }) => (
@@ -70,7 +62,6 @@ const BranchCard = memo(({ branch, onOpen }) => {
         ))}
       </S.CardBlock>
 
-      {/* Available Services */}
       <S.CardBlock>
         <S.BlockLabel>Available Services</S.BlockLabel>
         <S.ServiceList role="list" aria-label={`Services at ${branch.name}`}>
@@ -82,7 +73,7 @@ const BranchCard = memo(({ branch, onOpen }) => {
         </S.ServiceList>
       </S.CardBlock>
 
-      {/* View Details CTA */}
+      {/* ✅ "View Details" button – restored */}
       <S.ViewDetailsRow>
         <S.ViewDetailsBtn
           aria-label={`View details for ${branch.name}`}
