@@ -28,6 +28,7 @@ const Gallery = lazy(() => import("../pages/admin/CMS/Gallery"));
 const WhyChooseUs = lazy(() => import("../pages/admin/CMS/WhyChooseUs"));
 const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 const Branches = lazy(() => import("../pages/admin/CMS/Branches"));
+const Testimonials = lazy(() => import("../pages/admin/CMS/Testimonials"));
 
 // ── Fallbacks ──
 const PageFallback = () => (
@@ -91,7 +92,7 @@ export default function PublicRoutes() {
             <Route path="gallery" element={<Gallery />} />
             <Route path="why-choose-us" element={<WhyChooseUs />} />
             <Route path="branches" element={<Branches />} />
-            <Route path="testimonials" element={<ComingSoon title="Testimonials" />} />
+            <Route path="testimonials" element={<Testimonials />} />
             <Route path="faqs" element={<ComingSoon title="FAQs" />} />
             <Route path="contact" element={<ComingSoon title="Contact Section" />} />
             <Route path="footer" element={<ComingSoon title="Footer" />} />

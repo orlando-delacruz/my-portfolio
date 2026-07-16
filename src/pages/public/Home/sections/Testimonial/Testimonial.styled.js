@@ -16,7 +16,7 @@ export const CarouselTrack = styled.div`
   align-items: center;
   justify-content: center;
   gap: 24px;
- 
+
   @media ${theme.media.tablet} {
     flex-direction: column;
     align-items: stretch;
@@ -44,23 +44,25 @@ export const NavButton = styled.button`
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
   flex-shrink: 0;
- 
+
   &:hover {
     background: ${theme.colors.primaryDark};
     transform: scale(1.08);
   }
- 
+
   &:active {
     transform: scale(0.96);
   }
- 
+
   &:focus-visible {
     outline: 2px solid ${theme.colors.primary};
     outline-offset: 4px;
   }
- 
+
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -84,10 +86,19 @@ export const Dot = styled.button`
   border: none;
   cursor: pointer;
   padding: 0;
-  transition: width 0.25s ease, opacity 0.25s ease;
- 
+  transition:
+    width 0.25s ease,
+    opacity 0.25s ease;
+
   &:focus-visible {
     outline: 2px solid ${theme.colors.primary};
     outline-offset: 4px;
   }
+`;
+
+export const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
+  color: ${theme.colors.gray};
+  font-size: ${theme.typography.size.body};
 `;

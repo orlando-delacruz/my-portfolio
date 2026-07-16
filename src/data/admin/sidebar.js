@@ -76,6 +76,11 @@ export const sidebarNavItems = [
         label: "Branches Section",
         path: "/admin/cms/branches",
       },
+      {
+        key: "cms-testimonials",
+        label: "Testimonials Section",
+        path: "/admin/cms/testimonials",
+      },
     ],
   },
   {
