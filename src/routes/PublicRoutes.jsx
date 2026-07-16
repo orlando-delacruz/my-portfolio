@@ -21,7 +21,6 @@ const Users = lazy(() => import("../pages/admin/Users"));
 const Settings = lazy(() => import("../pages/admin/Settings"));
 
 // ── CMS pages ──
-const ComingSoon = lazy(() => import("../pages/admin/CMS/ComingSoon"));
 const Hero = lazy(() => import("../pages/admin/CMS/Hero/Hero"));
 const About = lazy(() => import("../pages/admin/CMS/About"));
 const Gallery = lazy(() => import("../pages/admin/CMS/Gallery"));
@@ -30,6 +29,8 @@ const Services = lazy(() => import("../pages/admin/CMS/Services/Services"));
 const Branches = lazy(() => import("../pages/admin/CMS/Branches"));
 const Testimonials = lazy(() => import("../pages/admin/CMS/Testimonials"));
 const FAQs = lazy(() => import("../pages/admin/CMS/FAQs"));
+const CTA = lazy(() => import("../pages/admin/CMS/CTA"));
+const Footer = lazy(() => import("../pages/admin/CMS/Footer"));
 
 // ── Fallbacks ──
 const PageFallback = () => (
@@ -95,8 +96,8 @@ export default function PublicRoutes() {
             <Route path="branches" element={<Branches />} />
             <Route path="testimonials" element={<Testimonials />} />
             <Route path="faqs" element={<FAQs />} />
-            <Route path="contact" element={<ComingSoon title="Contact Section" />} />
-            <Route path="footer" element={<ComingSoon title="Footer" />} />
+            <Route path="cta" element={<CTA />} />
+            <Route path="footer" element={<Footer />} />
           </Route>
         </Route>
 

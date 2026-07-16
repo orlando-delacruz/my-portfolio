@@ -16,15 +16,15 @@ export const CTASection = styled.section`
 /* ─── Gradient card — 2-col grid on desktop ───────────── */
 export const CTACard = styled.div`
   border-radius: 30px;
-  background: linear-gradient(
-    90deg,
-    ${theme.colors.white} 41%,
-    rgba(136, 98, 23, 0.5) 100%
-  );
+  background: ${({ $backgroundImage }) =>
+    $backgroundImage
+      ? `linear-gradient(90deg, ${theme.colors.white} 41%, rgba(136, 98, 23, 0.5) 100%), url(${$backgroundImage})`
+      : `linear-gradient(90deg, ${theme.colors.white} 41%, rgba(136, 98, 23, 0.5) 100%)`};
+  background-size: cover;
+  background-position: center;
   padding: 40px;
   overflow: hidden;
   animation: ${fadeUp} 0.6s ease both;
-
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
@@ -34,22 +34,24 @@ export const CTACard = styled.div`
     grid-template-columns: 1fr 1fr;
     gap: 28px;
     padding: 32px 24px;
-    background: linear-gradient(
-      135deg,
-      ${theme.colors.white} 50%,
-      rgba(136, 98, 23, 0.35) 100%
-    );
+    background: ${({ $backgroundImage }) =>
+      $backgroundImage
+        ? `linear-gradient(135deg, ${theme.colors.white} 50%, rgba(136, 98, 23, 0.35) 100%), url(${$backgroundImage})`
+        : `linear-gradient(135deg, ${theme.colors.white} 50%, rgba(136, 98, 23, 0.35) 100%)`};
+    background-size: cover;
+    background-position: center;
   }
 
   @media ${theme.media.mobile} {
     grid-template-columns: 1fr;
     padding: 28px 20px;
     border-radius: 20px;
-    background: linear-gradient(
-      180deg,
-      ${theme.colors.white} 60%,
-      rgba(136, 98, 23, 0.35) 100%
-    );
+    background: ${({ $backgroundImage }) =>
+      $backgroundImage
+        ? `linear-gradient(180deg, ${theme.colors.white} 60%, rgba(136, 98, 23, 0.35) 100%), url(${$backgroundImage})`
+        : `linear-gradient(180deg, ${theme.colors.white} 60%, rgba(136, 98, 23, 0.35) 100%)`};
+    background-size: cover;
+    background-position: center;
   }
 `;
 
@@ -114,7 +116,7 @@ export const CTAImage = styled.img`
   display: block;
 
   @media ${theme.media.mobile} {
-    order: 1; /* image above text on mobile */
+    order: 1;
     min-height: 200px;
     max-height: 220px;
   }
