@@ -6,10 +6,11 @@ import { CalendarOutlined } from "@ant-design/icons";
 import * as S from "./ServiceModal.styled";
 
 const formatPrice = (starting, maximum) => {
-  if (starting === undefined || starting === null) return null;
-  const start = Number(starting);
-  const max = Number(maximum);
-  if (start === max) return `₱${start.toLocaleString()}`;
+  const start = Number(starting) || 0;
+  const max = Number(maximum) || 0;
+  if (start === max) {
+    return `₱${start.toLocaleString()}`;
+  }
   return `₱${start.toLocaleString()} – ₱${max.toLocaleString()}`;
 };
 
@@ -18,22 +19,27 @@ const ServiceModal = memo(({ service, open, onClose }) => {
   if (!service) return null;
 
   const {
-    title,
-    titleTl,
-    fullDesc,
+    title = "",
+    titleTl = "",
+    fullDesc = "",
     image,
-    imageAlt,
-    starting_price,
-    maximum_price,
+    imageAlt = title,
+    starting_price = 0,
+    maximum_price = 0,
   } = service;
 
   const priceDisplay = formatPrice(starting_price, maximum_price);
+  const hasPrice = starting_price > 0 || maximum_price > 0;
 
   const handleBookNow = () => {
-    // Static navigation to the booking page – no query parameters or state.
     navigate("/book");
     onClose();
   };
+
+  // Use a placeholder image if no image is provided
+  const imageSrc = image && image.startsWith("http")
+    ? image
+    : "https://picsum.photos/seed/dental/600/300";
 
   return (
     <Modal
@@ -50,20 +56,23 @@ const ServiceModal = memo(({ service, open, onClose }) => {
       aria-labelledby="service-modal-title"
     >
       <S.ModalImage
-        src={image}
+        src={imageSrc}
         alt={imageAlt || title}
         loading="lazy"
         decoding="async"
         width={600}
         height={280}
+        onError={(e) => {
+          e.currentTarget.src = "https://picsum.photos/seed/dental/600/300";
+        }}
       />
       <S.ModalBody>
         <S.ModalTitleGroup>
           <S.ModalTitle id="service-modal-title">{title}</S.ModalTitle>
           {titleTl && <S.ModalTitleTl>{titleTl}</S.ModalTitleTl>}
         </S.ModalTitleGroup>
-        {priceDisplay && <S.ModalPrice>{priceDisplay}</S.ModalPrice>}
-        <S.ModalDesc>{fullDesc}</S.ModalDesc>
+        {hasPrice && <S.ModalPrice>{priceDisplay}</S.ModalPrice>}
+        <S.ModalDesc>{fullDesc || "Description coming soon."}</S.ModalDesc>
         <S.ModalFooter>
           <Button
             type="primary"

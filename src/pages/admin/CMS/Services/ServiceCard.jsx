@@ -1,13 +1,13 @@
 // src/pages/admin/CMS/Services/ServiceCard.jsx
-import { memo } from 'react';
-import { Card, Tag, Space, Typography, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
-import * as S from './Services.styled';
+import { memo } from "react";
+import { Card, Tag, Space, Typography, Tooltip } from "antd";
+import { EditOutlined, DeleteOutlined, EyeOutlined, CopyOutlined } from "@ant-design/icons";
+import * as S from "./Services.styled";
 
 const { Text, Paragraph } = Typography;
 
 const formatPrice = (starting, maximum) => {
-  if (starting === undefined || starting === null) return '—';
+  if (starting === undefined || starting === null) return "—";
   const start = Number(starting);
   const max = Number(maximum);
   if (start === max) {
@@ -36,15 +36,15 @@ const ServiceCard = memo(({ service, onEdit, onDelete, onPreview, onDuplicate })
       <Card
         hoverable
         cover={
-          <div style={{ height: 160, overflow: 'hidden', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: 160, overflow: "hidden", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {featured_image ? (
               <img
                 src={featured_image}
                 alt={title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
-              <span style={{ color: '#aaa', fontSize: 14 }}>No Image</span>
+              <span style={{ color: "#aaa", fontSize: 14 }}>No Image</span>
             )}
           </div>
         }
@@ -68,7 +68,7 @@ const ServiceCard = memo(({ service, onEdit, onDelete, onPreview, onDuplicate })
             <div>
               <Text strong>{title}</Text>
               {title_tagalog && (
-                <div style={{ fontSize: 13, color: '#888' }}>{title_tagalog}</div>
+                <div style={{ fontSize: 13, color: "#888" }}>{title_tagalog}</div>
               )}
             </div>
           }
@@ -79,13 +79,13 @@ const ServiceCard = memo(({ service, onEdit, onDelete, onPreview, onDuplicate })
           }
         />
         <div style={{ marginTop: 8 }}>
-          <Text strong style={{ fontSize: 16, color: '#886217' }}>
+          <Text strong style={{ fontSize: 16, color: "#886217" }}>
             {formatPrice(starting_price, maximum_price)}
           </Text>
         </div>
         <Space size={4} wrap style={{ marginTop: 8 }}>
-          <Tag color={is_active ? 'green' : 'red'}>
-            {is_active ? 'Active' : 'Inactive'}
+          <Tag color={is_active ? "green" : "red"}>
+            {is_active ? "Active" : "Inactive"}
           </Tag>
           {show_on_homepage && <Tag color="blue">Homepage</Tag>}
           <Tag>Order: {display_order}</Tag>
@@ -106,5 +106,5 @@ const ServiceCard = memo(({ service, onEdit, onDelete, onPreview, onDuplicate })
   );
 });
 
-ServiceCard.displayName = 'ServiceCard';
+ServiceCard.displayName = "ServiceCard";
 export default ServiceCard;

@@ -1,14 +1,18 @@
 // src/pages/admin/CMS/Services/Services.styled.js
-import styled from 'styled-components';
-import adminTheme from '../../../../styles/adminTheme';
+import styled from "styled-components";
+import adminTheme from "../../../../styles/adminTheme";
 
-export const PageContainer = styled.div`
-  padding: 24px;
+export const LoadingContainer = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 24px;
+`;
+
+export const Container = styled.div`
+  padding: 24px;
   max-width: 100%;
-  overflow: hidden;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -25,6 +29,7 @@ export const Header = styled.div`
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
+  margin-bottom: 24px;
 
   @media (max-width: 480px) {
     flex-direction: column;
@@ -55,6 +60,31 @@ export const Subtitle = styled.p`
   }
 `;
 
+export const SectionTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  margin: 0 0 16px 0;
+`;
+
+export const Card = styled.div`
+  background: ${adminTheme.colors.white};
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow:
+    0 1px 2px rgba(17, 17, 17, 0.04),
+    0 2px 8px rgba(17, 17, 17, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
+`;
+
 export const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -79,8 +109,12 @@ export const CardWrapper = styled.div`
 
   .ant-card {
     border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 2px 8px rgba(17, 17, 17, 0.05);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    box-shadow:
+      0 1px 2px rgba(17, 17, 17, 0.04),
+      0 2px 8px rgba(17, 17, 17, 0.05);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -88,7 +122,7 @@ export const CardWrapper = styled.div`
   }
 
   .ant-card:hover {
-    box-shadow: 0 6px 20px rgba(17, 17, 17, 0.10);
+    box-shadow: 0 6px 20px rgba(17, 17, 17, 0.1);
     transform: translateY(-2px);
   }
 
@@ -159,7 +193,6 @@ export const CardWrapper = styled.div`
     font-size: 16px;
   }
 
-  // Responsive card content
   .ant-tag {
     font-size: 11px;
     padding: 1px 8px;
@@ -216,4 +249,26 @@ export const CardWrapper = styled.div`
       }
     }
   }
+`;
+
+export const ServiceHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+export const ServiceTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${adminTheme.colors.black};
+  margin: 0;
+`;
+
+export const EmptyState = styled.div`
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 0;
+  color: ${adminTheme.colors.gray};
+  font-size: 16px;
 `;

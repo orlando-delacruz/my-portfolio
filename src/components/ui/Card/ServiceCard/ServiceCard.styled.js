@@ -7,6 +7,7 @@ export const Card = styled.article`
   border-radius: 20px;
   box-shadow: 1px 2px 10px 1px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 100%;

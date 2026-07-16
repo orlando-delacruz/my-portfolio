@@ -5,9 +5,12 @@ import SectionTitle from "../../../../../components/common/SectionTitle";
 import { ServiceCard } from "../../../../../components/ui/Card/ServiceCard";
 import { ServiceModal } from "../../../../../components/ui/Modal/ServiceModal";
 import { useServices } from "./useServices";
-import { services } from "../../../../../data/HomePage/services"; // fallback if needed, but we'll override
+import { useServicesSection } from "../../../../../hooks/cms/useCmsServices";
+import Loading from "../../../../../components/common/Loading";
+import { Alert } from "antd";
 
 const Services = () => {
+  const { data: section, isLoading: sectionLoading, error: sectionError } = useServicesSection();
   const {
     branches,
     activeBranchId,
@@ -20,16 +23,30 @@ const Services = () => {
     handleViewDetails,
     handleCloseModal,
     handleToggleExpand,
+    isLoading: servicesLoading,
+    error: servicesError,
   } = useServices();
 
-  const { eyebrow, headingStart, headingAccent, viewAllLabel } = services;
+  if (sectionLoading || servicesLoading) {
+    return <Loading fullscreen />;
+  }
+
+  if (sectionError || servicesError || !section) {
+    return (
+      <S.ServicesSection id="services" aria-labelledby="services-heading">
+        <Alert type="error" title="Failed to load services" showIcon />
+      </S.ServicesSection>
+    );
+  }
+
+  const { pre_title, title, highlight_text } = section;
 
   return (
     <S.ServicesSection id="services" aria-labelledby="services-heading">
       <SectionTitle
-        eyebrow={eyebrow}
-        headingStart={headingStart}
-        headingAccent={headingAccent}
+        eyebrow={pre_title}
+        headingStart={title}
+        headingAccent={highlight_text}
         id="services-heading"
       />
 
@@ -73,7 +90,7 @@ const Services = () => {
             aria-expanded={expanded}
             aria-controls="services-grid"
           >
-            {expanded ? "Show Less" : viewAllLabel}
+            {expanded ? "Show Less" : "View All Services"}
           </S.ViewAllButton>
         )}
       </S.ServicesBody>

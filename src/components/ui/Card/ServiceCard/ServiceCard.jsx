@@ -24,8 +24,29 @@ const ServiceCard = memo(({ service, onViewDetails }) => {
 
   const priceDisplay = formatPrice(starting_price, maximum_price);
 
+  const handleCardClick = () => {
+    onViewDetails(service);
+  };
+
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    onViewDetails(service);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleCardClick();
+    }
+  };
+
   return (
-    <S.Card>
+    <S.Card
+      role="button"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+    >
       <S.ImageWrapper>
         {image ? (
           <S.CardImage src={image} alt={imageAlt || title} loading="lazy" decoding="async" />
@@ -46,7 +67,7 @@ const ServiceCard = memo(({ service, onViewDetails }) => {
         </S.CardTextGroup>
 
         <S.ButtonRow>
-          <S.ViewDetailsButton onClick={() => onViewDetails(service)}>
+          <S.ViewDetailsButton onClick={handleButtonClick}>
             View Details <FiArrowRight aria-hidden="true" />
           </S.ViewDetailsButton>
         </S.ButtonRow>

@@ -1,19 +1,29 @@
 // src/pages/admin/CMS/Services/Services.jsx
-import { memo, useState, useCallback } from 'react';
-import { Button, message, Spin, Empty, Modal, Alert } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import AdminLayout from '../../../../components/admin/AdminLayout';
+import { memo, useState, useCallback, useEffect, useRef } from "react";
+import { Form, Input, Button, message, Spin, Alert, Modal } from "antd";
+import { SaveOutlined, PlusOutlined } from "@ant-design/icons";
+import AdminLayout from "../../../../components/admin/AdminLayout";
 import {
   useCmsServices,
   useCreateCmsService,
   useUpdateCmsService,
   useDeleteCmsService,
-} from '../../../../hooks/cms/useCmsServices';
-import ServiceCard from './ServiceCard';
-import ServiceModal from './ServiceModal';
-import * as S from './Services.styled';
+  useServicesSection,
+  useUpdateServicesSection,
+} from "../../../../hooks/cms/useCmsServices";
+import ServiceCard from "./ServiceCard";
+import ServiceModal from "./ServiceModal";
+import * as S from "./Services.styled";
 
 const Services = () => {
+  // ── Services section metadata ──
+  const { data: sectionData, isLoading: sectionLoading, error: sectionError, refetch: refetchSection } = useServicesSection();
+  const updateSectionMutation = useUpdateServicesSection();
+  const [sectionForm] = Form.useForm();
+  const [savingSection, setSavingSection] = useState(false);
+  const formReady = useRef(false);
+
+  // ── Service items ──
   const { data: services, isLoading, error, refetch } = useCmsServices();
   const createMutation = useCreateCmsService();
   const updateMutation = useUpdateCmsService();
@@ -23,6 +33,49 @@ const Services = () => {
   const [editingService, setEditingService] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Mark form as ready after mount
+  useEffect(() => {
+    formReady.current = true;
+  }, []);
+
+  // Populate form when data loads – only after form is ready
+  useEffect(() => {
+    if (sectionData && formReady.current) {
+      sectionForm.setFieldsValue({
+        pre_title: sectionData.pre_title || "",
+        title: sectionData.title || "",
+        highlight_text: sectionData.highlight_text || "",
+      });
+    }
+  }, [sectionData, sectionForm]);
+
+  // ── Section save ──
+  const handleSectionFinish = async (values) => {
+    if (!sectionData) {
+      message.error("Section data is not loaded. Please refresh.");
+      return;
+    }
+    setSavingSection(true);
+    try {
+      const payload = {
+        id: sectionData.id,
+        pre_title: values.pre_title,
+        title: values.title,
+        highlight_text: values.highlight_text,
+        is_active: true,
+      };
+      await updateSectionMutation.mutateAsync(payload);
+      message.success("Services section updated successfully!");
+      await refetchSection();
+    } catch (err) {
+      console.error(err);
+      message.error(err.message || "Failed to update section.");
+    } finally {
+      setSavingSection(false);
+    }
+  };
+
+  // ── Service item actions ──
   const handleAdd = useCallback(() => {
     setEditingService(null);
     setModalOpen(true);
@@ -35,17 +88,17 @@ const Services = () => {
 
   const handleDelete = useCallback((id) => {
     Modal.confirm({
-      title: 'Delete Service',
-      content: 'Are you sure you want to delete this service? This action cannot be undone.',
-      okText: 'Delete',
-      okType: 'danger',
+      title: "Delete Service",
+      content: "Are you sure you want to delete this service? This action cannot be undone.",
+      okText: "Delete",
+      okType: "danger",
       onOk: async () => {
         try {
           await deleteMutation.mutateAsync(id);
-          message.success('Service deleted successfully');
+          message.success("Service deleted successfully");
           refetch();
         } catch (err) {
-          message.error(err.message || 'Failed to delete service');
+          message.error(err.message || "Failed to delete service");
         }
       },
     });
@@ -57,15 +110,13 @@ const Services = () => {
       content: (
         <div>
           <p><strong>Short Description:</strong> {service.short_description}</p>
-          <p><strong>Full Description:</strong> {service.full_description || 'N/A'}</p>
+          <p><strong>Full Description:</strong> {service.full_description || "N/A"}</p>
           <p><strong>Slug:</strong> {service.slug}</p>
-          <p><strong>Button Text:</strong> {service.button_text}</p>
-          <p><strong>Button Link:</strong> {service.button_link || 'N/A'}</p>
-          <p><strong>Active:</strong> {service.is_active ? 'Yes' : 'No'}</p>
-          <p><strong>Show on Homepage:</strong> {service.show_on_homepage ? 'Yes' : 'No'}</p>
+          <p><strong>Active:</strong> {service.is_active ? "Yes" : "No"}</p>
+          <p><strong>Show on Homepage:</strong> {service.show_on_homepage ? "Yes" : "No"}</p>
           <p><strong>Display Order:</strong> {service.display_order}</p>
           {service.featured_image && (
-            <img src={service.featured_image} alt={service.title} style={{ maxWidth: '100%', maxHeight: 200 }} />
+            <img src={service.featured_image} alt={service.title} style={{ maxWidth: "100%", maxHeight: 200 }} />
           )}
         </div>
       ),
@@ -74,7 +125,6 @@ const Services = () => {
   }, []);
 
   const handleDuplicate = useCallback((service) => {
-    // Create a copy without id, created_at, updated_at
     const rest = { ...service };
     delete rest.id;
     delete rest.created_at;
@@ -94,16 +144,16 @@ const Services = () => {
     try {
       if (editingService?.id) {
         await updateMutation.mutateAsync({ id: editingService.id, payload });
-        message.success('Service updated successfully');
+        message.success("Service updated successfully");
       } else {
         await createMutation.mutateAsync(payload);
-        message.success('Service created successfully');
+        message.success("Service created successfully");
       }
       setModalOpen(false);
       setEditingService(null);
       refetch();
     } catch (err) {
-      message.error(err.message || 'Failed to save service');
+      message.error(err.message || "Failed to save service");
     } finally {
       setModalLoading(false);
     }
@@ -114,58 +164,100 @@ const Services = () => {
     setEditingService(null);
   }, []);
 
-  if (isLoading) {
+  // ── Loading states ──
+  if (sectionLoading || isLoading) {
     return (
       <AdminLayout>
-        <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+        <S.LoadingContainer>
           <Spin size="large" />
-        </div>
+        </S.LoadingContainer>
       </AdminLayout>
     );
   }
 
-  if (error) {
+  if (sectionError || error) {
     return (
       <AdminLayout>
-        <div style={{ padding: '40px 24px' }}>
-          <Alert type="error" message="Failed to load services" description={error.message} showIcon />
-        </div>
+        <S.Container>
+          <Alert type="error" message="Failed to load data" description={sectionError?.message || error?.message} showIcon />
+        </S.Container>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <S.PageContainer>
+      <S.Container>
         <S.Header>
           <div>
             <S.Title>Services Section</S.Title>
-            <S.Subtitle>Manage the services displayed on your public website.</S.Subtitle>
+            <S.Subtitle>Manage the services section content and individual service cards.</S.Subtitle>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            Add Service
-          </Button>
         </S.Header>
 
-        <S.CardGrid>
-          {services && services.length > 0 ? (
-            services.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onPreview={handlePreview}
-                onDuplicate={handleDuplicate}
-              />
-            ))
-          ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0' }}>
-              <Empty description="No services added yet. Click 'Add Service' to create one." />
-            </div>
-          )}
-        </S.CardGrid>
-      </S.PageContainer>
+        {/* ── Section Metadata Form ── */}
+        <S.Card>
+          <S.SectionTitle>Section Content</S.SectionTitle>
+          <Form form={sectionForm} layout="vertical" onFinish={handleSectionFinish} requiredMark={false}>
+            <Form.Item
+              name="pre_title"
+              label="Pre-title"
+              rules={[{ required: true, message: "Pre-title is required." }]}
+            >
+              <Input placeholder="e.g., Services" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: "Title is required." }]}
+            >
+              <Input placeholder="e.g., Dental Services " size="large" />
+            </Form.Item>
+
+            <Form.Item
+              name="highlight_text"
+              label="Highlight Text"
+              rules={[{ required: true, message: "Highlight text is required." }]}
+            >
+              <Input placeholder="e.g., We Offer" size="large" />
+            </Form.Item>
+
+            <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={savingSection}>
+                Save Section
+              </Button>
+            </Form.Item>
+          </Form>
+        </S.Card>
+
+        {/* ── Service Cards ── */}
+        <S.Card>
+          <S.ServiceHeader>
+            <S.ServiceTitle>Service Cards</S.ServiceTitle>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              Add Service
+            </Button>
+          </S.ServiceHeader>
+
+          <S.CardGrid>
+            {services && services.length > 0 ? (
+              services.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onPreview={handlePreview}
+                  onDuplicate={handleDuplicate}
+                />
+              ))
+            ) : (
+              <S.EmptyState>No services added yet. Click "Add Service" to create one.</S.EmptyState>
+            )}
+          </S.CardGrid>
+        </S.Card>
+      </S.Container>
 
       <ServiceModal
         open={modalOpen}
