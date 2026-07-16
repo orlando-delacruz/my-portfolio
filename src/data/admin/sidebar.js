@@ -81,6 +81,7 @@ export const sidebarNavItems = [
         label: "Testimonials Section",
         path: "/admin/cms/testimonials",
       },
+      { key: "cms-faqs", label: "FAQs Section", path: "/admin/cms/faqs" },
     ],
   },
   {
