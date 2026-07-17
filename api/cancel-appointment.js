@@ -80,14 +80,6 @@ export default async function handler(req, res) {
       status: "cancelled",
     });
 
-    // ── Trigger cancellation event via Trigger.dev ──
-    // Fire-and-forget; don't block response
-    fetch(`${process.env.PUBLIC_APP_URL}/api/trigger-cancellation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appointmentId: apt.id }),
-    }).catch((err) => console.error("Trigger cancellation failed:", err));
-
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error("Cancel appointment error:", err);

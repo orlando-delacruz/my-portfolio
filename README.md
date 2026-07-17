@@ -1,4 +1,3 @@
-
 ```
 leidi-bud-dentals
 ├─ api
@@ -100,6 +99,10 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ RescheduleModal.jsx
 │  │  │  │  │  └─ useAppointmentModal.js
+│  │  │  │  ├─ BranchItemModal
+│  │  │  │  │  ├─ BranchItemModal.jsx
+│  │  │  │  │  ├─ BranchItemModal.styled.js
+│  │  │  │  │  └─ index.js
 │  │  │  │  ├─ ClinicClosureDetailsModal
 │  │  │  │  │  ├─ ClinicClosureDetailsModal.jsx
 │  │  │  │  │  ├─ ClinicClosureDetailsModal.styled.js
@@ -112,6 +115,10 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ EditPatientModal.jsx
 │  │  │  │  │  ├─ EditPatientModal.styled.js
 │  │  │  │  │  └─ index.js
+│  │  │  │  ├─ FaqItemModal
+│  │  │  │  │  ├─ FaqItemModal.jsx
+│  │  │  │  │  ├─ FaqItemModal.styled.js
+│  │  │  │  │  └─ index.js
 │  │  │  │  ├─ LogoutModal
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ LogoutModal.jsx
@@ -120,6 +127,10 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ PatientDetailsModal.jsx
 │  │  │  │  │  └─ PatientDetailsModal.styled.js
+│  │  │  │  ├─ TestimonialItemModal
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ TestimonialItemModal.jsx
+│  │  │  │  │  └─ TestimonialItemModal.styled.js
 │  │  │  │  ├─ UserDetailsModal
 │  │  │  │  │  ├─ index.js
 │  │  │  │  │  ├─ UserDetailsModal.jsx
@@ -277,9 +288,14 @@ leidi-bud-dentals
 │  ├─ hooks
 │  │  ├─ cms
 │  │  │  ├─ useAbout.js
+│  │  │  ├─ useBranches.js
 │  │  │  ├─ useCmsServices.js
+│  │  │  ├─ useCta.js
+│  │  │  ├─ useFaqs.js
+│  │  │  ├─ useFooter.js
 │  │  │  ├─ useGallery.js
 │  │  │  ├─ useHero.js
+│  │  │  ├─ useTestimonials.js
 │  │  │  └─ useWhyChooseUs.js
 │  │  ├─ useAppointmentAvailability.js
 │  │  ├─ useAppointments.js
@@ -358,7 +374,22 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ About.jsx
 │  │  │  │  │  ├─ About.styled.js
 │  │  │  │  │  └─ index.js
-│  │  │  │  ├─ ComingSoon.jsx
+│  │  │  │  ├─ Branches
+│  │  │  │  │  ├─ Branches.jsx
+│  │  │  │  │  ├─ Branches.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ CTA
+│  │  │  │  │  ├─ CTA.jsx
+│  │  │  │  │  ├─ CTA.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ FAQs
+│  │  │  │  │  ├─ FAQs.jsx
+│  │  │  │  │  ├─ FAQs.styled.js
+│  │  │  │  │  └─ index.js
+│  │  │  │  ├─ Footer
+│  │  │  │  │  ├─ Footer.jsx
+│  │  │  │  │  ├─ Footer.styled.js
+│  │  │  │  │  └─ index.js
 │  │  │  │  ├─ Gallery
 │  │  │  │  │  ├─ Gallery.jsx
 │  │  │  │  │  ├─ Gallery.styled.js
@@ -373,6 +404,10 @@ leidi-bud-dentals
 │  │  │  │  │  ├─ ServiceModal.jsx
 │  │  │  │  │  ├─ Services.jsx
 │  │  │  │  │  └─ Services.styled.js
+│  │  │  │  ├─ Testimonials
+│  │  │  │  │  ├─ index.js
+│  │  │  │  │  ├─ Testimonials.jsx
+│  │  │  │  │  └─ Testimonials.styled.js
 │  │  │  │  └─ WhyChooseUs
 │  │  │  │     ├─ index.js
 │  │  │  │     ├─ WhyChooseUs.jsx
@@ -502,9 +537,14 @@ leidi-bud-dentals
 │  │  ├─ clinicClosures.js
 │  │  ├─ cms
 │  │  │  ├─ about.js
+│  │  │  ├─ branches.js
+│  │  │  ├─ cta.js
+│  │  │  ├─ faqs.js
+│  │  │  ├─ footer.js
 │  │  │  ├─ gallery.js
 │  │  │  ├─ hero.js
 │  │  │  ├─ services.js
+│  │  │  ├─ testimonials.js
 │  │  │  └─ whyChooseUs.js
 │  │  ├─ dashboard.js
 │  │  ├─ notificationService.js
@@ -535,6 +575,7 @@ leidi-bud-dentals
 │  │  └─ theme.js
 │  └─ utils
 │     ├─ appointmentMapper.js
+│     ├─ avatarGenerator.js
 │     ├─ branchUtils.js
 │     ├─ calendarGrid.js
 │     ├─ calendarHelpers.js
