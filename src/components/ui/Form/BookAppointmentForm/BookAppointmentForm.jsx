@@ -39,7 +39,8 @@ const BookAppointmentForm = () => {
   } = useBookAppointmentForm(form);
 
   const isDateUnavailable = isSelectedDateClosed || isDateFullyBooked;
-  const isTimeDisabled = !fields.branchId || !fields.date || allSlots.length === 0 || isDateUnavailable;
+  // ✅ FIX: guard allSlots since the hook doesn't currently return it (defaults to undefined)
+  const isTimeDisabled = !fields.branchId || !fields.date || (allSlots || []).length === 0 || isDateUnavailable;
 
   // Find selected service for price display
   const selectedService = useMemo(() => {
@@ -247,7 +248,6 @@ const BookAppointmentForm = () => {
 
             <Form.Item name="branchId" label="Branch" rules={[{ required: true, message: "Please select a branch." }]}>
               <Select placeholder="Select a branch" loading={branchesLoading} size="large">
-                {/* Safe fallback: (branches || []) */}
                 {(branches || []).map((b) => <Option key={b.id} value={b.id}>{b.name}</Option>)}
               </Select>
             </Form.Item>
@@ -272,7 +272,6 @@ const BookAppointmentForm = () => {
                   disabled={!fields.branchId || !services || services.length === 0}
                   size="large"
                 >
-                  {/* Safe fallback: (services || []) */}
                   {(services || []).map((s) => (
                     <Option key={s.service_branch_id} value={s.service_branch_id}>
                       {s.name || "Unnamed"}
@@ -312,7 +311,6 @@ const BookAppointmentForm = () => {
                     size="large"
                     key={`timeselect-${fields.branchId}-${fields.date}-${closureVersion}-${schedulingVersion}`}
                   >
-                    {/* Safe fallback: (allSlots || []) */}
                     {(allSlots || []).map((slot) => (
                       <Option key={slot.value} value={slot.value} disabled={slot.disabled}>
                         {formatTimeDisplay(slot.value)}

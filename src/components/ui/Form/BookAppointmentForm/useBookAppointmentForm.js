@@ -44,7 +44,8 @@ export function useBookAppointmentForm(form) {
   }, [fields.serviceBranchId, services]);
 
   const durationMinutes = useMemo(() => {
-    if (selectedService?.duration_minutes) return selectedService.duration_minutes;
+    if (selectedService?.duration_minutes)
+      return selectedService.duration_minutes;
     return 30;
   }, [selectedService]);
 
@@ -58,7 +59,7 @@ export function useBookAppointmentForm(form) {
   }, [selectedDateKey]);
 
   const {
-    disabledTime,
+    allSlots,
     isDateFullyBooked,
     isSelectedDateClosed,
     isClosureDate,
@@ -70,7 +71,8 @@ export function useBookAppointmentForm(form) {
     fields.branchId,
     selectedDateKey,
     monthKey,
-    durationMinutes
+    null, // ✅ FIX: public booking never excludes an existing appointment — durationMinutes was
+    // incorrectly being passed here before, landing in the excludeAppointmentId slot.
   );
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export function useBookAppointmentForm(form) {
       const dateStr = current.format("YYYY-MM-DD");
       return isClosureDate(dateStr);
     },
-    [fields.branchId, isClosureDate]
+    [fields.branchId, isClosureDate],
   );
 
   const updateFields = useCallback((newFields) => {
@@ -106,7 +108,14 @@ export function useBookAppointmentForm(form) {
     } else {
       clearedRef.current = false;
     }
-  }, [fields.date, isSelectedDateClosed, isDateFullyBooked, fields.time, form, updateFields]);
+  }, [
+    fields.date,
+    isSelectedDateClosed,
+    isDateFullyBooked,
+    fields.time,
+    form,
+    updateFields,
+  ]);
 
   const handleSubmit = useCallback(
     async (values) => {
@@ -149,7 +158,7 @@ export function useBookAppointmentForm(form) {
         setIsSubmitting(false);
       }
     },
-    [durationMinutes]
+    [durationMinutes],
   );
 
   const handleReset = useCallback(() => {
@@ -159,7 +168,8 @@ export function useBookAppointmentForm(form) {
     form?.resetFields();
   }, [form]);
 
-  const loading = isSubmitting || availabilityLoading || branchesLoading || servicesLoading;
+  const loading =
+    isSubmitting || availabilityLoading || branchesLoading || servicesLoading;
 
   return {
     fields,
@@ -171,7 +181,7 @@ export function useBookAppointmentForm(form) {
     services,
     branchesLoading,
     servicesLoading,
-    disabledTime,
+    allSlots, // ✅ FIX: now actually returned, so BookAppointmentForm.jsx receives real slot data
     disabledDate,
     isDateFullyBooked,
     isSelectedDateClosed,
