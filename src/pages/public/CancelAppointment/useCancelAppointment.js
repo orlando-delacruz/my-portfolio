@@ -1,13 +1,12 @@
 // src/pages/public/CancelAppointment/useCancelAppointment.js
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 
 export function useCancelAppointment(token) {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [appointment, setAppointment] = useState(null);
   const [error, setError] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,12 +66,20 @@ export function useCancelAppointment(token) {
         setCancelling(false);
         return;
       }
-      navigate("/cancel-confirmation");
+      setCancelled(true);
+      setCancelling(false);
     } catch {
       setError("An error occurred. Please try again.");
       setCancelling(false);
     }
-  }, [appointment, token, navigate]);
+  }, [appointment, token]);
 
-  return { loading, appointment, error, cancelling, cancelAppointment };
+  return {
+    loading,
+    appointment,
+    error,
+    cancelling,
+    cancelled,
+    cancelAppointment,
+  };
 }

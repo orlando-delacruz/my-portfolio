@@ -13,6 +13,7 @@ const CancelAppointment = () => {
     appointment,
     error,
     cancelling,
+    cancelled,
     cancelAppointment,
   } = useCancelAppointment(token);
 
@@ -21,6 +22,25 @@ const CancelAppointment = () => {
       <S.PageWrapper>
         <S.Card>
           <S.LoadingText>Verifying your request...</S.LoadingText>
+        </S.Card>
+      </S.PageWrapper>
+    );
+  }
+
+  if (cancelled) {
+    return (
+      <S.PageWrapper>
+        <S.Card>
+          <S.Brand>
+            <S.Logo src="/logo.png" alt="Leidi Bud Dentals" />
+            <S.BrandName>Leidi Bud Dentals</S.BrandName>
+          </S.Brand>
+          <S.ErrorIcon>✅</S.ErrorIcon>
+          <S.ErrorTitle>Appointment Cancelled</S.ErrorTitle>
+          <S.ErrorMessage>
+            Your appointment has been successfully cancelled. A confirmation email has been sent to you.
+          </S.ErrorMessage>
+          <S.BackLink href="/">Return to Homepage</S.BackLink>
         </S.Card>
       </S.PageWrapper>
     );
