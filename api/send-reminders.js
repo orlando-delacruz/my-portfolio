@@ -11,6 +11,19 @@ const supabase = createClient(
 const PUBLIC_APP_URL =
   process.env.PUBLIC_APP_URL || "https://leidibuddentals.vercel.app";
 
+const CLINIC_UTC_OFFSET_MINUTES = 8 * 60; // Asia/Manila, UTC+8, no DST
+
+// Converts a Manila-local "YYYY-MM-DD" + "HH:mm:ss" pair into the correct
+// UTC instant, regardless of what timezone the server process itself runs in.
+function manilaDateTimeToUtc(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute, second = 0] = timeStr.split(":").map(Number);
+  const utcMillis =
+    Date.UTC(year, month - 1, day, hour, minute, second) -
+    CLINIC_UTC_OFFSET_MINUTES * 60 * 1000;
+  return new Date(utcMillis);
+}
+
 function getReminderType(diffMinutes) {
   if (diffMinutes <= 0) return null;
   if (diffMinutes <= 45) return "reminder_30min";
@@ -53,7 +66,7 @@ export default async function handler(req, res) {
   let remindersSent = 0;
 
   for (const apt of appointments) {
-    const aptDate = new Date(`${apt.preferred_date}T${apt.preferred_time}`);
+    const aptDate = manilaDateTimeToUtc(apt.preferred_date, apt.preferred_time);
     const diffMinutes = (aptDate.getTime() - now.getTime()) / (1000 * 60);
 
     const reminderType = getReminderType(diffMinutes);
