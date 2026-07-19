@@ -12,10 +12,10 @@ const PUBLIC_APP_URL =
   process.env.PUBLIC_APP_URL || "https://leidibuddentals.vercel.app";
 
 function getReminderType(diffMinutes) {
-  if (diffMinutes >= 24 * 60 && diffMinutes < 25 * 60) return "reminder_24h";
-  if (diffMinutes >= 2 * 60 && diffMinutes < 3 * 60) return "reminder_2h";
-  if (diffMinutes >= 30 && diffMinutes < 45) return "reminder_30min";
-  if (diffMinutes > 0 && diffMinutes < 30) return "reminder_30min";
+  if (diffMinutes <= 0) return null;
+  if (diffMinutes <= 45) return "reminder_30min";
+  if (diffMinutes <= 180) return "reminder_2h";
+  if (diffMinutes <= 1500) return "reminder_24h";
   return null;
 }
 
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     const result = await sendAppointmentEmail({
       appointmentId: apt.id,
       emailType: "reminder",
-      logType: reminderType, // logged as reminder_24h / reminder_2h / reminder_30min for dedupe above
+      logType: reminderType,
       extra: {
         cancelLink: `${PUBLIC_APP_URL}/cancel-appointment?token=${token}`,
         reminderType,
