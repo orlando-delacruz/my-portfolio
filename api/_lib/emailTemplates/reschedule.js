@@ -13,6 +13,7 @@ export function buildRescheduleEmail({ clinic, appointment }) {
     notes,
     previousDate,
     previousTime,
+    cancelLink,
   } = appointment;
 
   const bodyHtml = `
@@ -28,16 +29,25 @@ export function buildRescheduleEmail({ clinic, appointment }) {
         : ""
     }
     <div class="appointment-card">
-      <div class="row"><span class="label">Reference</span><span class="value">${referenceNumber}</span></div>
-      <div class="row"><span class="label">New Date</span><span class="value">${date}</span></div>
-      <div class="row"><span class="label">New Time</span><span class="value">${time}</span></div>
-      <div class="row"><span class="label">Branch</span><span class="value">${branch}</span></div>
-      <div class="row"><span class="label">Service</span><span class="value">${service}</span></div>
-      ${dentist ? `<div class="row"><span class="label">Dentist</span><span class="value">${dentist}</span></div>` : ""}
-      ${notes ? `<div class="row"><span class="label">Notes</span><span class="value">${notes}</span></div>` : ""}
-      <div class="row"><span class="label">Status</span><span class="value"><span class="status-badge">Confirmed</span></span></div>
+      <div class="row"><span class="label">Reference: </span><span class="value">${referenceNumber}</span></div>
+      <div class="row"><span class="label">New Date: </span><span class="value">${date}</span></div>
+      <div class="row"><span class="label">New Time: </span><span class="value">${time}</span></div>
+      <div class="row"><span class="label">Branch: </span><span class="value">${branch}</span></div>
+      <div class="row"><span class="label">Service: </span><span class="value">${service}</span></div>
+      ${dentist ? `<div class="row"><span class="label">Dentist: </span><span class="value">${dentist}</span></div>` : ""}
+      ${notes ? `<div class="row"><span class="label">Notes: </span><span class="value">${notes}</span></div>` : ""}
+      <div class="row"><span class="label">Status: </span><span class="value"><span class="status-badge">Confirmed</span></span></div>
     </div>
     <p>We look forward to seeing you at your new appointment time!</p>
+    ${
+      cancelLink
+        ? `
+    <p>Need to cancel instead? Use the button below.</p>
+    <div class="cta-wrapper">
+      <a href="${cancelLink}" class="cta-button">Cancel Appointment</a>
+    </div>`
+        : ""
+    }
   `;
 
   return {

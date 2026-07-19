@@ -3,6 +3,7 @@
 // Single entry point for every transactional appointment email.
 // Adding a new email type later = one template file + one line in TEMPLATE_BUILDERS.
 import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
 import { sendMail } from "./mailer.js";
 import { formatAppointmentDate, formatAppointmentTime } from "./format.js";
 import { buildConfirmationEmail } from "./emailTemplates/confirmation.js";
@@ -14,6 +15,9 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY,
 );
+
+const PUBLIC_APP_URL =
+  process.env.PUBLIC_APP_URL || "https://leidibuddentals.vercel.app";
 
 const TEMPLATE_BUILDERS = {
   confirmation: buildConfirmationEmail,
@@ -57,6 +61,38 @@ async function fetchAppointment(appointmentId) {
 
   if (error) throw error;
   return data;
+}
+
+// ── Cancellation token: reuse an active one if it exists, otherwise create it. ──
+async function getOrCreateCancellationToken(appointmentId) {
+  const { data: existing } = await supabase
+    .from("appointment_tokens")
+    .select("token")
+    .eq("appointment_id", appointmentId)
+    .eq("purpose", "cancellation")
+    .eq("is_active", true)
+    .gte("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (existing?.token) return existing.token;
+
+  const token = randomBytes(24).toString("hex");
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  const { error } = await supabase.from("appointment_tokens").insert({
+    appointment_id: appointmentId,
+    token,
+    purpose: "cancellation",
+    expires_at: expiresAt.toISOString(),
+    is_active: true,
+  });
+
+  if (error) {
+    console.error("Failed to create cancellation token:", error);
+    return null; // template will simply omit the button if this fails
+  }
+
+  return token;
 }
 
 function toEmailAppointment(row, extra) {
@@ -106,7 +142,21 @@ export async function sendAppointmentEmail({
   }
 
   const clinic = await getClinicInfo();
-  const appointment = toEmailAppointment(row, extra);
+
+  // Attach a cancel link for confirmation/reschedule/reminder emails.
+  // Reminders may already pass their own cancelLink via `extra` (built from
+  // an existing token in send-reminders.js) — respect that if present.
+  let cancelLink = extra.cancelLink || null;
+  if (
+    !cancelLink &&
+    ["confirmation", "reschedule", "reminder"].includes(emailType)
+  ) {
+    const token = await getOrCreateCancellationToken(appointmentId);
+    if (token)
+      cancelLink = `${PUBLIC_APP_URL}/cancel-appointment?token=${token}`;
+  }
+
+  const appointment = toEmailAppointment(row, { ...extra, cancelLink });
   const { subject, html } = buildTemplate({ clinic, appointment });
   const type = logType || emailType;
 
