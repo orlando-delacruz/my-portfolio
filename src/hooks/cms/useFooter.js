@@ -13,6 +13,7 @@ export function useFooter() {
     queryKey: [FOOTER_QUERY_KEY],
     queryFn: fetchFooter,
     staleTime: 60 * 1000,
+    retry: 1,
   });
 }
 

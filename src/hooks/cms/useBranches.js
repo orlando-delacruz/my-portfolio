@@ -14,6 +14,7 @@ export function useBranchesSection() {
     queryKey: [BRANCHES_QUERY_KEY],
     queryFn: fetchActiveBranchesSection,
     staleTime: 60 * 1000,
+    retry: 1, // Fail fast – don't block the UI for long
   });
 }
 
@@ -22,6 +23,7 @@ export function useBranchesAdmin() {
     queryKey: [BRANCHES_ADMIN_QUERY_KEY],
     queryFn: fetchBranchesSectionForAdmin,
     staleTime: 60 * 1000,
+    retry: 1,
   });
 }
 

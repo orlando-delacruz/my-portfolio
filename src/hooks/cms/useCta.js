@@ -9,6 +9,7 @@ export function useCta() {
     queryKey: [CTA_QUERY_KEY],
     queryFn: fetchCta,
     staleTime: 60 * 1000,
+    retry: 1,
   });
 }
 

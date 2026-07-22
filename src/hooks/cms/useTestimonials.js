@@ -14,6 +14,7 @@ export function useTestimonials() {
     queryKey: [TESTIMONIALS_QUERY_KEY],
     queryFn: fetchActiveTestimonials,
     staleTime: 60 * 1000,
+    retry: 1,
   });
 }
 
@@ -22,6 +23,7 @@ export function useTestimonialsAdmin() {
     queryKey: [TESTIMONIALS_ADMIN_QUERY_KEY],
     queryFn: fetchTestimonialsForAdmin,
     staleTime: 60 * 1000,
+    retry: 1,
   });
 }
 
